@@ -16,3 +16,5 @@ A special thanks goes to:
 - FreeImage open source image library. See http://freeimage.sourceforge.net for details;
 
 This software is released under GPL License (see COPYING.txt file).
+
+Sfera includes many classes from LuxRender and LuxRays (http://www.luxrender.net)

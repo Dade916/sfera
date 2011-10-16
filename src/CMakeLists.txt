@@ -24,8 +24,8 @@ set(SFERA_VERSION_MINOR 0devel1)
 # Configure a header file to pass some of the CMake settings
 # to the source code
 configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/sferacfg.h.in"
-  "${CMAKE_CURRENT_SOURCE_DIR}/sferacfg.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/sferacfg.h.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/sferacfg.h"
   )
 
 
@@ -42,12 +42,11 @@ configure_file(
 #
 #############################################################################
 
-include_directories(${Sfera_INCLUDE_DIR})
-include_directories(".")
-link_directories (${Sfera_LIB_DIR})
-
 set(Sfera_SRCS
+	gameconfig.cpp
 	sfera.cpp
+	utils/oclutils.cpp
+	utils/properties.cpp
 	)
 
 add_executable(Sfera ${Sfera_SRCS})
@@ -55,6 +54,9 @@ add_executable(Sfera ${Sfera_SRCS})
 TARGET_LINK_LIBRARIES(Sfera ${GLEW_LIBRARY} ${OPENGL_LIBRARY})
 TARGET_LINK_LIBRARIES(Sfera ${OpenCL_LIBRARY})
 TARGET_LINK_LIBRARIES(Sfera ${GLUT_LIBRARY})
+TARGET_LINK_LIBRARIES(Sfera debug ${FreeImage_LIBRARY_DBG} optimized ${FreeImage_LIBRARY_REL} general ${FreeImage_LIBRARY_REL})
+TARGET_LINK_LIBRARIES(Sfera ${OPENCL_LIBRARY})
+TARGET_LINK_LIBRARIES(Sfera ${Boost_LIBRARIES})
 
 # This instructs FREEGLUT to emit a pragma for the static version
 SET_TARGET_PROPERTIES(Sfera PROPERTIES COMPILE_DEFINITIONS FREEGLUT_STATIC)

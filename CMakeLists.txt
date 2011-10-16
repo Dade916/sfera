@@ -56,7 +56,7 @@ INCLUDE(Configuration)
 # Install CMake modules
 #add_subdirectory(CMake)
 
-SET(Sfera_INCLUDE_DIR "${Sfera_SOURCE_DIR}/include")
+SET(Sfera_INCLUDE_DIR "${Sfera_SOURCE_DIR}/src/include")
 include_directories("${Sfera_INCLUDE_DIR}")
 
 # When using single configuration generators like make
