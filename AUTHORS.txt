@@ -1,0 +1,5 @@
+Authors:
+
+David "Dade" Bucciarelli <davibu.at.interfree.it>
+Jens Verwiebe <>
+Amir "foobarbarian" Mohammadkhani-Aminabadi <amir@mohammadkhani.eu>

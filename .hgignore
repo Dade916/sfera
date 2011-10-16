@@ -1,0 +1,13 @@
+^bin/*
+^nbproject/*
+^Makefile-Sfera.mk
+^.dep.inc
+syntax: glob
+*~
+*CMakeFiles
+*CMakeCache.txt
+*Makefile
+*cmake_install.cmake
+*.sdf
+*.vcxproj*
+
