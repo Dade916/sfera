@@ -77,12 +77,12 @@ if (GLEW_FOUND)
 endif ()
 
 
-set(GLUT_ROOT                  "${GLUT_SEARCH_PATH}")
-find_package(GLUT)
+set(SDL_ROOT                  "${SDL_SEARCH_PATH}")
+find_package(SDL)
 
-# GLUT
-if (GLUT_FOUND)
-  include_directories(${GLUT_INCLUDE_PATH})
+# SDL
+if (SDL_FOUND)
+  include_directories(${SDL_INCLUDE_PATH})
 endif ()
 
 set(OPENCL_ROOT                  "${OPENCL_SEARCH_PATH}")

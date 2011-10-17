@@ -91,8 +91,8 @@ if (NOT OPENCL_FOUND)
 	MESSAGE(FATAL_ERROR "--> Could not locate required OpenCL files - Please check ${OPENCL_SEARCH_PATH}")
 endif()
 
-if (NOT GLUT_FOUND)
-	MESSAGE(FATAL_ERROR "--> Could not locate required GLUT files - Please check ${GLUT_SEARCH_PATH}")
+if (NOT SDL_FOUND)
+	MESSAGE(FATAL_ERROR "--> Could not locate required SDL files - Please check ${SDL_SEARCH_PATH}")
 endif()
 
 
