@@ -18,21 +18,14 @@
  *                                                                         *
  ***************************************************************************/
 
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <string>
-#include <sstream>
 #include <stdexcept>
 
-#include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
 
 #include "sfera.h"
 #include "gameconfig.h"
 
-string SFERA_LABEL = "Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSION_MINOR;
+string SFERA_LABEL = "Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSION_MINOR " (Written by David \"Dade\" Bucciarelli)";
 
 void SferaDebugHandler(const char *msg) {
 	cerr << "[Sfera] " << msg << endl;
@@ -123,9 +116,9 @@ int main(int argc, char *argv[]) {
 					config = new GameConfig(argv[++i]);
 				}
 
-				else if (argv[i][1] == 'e') cmdLineProp.SetString("image.height", argv[++i]);
+				else if (argv[i][1] == 'e') cmdLineProp.SetString("screen.height", argv[++i]);
 
-				else if (argv[i][1] == 'w') cmdLineProp.SetString("image.width", argv[++i]);
+				else if (argv[i][1] == 'w') cmdLineProp.SetString("screen.width", argv[++i]);
 
 				else if (argv[i][1] == 'D') {
 					cmdLineProp.SetString(argv[i + 1], argv[i + 2]);
@@ -148,6 +141,19 @@ int main(int argc, char *argv[]) {
 					throw runtime_error("Unknown file extension: " + s);
 			}
 		}
+
+		if (!config)
+			config = new GameConfig();
+
+		// Overtwirte properties with the one defined on command line
+		config->cfg.Load(cmdLineProp);
+
+		// It is important to initialize OpenGL before OpenCL
+		// (for OpenGL/OpenCL interoperability)
+		unsigned int width = config->cfg.GetInt("screen.width", 512);
+		unsigned int height = config->cfg.GetInt("screen.height", 384);
+
+		InitGlut(argc, argv, width, height);
 	} catch (cl::Error err) {
 		SFERA_LOG("OpenCL ERROR: " << err.what() << "(" << utils::oclErrorString(err.err()) << ")");
 	} catch (runtime_error err) {

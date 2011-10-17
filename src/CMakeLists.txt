@@ -44,6 +44,7 @@ configure_file(
 
 set(Sfera_SRCS
 	gameconfig.cpp
+	gamesession.cpp
 	sfera.cpp
 	utils/oclutils.cpp
 	utils/properties.cpp

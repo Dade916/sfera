@@ -21,18 +21,18 @@
 #ifndef _GAMECONFIG_H
 #define	_GAMECONFIG_H
 
-#include <boost/thread/mutex.hpp>
-
 #include "sfera.h"
 #include "utils/properties.h"
 
 class GameConfig {
 public:
 	GameConfig(const string &fileName);
+	GameConfig();
 	~GameConfig();
+
+	void LogParameters();
 
 	Properties cfg;
 };
 
 #endif	/* _GAMECONFIG_H */
-

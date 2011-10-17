@@ -18,29 +18,20 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifndef _GAMESESSION_H
+#define	_GAMESESSION_H
+
+#include "sfera.h"
 #include "gameconfig.h"
 
-GameConfig::GameConfig(const string &fileName) {
-	SFERA_LOG("Reading configuration file: " << fileName);
-	cfg.LoadFile(fileName);
+class GameSession {
+public:
+	GameSession(const GameConfig &cfg);
+	~GameSession();
 
-	LogParameters();
-}
+private:
+	const GameConfig &gameConfig;
+};
 
-GameConfig::GameConfig() {
-	// Default configuration parameters
-	cfg.SetString("screen.width", "512");
-	cfg.SetString("screen.height", "384");
+#endif	/* _GAMESESSION_H */
 
-	LogParameters();
-}
-
-GameConfig::~GameConfig() {
-}
-
-void GameConfig::LogParameters() {
-	SFERA_LOG("Configuration: ");
-	vector<string> keys = cfg.GetAllKeys();
-	for (vector<string>::iterator i = keys.begin(); i != keys.end(); ++i)
-		SFERA_LOG("  " << *i << " = " << cfg.GetString(*i, ""));
-}
