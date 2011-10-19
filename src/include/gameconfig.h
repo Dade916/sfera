@@ -18,8 +18,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _GAMECONFIG_H
-#define	_GAMECONFIG_H
+#ifndef _SFERA_GAMECONFIG_H
+#define	_SFERA_GAMECONFIG_H
 
 #include "sfera.h"
 #include "utils/properties.h"
@@ -35,4 +35,4 @@ public:
 	Properties cfg;
 };
 
-#endif	/* _GAMECONFIG_H */
+#endif	/* _SFERA_GAMECONFIG_H */

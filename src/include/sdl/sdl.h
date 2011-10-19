@@ -18,29 +18,9 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "gameconfig.h"
+#ifndef _SFERA_SDL_H
+#define	_SFERA_SDL_H
 
-GameConfig::GameConfig(const string &fileName) {
-	SFERA_LOG("Reading configuration file: " << fileName);
-	cfg.LoadFile(fileName);
+#include "sdl/scene.h"
 
-	LogParameters();
-}
-
-GameConfig::GameConfig() {
-	// Default configuration parameters
-	cfg.SetString("screen.width", "512");
-	cfg.SetString("screen.height", "384");
-
-	LogParameters();
-}
-
-GameConfig::~GameConfig() {
-}
-
-void GameConfig::LogParameters() {
-	SFERA_LOG("Configuration: ");
-	vector<string> keys = cfg.GetAllKeys();
-	for (vector<string>::iterator i = keys.begin(); i != keys.end(); ++i)
-		SFERA_LOG("  " << *i << " = " << cfg.GetString(*i, ""));
-}
+#endif	/* _SFERA_SDL_H */

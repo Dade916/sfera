@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
 		// Overtwirte properties with the one defined on command line
 		config->cfg.Load(cmdLineProp);
 
-		DisplaySession displaySession(*config);
+		DisplaySession displaySession(config);
 		displaySession.RunLoop();
 
 		delete config;

@@ -20,12 +20,13 @@
 
 #include "sfera.h"
 #include "displaysession.h"
+#include "gamesession.h"
 
 static const string SFERA_LABEL = "Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSION_MINOR " (Written by David \"Dade\" Bucciarelli)";
 
-DisplaySession::DisplaySession(const GameConfig &cfg) : gameConfig(cfg) {
-	const unsigned int width = gameConfig.cfg.GetInt("screen.width", 512);
-	const unsigned int height = gameConfig.cfg.GetInt("screen.height", 384);
+DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
+	const unsigned int width = gameConfig->cfg.GetInt("screen.width", 512);
+	const unsigned int height = gameConfig->cfg.GetInt("screen.height", 384);
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 		throw std::runtime_error("Unable to initialize SDL");
@@ -60,8 +61,10 @@ DisplaySession::~DisplaySession() {
 }
 
 void DisplaySession::RunLoop() {
-	bool quit = false;
+	GameSession gameSession(gameConfig, "Sfera");
+	gameSession.LoadLevel(1);
 
+	bool quit = false;
 	do {
 		SDL_Event event;
 

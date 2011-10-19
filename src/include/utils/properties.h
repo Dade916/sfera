@@ -25,8 +25,6 @@
 #include <vector>
 #include <string>
 
-namespace utils {
-
 class Properties {
 public:
 	Properties() { }
@@ -59,7 +57,5 @@ public:
 private:
 	std::map<std::string, std::string> props;
 };
-
-}
 
 #endif	/* _SFERA_PROPERTIES_H */

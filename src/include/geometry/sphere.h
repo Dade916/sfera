@@ -18,29 +18,18 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "gameconfig.h"
+#ifndef _SFERA_SPHERE_H
+#define	_SFERA_SPHERE_H
 
-GameConfig::GameConfig(const string &fileName) {
-	SFERA_LOG("Reading configuration file: " << fileName);
-	cfg.LoadFile(fileName);
+#include "geometry/point.h"
 
-	LogParameters();
-}
+class Sphere {
+public:
+	Sphere(const Point &c, const float r) : center(c), rad(r) {};
+	~Sphere() {};
 
-GameConfig::GameConfig() {
-	// Default configuration parameters
-	cfg.SetString("screen.width", "512");
-	cfg.SetString("screen.height", "384");
+	Point center;
+	float rad;
+};
 
-	LogParameters();
-}
-
-GameConfig::~GameConfig() {
-}
-
-void GameConfig::LogParameters() {
-	SFERA_LOG("Configuration: ");
-	vector<string> keys = cfg.GetAllKeys();
-	for (vector<string>::iterator i = keys.begin(); i != keys.end(); ++i)
-		SFERA_LOG("  " << *i << " = " << cfg.GetString(*i, ""));
-}
+#endif	/* _SFERA_SPHERE_H */

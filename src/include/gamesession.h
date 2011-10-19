@@ -18,20 +18,25 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _GAMESESSION_H
-#define	_GAMESESSION_H
+#ifndef _SFERA_GAMESESSION_H
+#define	_SFERA_GAMESESSION_H
 
 #include "sfera.h"
 #include "gameconfig.h"
+#include "gamelevel.h"
 
 class GameSession {
 public:
-	GameSession(const GameConfig &cfg);
+	GameSession(const GameConfig *cfg, const string &pack);
 	~GameSession();
 
+	void LoadLevel(const unsigned int level);
+
 private:
-	const GameConfig &gameConfig;
+	const GameConfig *gameConfig;
+	const string packName;
+
+	const GameLevel *currentLevel;
 };
 
-#endif	/* _GAMESESSION_H */
-
+#endif	/* _SFERA_GAMESESSION_H */

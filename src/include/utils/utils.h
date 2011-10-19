@@ -83,8 +83,6 @@ using std::isinf;
 #define INV_TWOPI  0.15915494309189533577f
 #endif
 
-namespace utils {
-
 inline double WallClockTime() {
 #if defined(__linux__) || defined(__APPLE__) || defined(__CYGWIN__)
 	struct timeval t;
@@ -369,7 +367,5 @@ public:
 #else // NOBOOK
 } __attribute__((aligned(16)));
 #endif // NOBOOK
-
-}
 
 #endif	/* _SFERA_UTILS_H */

@@ -18,8 +18,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _OCL_UTILS_H
-#define	_OCL_UTILS_H
+#ifndef _SFERA_OCL_UTILS_H
+#define	_SFERA_OCL_UTILS_H
 
 #include <string>
 #include <map>
@@ -91,4 +91,4 @@ private:
 
 }
 
-#endif	/* _OCL_UTILS_H */
+#endif	/* _SFERA_OCL_UTILS_H */

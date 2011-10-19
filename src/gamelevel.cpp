@@ -18,29 +18,12 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "gameconfig.h"
+#include "gamelevel.h"
 
-GameConfig::GameConfig(const string &fileName) {
-	SFERA_LOG("Reading configuration file: " << fileName);
-	cfg.LoadFile(fileName);
-
-	LogParameters();
+GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameConfig(cfg) {
+	scene = new Scene(levelFileName);
 }
 
-GameConfig::GameConfig() {
-	// Default configuration parameters
-	cfg.SetString("screen.width", "512");
-	cfg.SetString("screen.height", "384");
-
-	LogParameters();
-}
-
-GameConfig::~GameConfig() {
-}
-
-void GameConfig::LogParameters() {
-	SFERA_LOG("Configuration: ");
-	vector<string> keys = cfg.GetAllKeys();
-	for (vector<string>::iterator i = keys.begin(); i != keys.end(); ++i)
-		SFERA_LOG("  " << *i << " = " << cfg.GetString(*i, ""));
+GameLevel::~GameLevel() {
+	delete scene;
 }

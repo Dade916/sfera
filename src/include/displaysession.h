@@ -18,21 +18,21 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _DISPLAYSESSION_H
-#define	_DISPLAYSESSION_H
+#ifndef _SFERA_DISPLAYSESSION_H
+#define	_SFERA_DISPLAYSESSION_H
 
 #include "sfera.h"
 #include "gameconfig.h"
 
 class DisplaySession {
 public:
-	DisplaySession(const GameConfig &cfg);
+	DisplaySession(const GameConfig *cfg);
 	~DisplaySession();
 
 	void RunLoop();
 private:
-	const GameConfig &gameConfig;
+	const GameConfig *gameConfig;
 };
 
-#endif	/* _DISPLAYSESSION_H */
+#endif	/* _SFERA_DISPLAYSESSION_H */
 

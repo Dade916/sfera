@@ -45,7 +45,10 @@ configure_file(
 set(Sfera_SRCS
 	displaysession.cpp
 	gameconfig.cpp
+	gamelevel.cpp
 	gamesession.cpp
+	geometry/ray.cpp
+	sdl/scene.cpp
 	sfera.cpp
 	utils/oclutils.cpp
 	utils/properties.cpp

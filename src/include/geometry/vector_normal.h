@@ -18,29 +18,39 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "gameconfig.h"
+#ifndef _SFERA_VECTOR_NORMAL_H
+#define _SFERA_VECTOR_NORMAL_H
 
-GameConfig::GameConfig(const string &fileName) {
-	SFERA_LOG("Reading configuration file: " << fileName);
-	cfg.LoadFile(fileName);
+#include "geometry/vector.h"
+#include "geometry/normal.h"
 
-	LogParameters();
+// Geometry Inline Functions
+inline Vector Cross(const Vector &v1, const Normal &v2) {
+	return Vector((v1.y * v2.z) - (v1.z * v2.y),
+                  (v1.z * v2.x) - (v1.x * v2.z),
+                  (v1.x * v2.y) - (v1.y * v2.x));
 }
 
-GameConfig::GameConfig() {
-	// Default configuration parameters
-	cfg.SetString("screen.width", "512");
-	cfg.SetString("screen.height", "384");
-
-	LogParameters();
+inline Vector Cross(const Normal &v1, const Vector &v2) {
+	return Vector((v1.y * v2.z) - (v1.z * v2.y),
+                  (v1.z * v2.x) - (v1.x * v2.z),
+                  (v1.x * v2.y) - (v1.y * v2.x));
 }
 
-GameConfig::~GameConfig() {
+inline float Dot(const Normal &n1, const Vector &v2) {
+	return n1.x * v2.x + n1.y * v2.y + n1.z * v2.z;
 }
 
-void GameConfig::LogParameters() {
-	SFERA_LOG("Configuration: ");
-	vector<string> keys = cfg.GetAllKeys();
-	for (vector<string>::iterator i = keys.begin(); i != keys.end(); ++i)
-		SFERA_LOG("  " << *i << " = " << cfg.GetString(*i, ""));
+inline float Dot(const Vector &v1, const Normal &n2) {
+	return v1.x * n2.x + v1.y * n2.y + v1.z * n2.z;
 }
+
+inline float AbsDot(const Vector &v1, const Normal &n2) {
+	return fabsf(v1.x * n2.x + v1.y * n2.y + v1.z * n2.z);
+}
+
+inline float AbsDot(const Normal &n1, const Vector &v2) {
+	return fabsf(n1.x * v2.x + n1.y * v2.y + n1.z * v2.z);
+}
+
+#endif 	/* _SFERA_VECTOR_NORMAL_H */

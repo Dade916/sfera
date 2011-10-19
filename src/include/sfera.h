@@ -18,8 +18,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef SFERA_H
-#define	SFERA_H
+#ifndef _SFERA_H
+#define	_SFERA_H
 
 #include <cmath>
 #include <sstream>
@@ -56,10 +56,9 @@
 #include "utils/properties.h"
 
 using namespace std;
-using namespace utils;
 
 extern void SferaDebugHandler(const char *msg);
 
 #define SFERA_LOG(a) { std::stringstream _SFERA_LOG_LOCAL_SS; _SFERA_LOG_LOCAL_SS << a; SferaDebugHandler(_SFERA_LOG_LOCAL_SS.str().c_str()); }
 
-#endif	/* SFERA_H */
+#endif	/* _SFERA_H */

@@ -18,29 +18,22 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifndef _SFERA_GAMELEVEL_H
+#define	_SFERA_GAMELEVEL_H
+
+#include "sfera.h"
 #include "gameconfig.h"
+#include "sdl/scene.h"
 
-GameConfig::GameConfig(const string &fileName) {
-	SFERA_LOG("Reading configuration file: " << fileName);
-	cfg.LoadFile(fileName);
+class GameLevel {
+public:
+	GameLevel(const GameConfig *cfg, const string &levelFileName);
+	~GameLevel();
 
-	LogParameters();
-}
+private:
+	const GameConfig *gameConfig;
 
-GameConfig::GameConfig() {
-	// Default configuration parameters
-	cfg.SetString("screen.width", "512");
-	cfg.SetString("screen.height", "384");
+	const Scene *scene;
+};
 
-	LogParameters();
-}
-
-GameConfig::~GameConfig() {
-}
-
-void GameConfig::LogParameters() {
-	SFERA_LOG("Configuration: ");
-	vector<string> keys = cfg.GetAllKeys();
-	for (vector<string>::iterator i = keys.begin(); i != keys.end(); ++i)
-		SFERA_LOG("  " << *i << " = " << cfg.GetString(*i, ""));
-}
+#endif	/* _SFERA_GAMELEVEL_H */

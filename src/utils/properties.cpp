@@ -28,8 +28,6 @@
 #include "utils/utils.h"
 #include "utils/properties.h"
 
-using namespace utils;
-
 Properties::Properties(const std::string &fileName) {
 	LoadFile(fileName);
 }

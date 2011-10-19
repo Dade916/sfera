@@ -20,8 +20,15 @@
 
 #include "gamesession.h"
 
-GameSession::GameSession(const GameConfig &cfg) : gameConfig(cfg) {
+GameSession::GameSession(const GameConfig *cfg, const string &pack) :
+	gameConfig(cfg), packName(pack) {
+	currentLevel = NULL;
 }
 
 GameSession::~GameSession() {
+	delete currentLevel;
+}
+
+void GameSession::LoadLevel(const unsigned int level) {
+	currentLevel = new GameLevel(gameConfig, "gamedata/packs/" + packName + "/lvl01-Single.lvl");
 }
