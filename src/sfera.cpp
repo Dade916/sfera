@@ -24,8 +24,7 @@
 
 #include "sfera.h"
 #include "gameconfig.h"
-
-string SFERA_LABEL = "Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSION_MINOR " (Written by David \"Dade\" Bucciarelli)";
+#include "displaysession.h"
 
 void SferaDebugHandler(const char *msg) {
 	cerr << "[Sfera] " << msg << endl;
@@ -148,27 +147,10 @@ int main(int argc, char *argv[]) {
 		// Overtwirte properties with the one defined on command line
 		config->cfg.Load(cmdLineProp);
 
-		// It is important to initialize OpenGL before OpenCL
-		// (for OpenGL/OpenCL interoperability)
-		const unsigned int width = config->cfg.GetInt("screen.width", 512);
-		const unsigned int height = config->cfg.GetInt("screen.height", 384);
+		DisplaySession displaySession(*config);
+		displaySession.RunLoop();
 
-		if (SDL_Init(SDL_INIT_VIDEO) < 0)
-			throw std::runtime_error("Unable to initialize SDL");
-
-		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-		SDL_Surface *surface = SDL_SetVideoMode(width, height, 32,
-				SDL_HWSURFACE | SDL_OPENGL);
-		if (!surface)
-			throw std::runtime_error("Unable to create window");
-
-		glClearColor(1.0, 0.0, 0.0, 1.0);
-		glClear(GL_COLOR_BUFFER_BIT);
-		SDL_GL_SwapBuffers();
-		SDL_Delay(2000);
-
-		SDL_Quit();
+		delete config;
 	} catch (cl::Error err) {
 		SFERA_LOG("OpenCL ERROR: " << err.what() << "(" << utils::oclErrorString(err.err()) << ")");
 	} catch (runtime_error err) {

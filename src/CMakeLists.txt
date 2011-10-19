@@ -43,6 +43,7 @@ configure_file(
 #############################################################################
 
 set(Sfera_SRCS
+	displaysession.cpp
 	gameconfig.cpp
 	gamesession.cpp
 	sfera.cpp
