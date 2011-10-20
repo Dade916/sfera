@@ -30,9 +30,7 @@ public:
 	GameLevel(const GameConfig *cfg, const string &levelFileName);
 	~GameLevel();
 
-private:
 	const GameConfig *gameConfig;
-
 	const Scene *scene;
 };
 

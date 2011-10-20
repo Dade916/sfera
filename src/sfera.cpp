@@ -145,14 +145,14 @@ int main(int argc, char *argv[]) {
 			config = new GameConfig();
 
 		// Overtwirte properties with the one defined on command line
-		config->cfg.Load(cmdLineProp);
+		config->LoadProperties(cmdLineProp);
 
 		DisplaySession displaySession(config);
 		displaySession.RunLoop();
 
 		delete config;
 	} catch (cl::Error err) {
-		SFERA_LOG("OpenCL ERROR: " << err.what() << "(" << utils::oclErrorString(err.err()) << ")");
+		SFERA_LOG("OpenCL ERROR: " << err.what() << "(" << OCLErrorString(err.err()) << ")");
 	} catch (runtime_error err) {
 		SFERA_LOG("RUNTIME ERROR: " << err.what());
 	} catch (exception err) {

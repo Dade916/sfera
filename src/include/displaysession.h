@@ -30,7 +30,7 @@ public:
 	~DisplaySession();
 
 	void RunLoop();
-private:
+
 	const GameConfig *gameConfig;
 };
 

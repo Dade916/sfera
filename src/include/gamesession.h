@@ -32,10 +32,8 @@ public:
 
 	void LoadLevel(const unsigned int level);
 
-private:
 	const GameConfig *gameConfig;
 	const string packName;
-
 	const GameLevel *currentLevel;
 };
 

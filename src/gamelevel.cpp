@@ -21,7 +21,11 @@
 #include "gamelevel.h"
 
 GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameConfig(cfg) {
-	scene = new Scene(levelFileName);
+	SFERA_LOG("Reading level: " << levelFileName);
+
+	Properties lvlProp(levelFileName);
+
+	scene = new Scene(lvlProp);
 }
 
 GameLevel::~GameLevel() {

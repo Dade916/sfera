@@ -48,6 +48,7 @@ set(Sfera_SRCS
 	gamelevel.cpp
 	gamesession.cpp
 	geometry/ray.cpp
+	renderer/cpu/singlecpurenderer.cpp
 	sdl/scene.cpp
 	sfera.cpp
 	utils/oclutils.cpp

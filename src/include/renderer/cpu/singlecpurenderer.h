@@ -18,55 +18,21 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "gameconfig.h"
+#ifndef _SFERA_CPURENDERER_H
+#define	_SFERA_CPURENDERER_H
 
-const string GameConfig::SCREEN_WIDTH = "screen.width";
-const string GameConfig::SCREEN_WIDTH_DEFAULT = "512";
-const string GameConfig::SCREEN_HEIGHT = "screen.height";
-const string GameConfig::SCREEN_HEIGHT_DEFAULT = "384";
+#include "renderer/levelrenderer.h"
 
-GameConfig::GameConfig(const string &fileName) {
-	SFERA_LOG("Reading configuration file: " << fileName);
-	cfg.LoadFile(fileName);
-	InitCachedValues();
+class SingleCPURenderer : public LevelRenderer {
+public:
+	SingleCPURenderer(const GameLevel *level);
+	~SingleCPURenderer();
 
-	LogParameters();
-}
+	void DrawFrame();
 
-GameConfig::GameConfig() {
-	// Default configuration parameters
-	cfg.SetString(SCREEN_WIDTH, SCREEN_WIDTH_DEFAULT);
-	cfg.SetString(SCREEN_HEIGHT, SCREEN_HEIGHT_DEFAULT);
-	InitCachedValues();
+private:
+	int screenWidth, screenHeight;
+	float *pixels;
+};
 
-	LogParameters();
-}
-
-GameConfig::~GameConfig() {
-}
-
-void GameConfig::LogParameters() {
-	SFERA_LOG("Configuration: ");
-	vector<string> keys = cfg.GetAllKeys();
-	for (vector<string>::iterator i = keys.begin(); i != keys.end(); ++i)
-		SFERA_LOG("  " << *i << " = " << cfg.GetString(*i, ""));
-}
-
-void GameConfig::LoadProperties(const Properties &prop) {
-	cfg.Load(prop);
-
-	InitCachedValues();
-}
-
-int GameConfig::GetScreenWidth() const {
-	return screenWidth;
-}
-
-int GameConfig::GetScreenHeight() const {
-	return screenHeight;
-}
-
-void GameConfig::InitCachedValues() {
-	screenWidth = cfg.GetInt(SCREEN_WIDTH, atoi(SCREEN_WIDTH_DEFAULT.c_str()));
-	screenHeight = cfg.GetInt(SCREEN_HEIGHT, atoi(SCREEN_HEIGHT_DEFAULT.c_str()));
-}
+#endif	/* _SFERA_CPURENDERER_H */

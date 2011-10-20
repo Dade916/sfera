@@ -32,7 +32,25 @@ public:
 
 	void LogParameters();
 
+	void LoadProperties(const Properties &prop);
+
+	int GetScreenWidth() const;
+	int GetScreenHeight() const;
+
+private:
+	// List of possible properties
+	const static string SCREEN_WIDTH;
+	const static string SCREEN_WIDTH_DEFAULT;
+	const static string SCREEN_HEIGHT;
+	const static string SCREEN_HEIGHT_DEFAULT;
+
+	void InitCachedValues();
+
 	Properties cfg;
+
+	// Cached values
+	int screenWidth;
+	int screenHeight;
 };
 
 #endif	/* _SFERA_GAMECONFIG_H */

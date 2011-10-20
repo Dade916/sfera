@@ -18,55 +18,27 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "gameconfig.h"
+#include "renderer/cpu/singlecpurenderer.h"
 
-const string GameConfig::SCREEN_WIDTH = "screen.width";
-const string GameConfig::SCREEN_WIDTH_DEFAULT = "512";
-const string GameConfig::SCREEN_HEIGHT = "screen.height";
-const string GameConfig::SCREEN_HEIGHT_DEFAULT = "384";
+SingleCPURenderer::SingleCPURenderer(const GameLevel *level) : LevelRenderer(level) {
+	const size_t pixelsCount = gameLevel->gameConfig->GetScreenWidth() * gameLevel->gameConfig->GetScreenHeight();
+	pixels = new float[pixelsCount * 3];
 
-GameConfig::GameConfig(const string &fileName) {
-	SFERA_LOG("Reading configuration file: " << fileName);
-	cfg.LoadFile(fileName);
-	InitCachedValues();
-
-	LogParameters();
+	float *p = pixels;
+	for (size_t i = 0; i < pixelsCount * 3; ++i)
+		*p++ = 0.f;
 }
 
-GameConfig::GameConfig() {
-	// Default configuration parameters
-	cfg.SetString(SCREEN_WIDTH, SCREEN_WIDTH_DEFAULT);
-	cfg.SetString(SCREEN_HEIGHT, SCREEN_HEIGHT_DEFAULT);
-	InitCachedValues();
-
-	LogParameters();
+SingleCPURenderer::~SingleCPURenderer() {
+	delete[] pixels;
 }
 
-GameConfig::~GameConfig() {
-}
+void SingleCPURenderer::DrawFrame() {
+	const size_t pixelsCount = gameLevel->gameConfig->GetScreenWidth() * gameLevel->gameConfig->GetScreenHeight();
 
-void GameConfig::LogParameters() {
-	SFERA_LOG("Configuration: ");
-	vector<string> keys = cfg.GetAllKeys();
-	for (vector<string>::iterator i = keys.begin(); i != keys.end(); ++i)
-		SFERA_LOG("  " << *i << " = " << cfg.GetString(*i, ""));
-}
+	float *p = pixels;
+	for (size_t i = 0; i < pixelsCount * 3; ++i)
+		*p++ += 0.001;
 
-void GameConfig::LoadProperties(const Properties &prop) {
-	cfg.Load(prop);
-
-	InitCachedValues();
-}
-
-int GameConfig::GetScreenWidth() const {
-	return screenWidth;
-}
-
-int GameConfig::GetScreenHeight() const {
-	return screenHeight;
-}
-
-void GameConfig::InitCachedValues() {
-	screenWidth = cfg.GetInt(SCREEN_WIDTH, atoi(SCREEN_WIDTH_DEFAULT.c_str()));
-	screenHeight = cfg.GetInt(SCREEN_HEIGHT, atoi(SCREEN_HEIGHT_DEFAULT.c_str()));
+	glDrawPixels(gameLevel->gameConfig->GetScreenWidth(), gameLevel->gameConfig->GetScreenHeight(), GL_RGB, GL_FLOAT, pixels);
 }
