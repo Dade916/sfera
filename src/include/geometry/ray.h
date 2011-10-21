@@ -24,8 +24,6 @@
 #include "geometry/vector.h"
 #include "geometry/point.h"
 
-namespace luxrays {
-
 extern float RAY_EPSILON;
 
 class  Ray {
@@ -71,7 +69,5 @@ public:
 	void SetMiss() { index = 0xffffffffu; };
 	bool Miss() const { return (index == 0xffffffffu); };
 };
-
-}
 
 #endif	/* _SFERA_RAY_H */

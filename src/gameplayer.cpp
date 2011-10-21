@@ -18,47 +18,11 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "sfera.h"
-#include "sdl/sdl.h"
+#include "gameplayer.h"
 
-Scene::Scene(const Properties &scnProp) {
-	//--------------------------------------------------------------------------
-	// Read all spheres
-	//--------------------------------------------------------------------------
-
-	std::vector<std::string> objKeys = scnProp.GetAllKeys("scene.spheres.");
-	if (objKeys.size() == 0)
-		throw std::runtime_error("Unable to find object definitions");
-
-	double lastPrint = WallClockTime();
-	for (std::vector<std::string>::const_iterator objKey = objKeys.begin(); objKey != objKeys.end(); ++objKey) {
-		const std::string &key = *objKey;
-
-		// Check if it is the root of the definition of an object otherwise skip
-		const size_t dot1 = key.find(".", std::string("scene.spheres.").length());
-		if (dot1 == std::string::npos)
-			continue;
-		const size_t dot2 = key.find(".", dot1 + 1);
-		if (dot2 != std::string::npos)
-			continue;
-
-		const std::string sphereName = Properties::ExtractField(key, 3);
-		if (sphereName == "")
-			throw std::runtime_error("Syntax error in " + key);
-
-		// Build the sphere
-		const std::vector<float> vf = Properties::GetParameters(scnProp, key + ".geometry", 4, "0.0 0.0 0.0 1.0");
-
-		spheres.push_back(Sphere(Point(vf[0], vf[1], vf[2]), vf[3]));
-
-		const double now = WallClockTime();
-		if (now - lastPrint > 2.0) {
-			SFERA_LOG("Spheres count: " << spheres.size());
-			lastPrint = now;
-		}
-	}
-	SFERA_LOG("Spheres count: " << spheres.size());
+GamePlayer::GamePlayer(const Point &p) {
+	pos = p;
 }
 
-Scene::~Scene() {
+GamePlayer::~GamePlayer() {
 }

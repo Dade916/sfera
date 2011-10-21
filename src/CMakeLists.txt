@@ -46,9 +46,13 @@ set(Sfera_SRCS
 	displaysession.cpp
 	gameconfig.cpp
 	gamelevel.cpp
+	gameplayer.cpp
 	gamesession.cpp
+	geometry/matrix4x4.cpp
+	geometry/transform.cpp
 	geometry/ray.cpp
 	renderer/cpu/singlecpurenderer.cpp
+	sdl/camera.cpp
 	sdl/scene.cpp
 	sfera.cpp
 	utils/oclutils.cpp

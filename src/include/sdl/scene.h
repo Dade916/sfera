@@ -31,11 +31,6 @@ public:
 	~Scene();
 
 	std::vector<Sphere> spheres; // All sferes
-
-private:
-	static std::vector<float> GetParameters(
-		const Properties &prop, const std::string &paramName,
-		const unsigned int paramCount, const std::string &defaultValue);
 };
 
 #endif	/* _SFERA_SDL_SCENE_H */

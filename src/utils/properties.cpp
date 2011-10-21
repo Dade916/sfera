@@ -229,3 +229,15 @@ std::vector<float> Properties::ConvertToFloatVector(const std::string &values) {
 
 	return floats;
 }
+
+std::vector<float> Properties::GetParameters(const Properties &prop, const std::string &paramName,
+		const unsigned int paramCount, const std::string &defaultValue) {
+	const std::vector<float> vf = prop.GetFloatVector(paramName, defaultValue);
+	if (vf.size() != paramCount) {
+		std::stringstream ss;
+		ss << "Syntax error in " << paramName << " (required " << paramCount << " parameters)";
+		throw std::runtime_error(ss.str());
+	}
+
+	return vf;
+}

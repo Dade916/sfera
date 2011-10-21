@@ -23,6 +23,7 @@
 
 #include "sfera.h"
 #include "gameconfig.h"
+#include "gameplayer.h"
 #include "sdl/scene.h"
 
 class GameLevel {
@@ -32,6 +33,8 @@ public:
 
 	const GameConfig *gameConfig;
 	const Scene *scene;
+
+	GamePlayer *player;
 };
 
 #endif	/* _SFERA_GAMELEVEL_H */

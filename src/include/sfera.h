@@ -51,6 +51,12 @@
 #include <CL/cl.hpp>
 #endif
 
+#include "geometry/vector.h"
+#include "geometry/point.h"
+#include "geometry/normal.h"
+#include "geometry/ray.h"
+#include "geometry/matrix4x4.h"
+#include "geometry/transform.h"
 #include "utils/utils.h"
 #include "utils/oclutils.h"
 #include "utils/properties.h"

@@ -21,8 +21,6 @@
 #ifndef _SFERA_POINT_H
 #define _SFERA_POINT_H
 
-#include "sfera.h"
-
 #include "geometry/vector.h"
 
 class Point {

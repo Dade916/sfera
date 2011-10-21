@@ -18,47 +18,66 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "sfera.h"
-#include "sdl/sdl.h"
+#ifndef _SFERA_MATRIX4X4_H
+#define _SFERA_MATRIX4X4_H
 
-Scene::Scene(const Properties &scnProp) {
-	//--------------------------------------------------------------------------
-	// Read all spheres
-	//--------------------------------------------------------------------------
+#include <ostream>
 
-	std::vector<std::string> objKeys = scnProp.GetAllKeys("scene.spheres.");
-	if (objKeys.size() == 0)
-		throw std::runtime_error("Unable to find object definitions");
-
-	double lastPrint = WallClockTime();
-	for (std::vector<std::string>::const_iterator objKey = objKeys.begin(); objKey != objKeys.end(); ++objKey) {
-		const std::string &key = *objKey;
-
-		// Check if it is the root of the definition of an object otherwise skip
-		const size_t dot1 = key.find(".", std::string("scene.spheres.").length());
-		if (dot1 == std::string::npos)
-			continue;
-		const size_t dot2 = key.find(".", dot1 + 1);
-		if (dot2 != std::string::npos)
-			continue;
-
-		const std::string sphereName = Properties::ExtractField(key, 3);
-		if (sphereName == "")
-			throw std::runtime_error("Syntax error in " + key);
-
-		// Build the sphere
-		const std::vector<float> vf = Properties::GetParameters(scnProp, key + ".geometry", 4, "0.0 0.0 0.0 1.0");
-
-		spheres.push_back(Sphere(Point(vf[0], vf[1], vf[2]), vf[3]));
-
-		const double now = WallClockTime();
-		if (now - lastPrint > 2.0) {
-			SFERA_LOG("Spheres count: " << spheres.size());
-			lastPrint = now;
-		}
+class Matrix4x4 {
+public:
+	// Matrix4x4 Public Methods
+	Matrix4x4() {
+		for (int i = 0; i < 4; ++i)
+			for (int j = 0; j < 4; ++j)
+				if (i == j)
+					m[i][j] = 1.f;
+				else
+					m[i][j] = 0.f;
 	}
-	SFERA_LOG("Spheres count: " << spheres.size());
+	Matrix4x4(float mat[4][4]);
+	Matrix4x4(float t00, float t01, float t02, float t03,
+			float t10, float t11, float t12, float t13,
+			float t20, float t21, float t22, float t23,
+			float t30, float t31, float t32, float t33);
+
+	Matrix4x4 Transpose() const;
+	float Determinant() const;
+
+	void Print(std::ostream &os) const {
+		os << "Matrix4x4[ ";
+		for (int i = 0; i < 4; ++i) {
+			os << "[ ";
+			for (int j = 0; j < 4; ++j) {
+				os << m[i][j];
+				if (j != 3) os << ", ";
+			}
+			os << " ] ";
+		}
+		os << " ] ";
+	}
+
+	static Matrix4x4 Mul(const Matrix4x4 &m1, const Matrix4x4 &m2) {
+		float r[4][4];
+		for (int i = 0; i < 4; ++i)
+			for (int j = 0; j < 4; ++j)
+				r[i][j] = m1.m[i][0] * m2.m[0][j] +
+					m1.m[i][1] * m2.m[1][j] +
+					m1.m[i][2] * m2.m[2][j] +
+					m1.m[i][3] * m2.m[3][j];
+
+		return Matrix4x4(r);
+	}
+
+	Matrix4x4 Inverse() const;
+
+	friend std::ostream &operator<<(std::ostream &, const Matrix4x4 &);
+
+	float m[4][4];
+};
+
+inline std::ostream & operator<<(std::ostream &os, const Matrix4x4 &m) {
+	m.Print(os);
+	return os;
 }
 
-Scene::~Scene() {
-}
+#endif	/* _SFERA_MATRIX4X4_H */

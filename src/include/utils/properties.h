@@ -49,6 +49,8 @@ public:
 	void SetString(const std::string &propName, const std::string &value);
 	std::string SetString(const std::string &property);
 
+	static std::vector<float> GetParameters(const Properties &prop, const std::string &paramName,
+		const unsigned int paramCount, const std::string &defaultValue);
 	static std::string ExtractField(const std::string &value, const size_t index);
 	static std::vector<std::string> ConvertToStringVector(const std::string &values);
 	static std::vector<int> ConvertToIntVector(const std::string &values);

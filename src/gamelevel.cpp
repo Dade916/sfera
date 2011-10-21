@@ -26,8 +26,13 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 	Properties lvlProp(levelFileName);
 
 	scene = new Scene(lvlProp);
+
+	// Read player information
+	const std::vector<float> vf = Properties::GetParameters(lvlProp, "player.position", 3, "0.0 0.0 1.0");
+	player = new GamePlayer(Point(vf[0], vf[1], vf[2]));
 }
 
 GameLevel::~GameLevel() {
 	delete scene;
+	delete player;
 }
