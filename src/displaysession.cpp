@@ -67,8 +67,12 @@ void DisplaySession::RunLoop() {
 
 	SingleCPURenderer renderer(gameSession.currentLevel);
 
+	const double refreshTime = 1.0 / gameConfig->GetScreenRefreshCap();
+	double currentRefreshTime = 0.0;
 	bool quit = false;
 	do {
+		const double t1 = WallClockTime();
+
 		SDL_Event event;
 
 		while (SDL_PollEvent(&event)) {
@@ -89,6 +93,14 @@ void DisplaySession::RunLoop() {
 		renderer.DrawFrame();
 
 		SDL_GL_SwapBuffers();
+
+		if (currentRefreshTime < refreshTime) {
+			const Uint32 sleep = (Uint32)((refreshTime - currentRefreshTime) * 1000.0);
+			SDL_Delay(sleep);
+		}
+
+		const double t2 = WallClockTime();
+		currentRefreshTime = t2 - t1;
 	} while(!quit);
 
 	SFERA_LOG("Done.");
