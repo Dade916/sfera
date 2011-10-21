@@ -21,6 +21,7 @@
 #ifndef _SFERA_CPURENDERER_H
 #define	_SFERA_CPURENDERER_H
 
+#include "utils/randomgen.h"
 #include "renderer/levelrenderer.h"
 
 class SingleCPURenderer : public LevelRenderer {
@@ -31,7 +32,8 @@ public:
 	void DrawFrame();
 
 private:
-	int screenWidth, screenHeight;
+	RandomGenerator rnd;
+
 	float *pixels;
 };
 

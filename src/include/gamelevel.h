@@ -25,6 +25,7 @@
 #include "gameconfig.h"
 #include "gameplayer.h"
 #include "sdl/scene.h"
+#include "sdl/camera.h"
 
 class GameLevel {
 public:
@@ -35,6 +36,7 @@ public:
 	const Scene *scene;
 
 	GamePlayer *player;
+	PerspectiveCamera *camera;
 };
 
 #endif	/* _SFERA_GAMELEVEL_H */

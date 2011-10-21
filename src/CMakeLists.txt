@@ -51,6 +51,7 @@ set(Sfera_SRCS
 	geometry/matrix4x4.cpp
 	geometry/transform.cpp
 	geometry/ray.cpp
+	geometry/sphere.cpp
 	renderer/cpu/singlecpurenderer.cpp
 	sdl/camera.cpp
 	sdl/scene.cpp

@@ -21,12 +21,14 @@
 #ifndef _SFERA_SPHERE_H
 #define	_SFERA_SPHERE_H
 
-#include "geometry/point.h"
+#include "geometry/ray.h"
 
 class Sphere {
 public:
 	Sphere(const Point &c, const float r) : center(c), rad(r) {};
 	~Sphere() {};
+
+	bool Intersect(Ray *ray) const;
 
 	Point center;
 	float rad;

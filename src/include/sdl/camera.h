@@ -85,7 +85,7 @@ public:
 	void GenerateRay(
 		const float screenX, const float screenY,
 		const unsigned int filmWidth, const unsigned int filmHeight,
-		Ray *ray, const float u1, const float u2, const float u3) const;
+		Ray *ray, const float u1, const float u2) const;
 
 	const Matrix4x4 GetRasterToCameraMatrix() const {
 		return RasterToCamera.GetMatrix();

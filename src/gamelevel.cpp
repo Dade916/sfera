@@ -28,11 +28,18 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 	scene = new Scene(lvlProp);
 
 	// Read player information
-	const std::vector<float> vf = Properties::GetParameters(lvlProp, "player.position", 3, "0.0 0.0 1.0");
+	const std::vector<float> vf = Properties::GetParameters(lvlProp, "player.position", 3, "0.0 0.0 0.0");
 	player = new GamePlayer(Point(vf[0], vf[1], vf[2]));
+
+	camera = new PerspectiveCamera(
+			player->pos + Vector(0.f, 5.f, 0.f),
+			player->pos,
+			Vector(0.f, 0.f, 1.f));
+	camera->Update(gameConfig->GetScreenWidth(), gameConfig->GetScreenHeight());
 }
 
 GameLevel::~GameLevel() {
 	delete scene;
 	delete player;
+	delete camera;
 }

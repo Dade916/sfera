@@ -18,19 +18,29 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_SDL_SCENE_H
-#define	_SFERA_SDL_SCENE_H
-
-#include <vector>
-
 #include "geometry/sphere.h"
 
-class Scene {
-public:
-	Scene(const Properties &scnProp);
-	~Scene();
+bool Sphere::Intersect(Ray *ray) const {
+	const Vector op = center - ray->o;
+	const float b = Dot(op, ray->d);
 
-	vector<Sphere> spheres; // All sferes
-};
+	float det = b * b - Dot(op, op) + rad * rad;
+	if (det < 0.f)
+		return false;
+	else
+		det = sqrtf(det);
 
-#endif	/* _SFERA_SDL_SCENE_H */
+	float t = b - det;
+	if (t > RAY_EPSILON)
+		ray->maxt = t;
+	else {
+		t = b + det;
+
+		if (t > RAY_EPSILON)
+			ray->maxt = t;
+		else
+			return false;
+	}
+
+	return true;
+}

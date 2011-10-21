@@ -18,6 +18,8 @@
  *                                                                         *
  ***************************************************************************/
 
+#include <stddef.h>
+
 // Tausworthe (taus113) random numbergenerator by radiance
 // Based on code from GSL (GNU Scientific Library)
 // MASK assures 64bit safety

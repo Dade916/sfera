@@ -63,7 +63,7 @@ void PerspectiveCamera::Update(const unsigned int filmWidth, const unsigned int 
 void PerspectiveCamera::GenerateRay(
 	const float screenX, const float screenY,
 	const unsigned int filmWidth, const unsigned int filmHeight,
-	Ray *ray, const float u1, const float u2, const float u3) const {
+	Ray *ray, const float u1, const float u2) const {
 	Transform c2w = CameraToWorld;
 
 	Point Pras(screenX, filmHeight - screenY - 1.f, 0);

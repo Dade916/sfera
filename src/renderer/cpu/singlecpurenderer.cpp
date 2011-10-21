@@ -20,7 +20,8 @@
 
 #include "renderer/cpu/singlecpurenderer.h"
 
-SingleCPURenderer::SingleCPURenderer(const GameLevel *level) : LevelRenderer(level) {
+SingleCPURenderer::SingleCPURenderer(const GameLevel *level) :
+	LevelRenderer(level), rnd(1) {
 	const size_t pixelsCount = gameLevel->gameConfig->GetScreenWidth() * gameLevel->gameConfig->GetScreenHeight();
 	pixels = new float[pixelsCount * 3];
 
@@ -34,11 +35,40 @@ SingleCPURenderer::~SingleCPURenderer() {
 }
 
 void SingleCPURenderer::DrawFrame() {
-	const size_t pixelsCount = gameLevel->gameConfig->GetScreenWidth() * gameLevel->gameConfig->GetScreenHeight();
+	const unsigned int width = gameLevel->gameConfig->GetScreenWidth();
+	const unsigned int height = gameLevel->gameConfig->GetScreenHeight();
 
+	const PerspectiveCamera &camera(*(gameLevel->camera));
+	const vector<Sphere> &spheres(gameLevel->scene->spheres);
+
+	Ray ray;
 	float *p = pixels;
-	for (size_t i = 0; i < pixelsCount * 3; ++i)
-		*p++ += 0.001;
+	for (unsigned int y = 0; y < height; ++y) {
+		for (unsigned int x = 0; x < width; ++x) {
+			const float rx = x + rnd.floatValue() - .5f;
+			const float ry = y + rnd.floatValue() - .5f;
+			camera.GenerateRay(rx, ry, width, height,
+					&ray, rnd.floatValue(), rnd.floatValue());
+
+			bool hit = false;
+			for (size_t s = 0; s < spheres.size(); ++s) {
+				if (spheres[s].Intersect(&ray)) {
+					hit = true;
+					break;
+				}
+			}
+
+			if (hit) {
+				*p++ = 1.f;
+				*p++ = 1.f;
+				*p++ = 1.f;
+			} else {
+				*p++ = 0.f;
+				*p++ = 0.f;
+				*p++ = 0.f;
+			}
+		}
+	}
 
 	glDrawPixels(gameLevel->gameConfig->GetScreenWidth(), gameLevel->gameConfig->GetScreenHeight(), GL_RGB, GL_FLOAT, pixels);
 }
