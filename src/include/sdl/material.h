@@ -40,12 +40,9 @@ public:
 
 	virtual MaterialType GetType() const = 0;
 
-	virtual bool IsDiffuse() const = 0;
-	virtual bool IsSpecular() const = 0;
-
 	virtual Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N,
 		const Normal &shadeN, const float u0, const float u1,  const float u2,
-		float *pdf, bool &specularBounce) const = 0;
+		float *pdf, bool &diffuseBounce) const = 0;
 };
 
 class MatteMaterial : public Material {
@@ -57,12 +54,9 @@ public:
 
 	MaterialType GetType() const { return MATTE; }
 
-	bool IsDiffuse() const { return true; }
-	bool IsSpecular() const { return false; }
-
 	Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 		const float u0, const float u1,  const float u2,
-		float *pdf, bool &specularBounce) const;
+		float *pdf, bool &diffuseBounce) const;
 
 	const Spectrum &GetKd() const { return Kd; }
 
@@ -79,12 +73,9 @@ public:
 
 	MaterialType GetType() const { return MIRROR; }
 
-	bool IsDiffuse() const { return false; }
-	bool IsSpecular() const { return true; }
-
 	Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 		const float u0, const float u1,  const float u2,
-		float *pdf, bool &specularBounce) const;
+		float *pdf, bool &diffuseBounce) const;
 
 	const Spectrum &GetKr() const { return Kr; }
 
@@ -116,12 +107,9 @@ public:
 
 	MaterialType GetType() const { return GLASS; }
 
-	bool IsDiffuse() const { return false; }
-	bool IsSpecular() const { return true; }
-
 	Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 		const float u0, const float u1,  const float u2,
-		float *pdf, bool &specularBounce) const;
+		float *pdf, bool &diffuseBounce) const;
 
 	const Spectrum &GetKrefl() const { return Krefl; }
 	const Spectrum &GetKrefrct() const { return Krefrct; }
@@ -148,12 +136,9 @@ public:
 
 	MaterialType GetType() const { return METAL; }
 
-	bool IsDiffuse() const { return false; }
-	bool IsSpecular() const { return true; }
-
 	Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 		const float u0, const float u1,  const float u,
-		float *pdf, bool &specularBounce) const;
+		float *pdf, bool &diffuseBounce) const;
 
 	const Spectrum &GetKr() const { return Kr; }
 	float GetExp() const { return exponent; }
@@ -183,12 +168,9 @@ public:
 
 	MaterialType GetType() const { return ALLOY; }
 
-	bool IsDiffuse() const { return true; }
-	bool IsSpecular() const { return true; }
-
 	Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 		const float u0, const float u1,  const float u2,
-		float *pdf, bool &specularBounce) const;
+		float *pdf, bool &diffuseBounce) const;
 
 	const Spectrum &GetKrefl() const { return Krefl; }
 	const Spectrum &GetKd() const { return Kdiff; }

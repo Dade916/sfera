@@ -73,22 +73,22 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 			const Material &mat(*(scene.sphereMaterials[sphereIndex]));
 			Vector wi;
 			float pdf;
-			bool specularBounce;
+			bool diffuseBounce;
 			const Spectrum f = mat.Sample_f(-ray.d, &wi, N, N,
 					rnd.floatValue(), rnd.floatValue(), rnd.floatValue(),
-					&pdf, specularBounce);
+					&pdf, diffuseBounce);
 			if ((pdf <= 0.f) || f.Black())
 				return Spectrum();
 
-			if (specularBounce) {
-				++specularGlossyBounces;
-
-				if (specularGlossyBounces > maxSpecularGlossyBounces)
-					return Spectrum();
-			} else {
+			if (diffuseBounce) {
 				++diffuseBounces;
 
 				if (diffuseBounces > maxDiffuseBounces)
+					return Spectrum();
+			} else {
+				++specularGlossyBounces;
+
+				if (specularGlossyBounces > maxSpecularGlossyBounces)
 					return Spectrum();
 			}
 

@@ -17,6 +17,9 @@ scene.materials.redmatte.type=MATTE
 scene.materials.redmatte.params=0.75 0.0 0.0
 scene.materials.mirror.type=MIRROR
 scene.materials.mirror.params=0.75 0.75 0.75 1.0
+scene.materials.light.type=MATTE
+scene.materials.light.params=0.75 0.75 0.75
+scene.materials.light.emission=10.0 10.0 10.0
 # Infinite light source
 scene.infinitelight.file=textures/hdr/sky.exr
 scene.infinitelight.gain=1.0 1.0 1.0
@@ -28,3 +31,5 @@ scene.spheres.s01.geometry=0.0 0.0 0.4 0.4
 scene.spheres.s01.material=mirror
 scene.spheres.s02.geometry=0.8 0.0 0.4 0.4
 scene.spheres.s02.material=redmatte
+scene.spheres.s03.geometry=-0.8 0.0 0.4 0.4
+scene.spheres.s03.material=light

@@ -51,7 +51,7 @@ Vector MetalMaterial::GlossyReflection(const Vector &wo, const float exponent,
 
 Spectrum MatteMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 	const float u0, const float u1,  const float u2,
-	float *pdf, bool &specularBounce) const {
+	float *pdf, bool &diffuseBounce) const {
 	Vector dir = CosineSampleHemisphere(u0, u1);
 	*pdf = dir.z * INV_PI;
 
@@ -73,19 +73,19 @@ Spectrum MatteMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 	}
 	*pdf /=  dp;
 
-	specularBounce = false;
+	diffuseBounce = false;
 
 	return KdOverPI;
 }
 
 Spectrum MirrorMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 	const float u0, const float u1,  const float u2,
-	float *pdf, bool &specularBounce) const {
+	float *pdf, bool &diffuseBounce) const {
 	const Vector dir = -wo;
 	const float dp = Dot(shadeN, dir);
 	(*wi) = dir - (2.f * dp) * Vector(shadeN);
 
-	specularBounce = reflectionSpecularBounce;
+	diffuseBounce = !reflectionSpecularBounce;
 	*pdf = 1.f;
 
 	return Kr;
@@ -93,7 +93,7 @@ Spectrum MirrorMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N,
 
 Spectrum GlassMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 	const float u0, const float u1,  const float u2,
-	float *pdf, bool &specularBounce) const {
+	float *pdf, bool &diffuseBounce) const {
 	const Vector rayDir = -wo;
 	const Vector reflDir = rayDir - (2.f * Dot(N, rayDir)) * Vector(N);
 
@@ -110,7 +110,7 @@ Spectrum GlassMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 	if (cos2t < 0.f) {
 		(*wi) = reflDir;
 		*pdf = 1.f;
-		specularBounce = reflectionSpecularBounce;
+		diffuseBounce = !reflectionSpecularBounce;
 
 		return Krefl;
 	}
@@ -132,26 +132,26 @@ Spectrum GlassMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 		} else {
 			(*wi) = reflDir;
 			*pdf = 1.f;
-			specularBounce = reflectionSpecularBounce;
+			diffuseBounce = !reflectionSpecularBounce;
 
 			return Krefl;
 		}
 	} else if (Re == 0.f) {
 		(*wi) = transDir;
 		*pdf = 1.f;
-		specularBounce = transmitionSpecularBounce;
+		diffuseBounce = !transmitionSpecularBounce;
 
 		return Krefrct;
 	} else if (u0 < P) {
 		(*wi) = reflDir;
 		*pdf = P / Re;
-		specularBounce = reflectionSpecularBounce;
+		diffuseBounce = !reflectionSpecularBounce;
 
 		return Krefl;
 	} else {
 		(*wi) = transDir;
 		*pdf = (1.f - P) / Tr;
-		specularBounce = transmitionSpecularBounce;
+		diffuseBounce = !transmitionSpecularBounce;
 
 		return Krefrct;
 	}
@@ -159,11 +159,11 @@ Spectrum GlassMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 
 Spectrum MetalMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 	const float u0, const float u1,  const float u,
-	float *pdf, bool &specularBounce) const {
+	float *pdf, bool &diffuseBounce) const {
 	(*wi) = GlossyReflection(wo, exponent, shadeN, u0, u1);
 
 	if (Dot(*wi, shadeN) > 0.f) {
-		specularBounce = reflectionSpecularBounce;
+		diffuseBounce = !reflectionSpecularBounce;
 		*pdf = 1.f;
 
 		return Kr;
@@ -176,7 +176,7 @@ Spectrum MetalMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 
 Spectrum AlloyMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 	const float u0, const float u1,  const float u2,
-	float *pdf, bool &specularBounce) const {
+	float *pdf, bool &diffuseBounce) const {
 	// Schilick's approximation
 	const float c = 1.f - Dot(wo, shadeN);
 	const float Re = R0 + (1.f - R0) * c * c * c * c * c;
@@ -186,7 +186,7 @@ Spectrum AlloyMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 	if (u2 < P) {
 		(*wi) = MetalMaterial::GlossyReflection(wo, exponent, shadeN, u0, u1);
 		*pdf = P / Re;
-		specularBounce = reflectionSpecularBounce;
+		diffuseBounce = !reflectionSpecularBounce;
 
 		return Re * Krefl;
 	} else {
@@ -213,7 +213,7 @@ Spectrum AlloyMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 
 		const float iRe = 1.f - Re;
 		*pdf *= (1.f - P) / iRe;
-		specularBounce = false;
+		diffuseBounce = true;
 
 		return iRe * Kdiff;
 
