@@ -36,6 +36,7 @@ enum MaterialType {
 
 class Material {
 public:
+	Material() { }
 	virtual ~Material() { }
 
 	virtual MaterialType GetType() const = 0;
@@ -43,6 +44,12 @@ public:
 	virtual Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N,
 		const Normal &shadeN, const float u0, const float u1,  const float u2,
 		float *pdf, bool &diffuseBounce) const = 0;
+
+	void SetEmission(const Spectrum &e) { emission = e; }
+	const Spectrum &GetEmission() const { return emission; }
+
+protected:
+	Spectrum emission;
 };
 
 class MatteMaterial : public Material {

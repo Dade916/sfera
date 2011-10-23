@@ -47,6 +47,7 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 
 	const Scene &scene(*(gameLevel->scene));
 	Spectrum throughput(1.f, 1.f, 1.f);
+	Spectrum radiance(0.f, 0.f, 0.f);
 
 	unsigned int diffuseBounces = 0;
 	const unsigned int maxDiffuseBounces = gameLevel->maxPathDiffuseBounces;
@@ -71,6 +72,8 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 			const Normal N(Normalize(hitPoint - sphere.center));
 
 			const Material &mat(*(scene.sphereMaterials[sphereIndex]));
+			radiance += throughput * mat.GetEmission();
+
 			Vector wi;
 			float pdf;
 			bool diffuseBounce;
@@ -78,25 +81,26 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 					rnd.floatValue(), rnd.floatValue(), rnd.floatValue(),
 					&pdf, diffuseBounce);
 			if ((pdf <= 0.f) || f.Black())
-				return Spectrum();
+				return radiance;
 
 			if (diffuseBounce) {
 				++diffuseBounces;
 
 				if (diffuseBounces > maxDiffuseBounces)
-					return Spectrum();
+					return radiance;
 			} else {
 				++specularGlossyBounces;
 
 				if (specularGlossyBounces > maxSpecularGlossyBounces)
-					return Spectrum();
+					return radiance;
 			}
+
 
 			throughput *= f / pdf;
 
 			ray = Ray(hitPoint, wi);
 		} else
-			return throughput * scene.infiniteLight->Le(ray.d);
+			return radiance + throughput * scene.infiniteLight->Le(ray.d);
 	}
 }
 

@@ -127,7 +127,7 @@ void Scene::CreateMaterial(const string &propName, const Properties &prop) {
 		const vector<float> vf = Properties::GetParameters(prop, propName + ".params", 3, "1.0 1.0 1.0");
 		const Spectrum col(vf.at(0), vf.at(1), vf.at(2));
 
-		mat = new MatteMaterial(col);
+			mat = new MatteMaterial(col);
 	} else if (matType == "MIRROR") {
 		const vector<float> vf = Properties::GetParameters(prop, propName, 4, "1.0 1.0 1.0 1.0");
 		const Spectrum col(vf.at(0), vf.at(1), vf.at(2));
@@ -152,6 +152,13 @@ void Scene::CreateMaterial(const string &propName, const Properties &prop) {
 		mat = new AlloyMaterial(Kdiff, Krfl, vf.at(6), vf.at(7), vf.at(8) != 0.f);
 	} else
 		throw runtime_error("Unknown material type " + matType);
+
+	if (prop.IsDefined(propName + ".emission")) {
+		const vector<float> vf = Properties::GetParameters(prop, propName + ".emission", 3, "0.0 0.0 0.0");
+		const Spectrum e(vf.at(0), vf.at(1), vf.at(2));
+
+		mat->SetEmission(e);
+	}
 
 	materialIndices[matName] = materials.size();
 	materials.push_back(mat);
