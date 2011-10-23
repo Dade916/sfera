@@ -52,6 +52,7 @@ set(Sfera_SRCS
 	geometry/transform.cpp
 	geometry/ray.cpp
 	geometry/sphere.cpp
+	pixel/tonemap.cpp
 	renderer/cpu/singlecpurenderer.cpp
 	sdl/camera.cpp
 	sdl/light.cpp

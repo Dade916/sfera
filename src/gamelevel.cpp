@@ -24,11 +24,18 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 	SFERA_LOG("Reading level: " << levelFileName);
 
 	Properties lvlProp(levelFileName);
-
 	texMapCache = new TextureMapCache();
+
+	//--------------------------------------------------------------------------
+	// Read the scene
+	//--------------------------------------------------------------------------
+
 	scene = new Scene(lvlProp, texMapCache);
 
+	//--------------------------------------------------------------------------
 	// Read player information
+	//--------------------------------------------------------------------------
+
 	const std::vector<float> vf = Properties::GetParameters(lvlProp, "player.position", 3, "0.0 0.0 0.0");
 	player = new GamePlayer(Point(vf[0], vf[1], vf[2]));
 
@@ -37,6 +44,24 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 			player->pos,
 			Vector(0.f, 0.f, 1.f));
 	camera->Update(gameConfig->GetScreenWidth(), gameConfig->GetScreenHeight());
+
+	//--------------------------------------------------------------------------
+	// Read tone mapping information
+	//--------------------------------------------------------------------------
+
+	const float gamma = lvlProp.GetFloat("film.gamma", 2.2f);
+
+	const string toneMapType = lvlProp.GetString("film.tonemap.type", "LINEAR");
+	if (toneMapType.compare("LINEAR")) {
+		const float scale = lvlProp.GetFloat("film.tonemap.linear.scale", 1.f);
+		toneMap = new LinearToneMap(gamma, scale);
+	} else if (toneMapType.compare("REINHARD02")) {
+		const float preScale = lvlProp.GetFloat("film.tonemap.reinhard02.prescale", 1.f);
+		const float postScale = lvlProp.GetFloat("film.tonemap.reinhard02.postscale", 1.2f);
+		const float burn = lvlProp.GetFloat("film.tonemap.reinhard02.burn", 3.75f);
+		toneMap = new Reinhard02ToneMap(gamma, preScale, postScale, burn);
+	} else
+		throw std::runtime_error("Missing tone mapping definition");
 }
 
 GameLevel::~GameLevel() {
@@ -44,4 +69,5 @@ GameLevel::~GameLevel() {
 	delete player;
 	delete camera;
 	delete texMapCache;
+	delete toneMap;
 }

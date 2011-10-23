@@ -1,4 +1,13 @@
+# Player
 player.position=0.0 0.0 0.0
+# Tone mapping
+#film.tonemap.type=LINEAR
+#film.tonemap.linear.scale=1.0
+film.tonemap.type=REINHARD02
+film.tonemap.prescale=1.0
+film.tonemap.postscale=1.2
+film.tonemap.burn=3.75
+# Scene
 scene.infinitelight.file=textures/hdr/sky.exr
 scene.infinitelight.gain=1.0 1.0 1.0
 scene.infinitelight.shift=0.0 0.0

@@ -22,27 +22,32 @@
 
 SingleCPURenderer::SingleCPURenderer(const GameLevel *level) :
 	LevelRenderer(level), rnd(1) {
-	const size_t pixelsCount = gameLevel->gameConfig->GetScreenWidth() * gameLevel->gameConfig->GetScreenHeight();
-	pixels = new float[pixelsCount * 3];
+	sampleFrameBuffer = new SampleFrameBuffer(
+			gameLevel->gameConfig->GetScreenWidth(),
+			gameLevel->gameConfig->GetScreenHeight());
+	frameBuffer = new FrameBuffer(
+			gameLevel->gameConfig->GetScreenWidth(),
+			gameLevel->gameConfig->GetScreenHeight());
 
-	float *p = pixels;
-	for (size_t i = 0; i < pixelsCount * 3; ++i)
-		*p++ = 0.f;
+	sampleFrameBuffer->Clear();
+	frameBuffer->Clear();
 }
 
 SingleCPURenderer::~SingleCPURenderer() {
-	delete[] pixels;
+	delete sampleFrameBuffer;
+	delete frameBuffer;
 }
 
 void SingleCPURenderer::DrawFrame() {
 	const unsigned int width = gameLevel->gameConfig->GetScreenWidth();
 	const unsigned int height = gameLevel->gameConfig->GetScreenHeight();
 
+	// Render
+
 	const PerspectiveCamera &camera(*(gameLevel->camera));
 	const vector<Sphere> &spheres(gameLevel->scene->spheres);
 
 	Ray ray;
-	float *p = pixels;
 	for (unsigned int y = 0; y < height; ++y) {
 		for (unsigned int x = 0; x < width; ++x) {
 			const float rx = x + rnd.floatValue() - .5f;
@@ -58,17 +63,20 @@ void SingleCPURenderer::DrawFrame() {
 				}
 			}
 
-			if (hit) {
-				*p++ = 1.f;
-				*p++ = 1.f;
-				*p++ = 1.f;
-			} else {
-				*p++ = 0.f;
-				*p++ = 0.f;
-				*p++ = 0.f;
+			if (hit)
+				sampleFrameBuffer->SetPixel(x, y, Spectrum(1.f, 1.f, 1.f), 1.f);
+			else {
+				const InfiniteLight &infiniteLight(*(gameLevel->scene->infiniteLight));
+
+				const Spectrum Le = infiniteLight.Le(ray.d);
+
+				sampleFrameBuffer->SetPixel(x, y, Le, 1.f);
 			}
 		}
 	}
 
-	glDrawPixels(gameLevel->gameConfig->GetScreenWidth(), gameLevel->gameConfig->GetScreenHeight(), GL_RGB, GL_FLOAT, pixels);
+	// Tone mapping
+	gameLevel->toneMap->Map(sampleFrameBuffer, frameBuffer);
+
+	glDrawPixels(width, height, GL_RGB, GL_FLOAT, frameBuffer->GetPixels());
 }

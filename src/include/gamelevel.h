@@ -27,6 +27,7 @@
 #include "sdl/scene.h"
 #include "sdl/camera.h"
 #include "sdl/texmap.h"
+#include "pixel/tonemap.h"
 
 class GameLevel {
 public:
@@ -36,6 +37,7 @@ public:
 	const GameConfig *gameConfig;
 	const Scene *scene;
 	TextureMapCache *texMapCache;
+	ToneMap *toneMap;
 
 	GamePlayer *player;
 	PerspectiveCamera *camera;

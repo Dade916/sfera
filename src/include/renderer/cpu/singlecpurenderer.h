@@ -23,6 +23,7 @@
 
 #include "utils/randomgen.h"
 #include "renderer/levelrenderer.h"
+#include "pixel/framebuffer.h"
 
 class SingleCPURenderer : public LevelRenderer {
 public:
@@ -34,7 +35,8 @@ public:
 private:
 	RandomGenerator rnd;
 
-	float *pixels;
+	SampleFrameBuffer *sampleFrameBuffer;
+	FrameBuffer *frameBuffer;
 };
 
 #endif	/* _SFERA_CPURENDERER_H */
