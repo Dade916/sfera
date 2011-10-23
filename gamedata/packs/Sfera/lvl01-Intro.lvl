@@ -10,10 +10,14 @@ film.tonemap.burn=3.75
 # Materials
 scene.materials.whitematte.type=MATTE
 scene.materials.whitematte.params=0.75 0.75 0.75
+scene.materials.mirror.type=MIRROR
+scene.materials.mirror.params=0.75 0.75 0.75 1.0
 # Infinite light source
 scene.infinitelight.file=textures/hdr/sky.exr
 scene.infinitelight.gain=1.0 1.0 1.0
 scene.infinitelight.shift=0.0 0.0
 # Spheres
+scene.spheres.world.geometry=0.0 0.0 -11.0 10.0
+scene.spheres.world.material=whitematte
 scene.spheres.s01.geometry=0.0 0.0 0.0 1.0
-scene.spheres.s01.material=whitematte
+scene.spheres.s01.material=mirror

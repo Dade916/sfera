@@ -38,40 +38,67 @@ SingleCPURenderer::~SingleCPURenderer() {
 	delete frameBuffer;
 }
 
+Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
+	Ray ray;
+	gameLevel->camera->GenerateRay(
+		u0, u1,
+		sampleFrameBuffer->GetWidth(), sampleFrameBuffer->GetHeight(),
+		&ray, rnd.floatValue(), rnd.floatValue());
+
+	const Scene &scene(*(gameLevel->scene));
+	Spectrum throughput(1.f, 1.f, 1.f);
+	unsigned int depth = 0;
+
+	for(;;) {
+		// Check for intersection
+		bool hit = false;
+		const vector<Sphere> &spheres(scene.spheres);
+		size_t sphereIndex;
+		for (size_t s = 0; s < spheres.size(); ++s) {
+			const Sphere &sphere(spheres[s]);
+			if (sphere.Intersect(&ray)) {
+				hit = true;
+				sphereIndex = s;
+				break;
+			}
+		}
+
+		if (hit) {
+			if (depth > 3)
+				return Spectrum();
+
+			const Sphere &sphere(spheres[sphereIndex]);
+			const Point hitPoint(ray(ray.maxt));
+			const Normal N(Normalize(hitPoint - sphere.center));
+
+			const Material &mat(*(scene.sphereMaterials[sphereIndex]));
+			Vector wi;
+			float pdf;
+			bool specularBounce;
+			const Spectrum f = mat.Sample_f(-ray.d, &wi, N, N, rnd.floatValue(), rnd.floatValue(), rnd.floatValue(),
+					&pdf, specularBounce);
+			if ((pdf <= 0.f) || f.Black())
+				return Spectrum();
+			throughput *= f / pdf;
+
+			ray = Ray(hitPoint, wi);
+			++depth;
+		} else
+			return throughput * scene.infiniteLight->Le(ray.d);
+	}
+}
+
 void SingleCPURenderer::DrawFrame() {
 	const unsigned int width = gameLevel->gameConfig->GetScreenWidth();
 	const unsigned int height = gameLevel->gameConfig->GetScreenHeight();
 
 	// Render
-
-	const PerspectiveCamera &camera(*(gameLevel->camera));
-	const vector<Sphere> &spheres(gameLevel->scene->spheres);
-
-	Ray ray;
 	for (unsigned int y = 0; y < height; ++y) {
 		for (unsigned int x = 0; x < width; ++x) {
-			const float rx = x + rnd.floatValue() - .5f;
-			const float ry = y + rnd.floatValue() - .5f;
-			camera.GenerateRay(rx, ry, width, height,
-					&ray, rnd.floatValue(), rnd.floatValue());
+			Spectrum s = SampleImage(x + rnd.floatValue() - .5f, y + rnd.floatValue() - .5f);
 
-			bool hit = false;
-			for (size_t s = 0; s < spheres.size(); ++s) {
-				if (spheres[s].Intersect(&ray)) {
-					hit = true;
-					break;
-				}
-			}
-
-			if (hit)
-				sampleFrameBuffer->SetPixel(x, y, Spectrum(1.f, 1.f, 1.f), 1.f);
-			else {
-				const InfiniteLight &infiniteLight(*(gameLevel->scene->infiniteLight));
-
-				const Spectrum Le = infiniteLight.Le(ray.d);
-
-				sampleFrameBuffer->SetPixel(x, y, Le, 1.f);
-			}
+			//sampleFrameBuffer->SetPixel(x, y, s, 1.f);
+			sampleFrameBuffer->AddPixel(x, y, s, 1.f);
 		}
 	}
 

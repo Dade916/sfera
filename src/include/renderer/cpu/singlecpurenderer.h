@@ -33,6 +33,8 @@ public:
 	void DrawFrame();
 
 private:
+	Spectrum SampleImage(const float u0, const float u1);
+
 	RandomGenerator rnd;
 
 	SampleFrameBuffer *sampleFrameBuffer;
