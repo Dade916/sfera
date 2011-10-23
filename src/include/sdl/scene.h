@@ -23,13 +23,17 @@
 
 #include <vector>
 
+#include "utils/properties.h"
 #include "geometry/sphere.h"
+#include "sdl/texmap.h"
+#include "sdl/light.h"
 
 class Scene {
 public:
-	Scene(const Properties &scnProp);
+	Scene(const Properties &scnProp, TextureMapCache *texMapCache);
 	~Scene();
 
+	InfiniteLight *infiniteLight;
 	vector<Sphere> spheres; // All sferes
 };
 

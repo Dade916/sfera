@@ -18,27 +18,42 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_GAMELEVEL_H
-#define	_SFERA_GAMELEVEL_H
+#ifndef _SFERA_SDL_LIGHT_H
+#define	_SFERA_SDL_LIGHT_H
 
-#include "sfera.h"
-#include "gameconfig.h"
-#include "gameplayer.h"
-#include "sdl/scene.h"
-#include "sdl/camera.h"
+#include "geometry/vector.h"
+#include "pixel/spectrum.h"
 #include "sdl/texmap.h"
 
-class GameLevel {
+class InfiniteLight {
 public:
-	GameLevel(const GameConfig *cfg, const string &levelFileName);
-	~GameLevel();
+	InfiniteLight(TexMapInstance *tx);
+	~InfiniteLight() { }
 
-	const GameConfig *gameConfig;
-	const Scene *scene;
-	TextureMapCache *texMapCache;
+	void SetGain(const Spectrum &g) {
+		gain = g;
+	}
 
-	GamePlayer *player;
-	PerspectiveCamera *camera;
+	Spectrum GetGain() const {
+		return gain;
+	}
+
+	void SetShift(const float su, const float sv) {
+		shiftU = su;
+		shiftV = sv;
+	}
+
+	float GetShiftU() const { return shiftU; }
+	float GetShiftV() const { return shiftV; }
+
+	const TexMapInstance *GetTexture() const { return tex; }
+
+	Spectrum Le(const Vector &dir) const;
+
+protected:
+	TexMapInstance *tex;
+	float shiftU, shiftV;
+	Spectrum gain;
 };
 
-#endif	/* _SFERA_GAMELEVEL_H */
+#endif	/* _SFERA_SDL_LIGHT_H */

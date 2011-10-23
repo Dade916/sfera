@@ -25,7 +25,8 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 
 	Properties lvlProp(levelFileName);
 
-	scene = new Scene(lvlProp);
+	texMapCache = new TextureMapCache();
+	scene = new Scene(lvlProp, texMapCache);
 
 	// Read player information
 	const std::vector<float> vf = Properties::GetParameters(lvlProp, "player.position", 3, "0.0 0.0 0.0");
@@ -42,4 +43,5 @@ GameLevel::~GameLevel() {
 	delete scene;
 	delete player;
 	delete camera;
+	delete texMapCache;
 }

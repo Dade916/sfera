@@ -1,14 +1,14 @@
 /***************************************************************************
- *   Copyright (C) 1998-2010 by authors (see AUTHORS.txt)                  *
+ *   Copyright (C) 1998-2010 by authors (see AUTHORS.txt )                 *
  *                                                                         *
- *   This file is part of Sfera.                                           *
+ *   This file is part of LuxRays.                                         *
  *                                                                         *
- *   Sfera is free software; you can redistribute it and/or modify         *
+ *   LuxRays is free software; you can redistribute it and/or modify       *
  *   it under the terms of the GNU General Public License as published by  *
  *   the Free Software Foundation; either version 3 of the License, or     *
  *   (at your option) any later version.                                   *
  *                                                                         *
- *   Sfera is distributed in the hope that it will be useful,              *
+ *   LuxRays is distributed in the hope that it will be useful,            *
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
  *   GNU General Public License for more details.                          *
@@ -16,29 +16,22 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  *                                                                         *
+ *   LuxRays website: http://www.luxrender.net                             *
  ***************************************************************************/
 
-#ifndef _SFERA_GAMELEVEL_H
-#define	_SFERA_GAMELEVEL_H
+#include "sdl/light.h"
 
-#include "sfera.h"
-#include "gameconfig.h"
-#include "gameplayer.h"
-#include "sdl/scene.h"
-#include "sdl/camera.h"
-#include "sdl/texmap.h"
+//------------------------------------------------------------------------------
+// InfiniteLight
+//------------------------------------------------------------------------------
 
-class GameLevel {
-public:
-	GameLevel(const GameConfig *cfg, const string &levelFileName);
-	~GameLevel();
+InfiniteLight::InfiniteLight(TexMapInstance *tx) {
+	tex = tx;
+	shiftU = 0.f;
+	shiftV = 0.f;
+}
 
-	const GameConfig *gameConfig;
-	const Scene *scene;
-	TextureMapCache *texMapCache;
-
-	GamePlayer *player;
-	PerspectiveCamera *camera;
-};
-
-#endif	/* _SFERA_GAMELEVEL_H */
+Spectrum InfiniteLight::Le(const Vector &dir) const {
+	const UV uv(1.f - SphericalPhi(dir) * INV_TWOPI + shiftU, SphericalTheta(dir) * INV_PI + shiftV);
+	return gain * tex->GetTexMap()->GetColor(uv);
+}

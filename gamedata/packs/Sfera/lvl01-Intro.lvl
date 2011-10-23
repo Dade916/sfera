@@ -1,2 +1,5 @@
 player.position=0.0 0.0 0.0
+scene.infinitelight.file=textures/hdr/sky.exr
+scene.infinitelight.gain=1.0 1.0 1.0
+scene.infinitelight.shift=0.0 0.0
 scene.spheres.s01.geometry=0.0 0.0 0.0 1.0

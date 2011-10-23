@@ -54,7 +54,9 @@ set(Sfera_SRCS
 	geometry/sphere.cpp
 	renderer/cpu/singlecpurenderer.cpp
 	sdl/camera.cpp
+	sdl/light.cpp
 	sdl/scene.cpp
+	sdl/texmap.cpp
 	sfera.cpp
 	utils/oclutils.cpp
 	utils/properties.cpp

@@ -18,27 +18,78 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_GAMELEVEL_H
-#define	_SFERA_GAMELEVEL_H
+#ifndef _SFERA_UV_H
+#define _SFERA_UV_H
 
-#include "sfera.h"
-#include "gameconfig.h"
-#include "gameplayer.h"
-#include "sdl/scene.h"
-#include "sdl/camera.h"
-#include "sdl/texmap.h"
-
-class GameLevel {
+class UV {
 public:
-	GameLevel(const GameConfig *cfg, const string &levelFileName);
-	~GameLevel();
+	// UV Methods
 
-	const GameConfig *gameConfig;
-	const Scene *scene;
-	TextureMapCache *texMapCache;
+	UV(float _u = 0.f, float _v = 0.f)
+	: u(_u), v(_v) {
+	}
 
-	GamePlayer *player;
-	PerspectiveCamera *camera;
+	UV(float v[2]) : u(v[0]), v(v[1]) {
+	}
+
+
+	UV & operator+=(const UV &p) {
+		u += p.u;
+		v += p.v;
+		return *this;
+	}
+
+	UV & operator-=(const UV &p) {
+		u -= p.u;
+		v -= p.v;
+		return *this;
+	}
+
+	UV operator+(const UV &p) const {
+		return UV(u + p.u, v + p.v);
+	}
+
+	UV operator*(float f) const {
+		return UV(f*u, f*v);
+	}
+
+	UV & operator*=(float f) {
+		u *= f;
+		v *= f;
+		return *this;
+	}
+
+	UV operator/(float f) const {
+		float inv = 1.f / f;
+		return UV(inv*u, inv*v);
+	}
+
+	UV & operator/=(float f) {
+		float inv = 1.f / f;
+		u *= inv;
+		v *= inv;
+		return *this;
+	}
+
+	float operator[](int i) const {
+		return (&u)[i];
+	}
+
+	float &operator[](int i) {
+		return (&u)[i];
+	}
+
+	// UV Public Data
+	float u, v;
 };
 
-#endif	/* _SFERA_GAMELEVEL_H */
+inline std::ostream & operator<<(std::ostream &os, const UV &v) {
+	os << "UV[" << v.u << ", " << v.v << "]";
+	return os;
+}
+
+inline UV operator*(float f, const UV &p) {
+	return p*f;
+}
+
+#endif	/* _SFERA_UV_H */

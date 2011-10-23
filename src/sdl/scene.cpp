@@ -20,8 +20,26 @@
 
 #include "sfera.h"
 #include "sdl/sdl.h"
+#include "sdl/light.h"
 
-Scene::Scene(const Properties &scnProp) {
+Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
+	//--------------------------------------------------------------------------
+	// Read the infinite light source
+	//--------------------------------------------------------------------------
+
+	const std::vector<std::string> ilParams = scnProp.GetStringVector("scene.infinitelight.file", "");
+	if (ilParams.size() > 0) {
+		TexMapInstance *tex = texMapCache->GetTexMapInstance(ilParams.at(0));
+		infiniteLight = new InfiniteLight(tex);
+
+		std::vector<float> vf = Properties::GetParameters(scnProp, "scene.infinitelight.gain", 3, "1.0 1.0 1.0");
+		infiniteLight->SetGain(Spectrum(vf.at(0), vf.at(1), vf.at(2)));
+
+		vf = Properties::GetParameters(scnProp, "scene.infinitelight.shift", 2, "0.0 0.0");
+		infiniteLight->SetShift(vf.at(0), vf.at(1));
+	} else
+		throw std::runtime_error("Missing infinite light source definition");
+
 	//--------------------------------------------------------------------------
 	// Read all spheres
 	//--------------------------------------------------------------------------
@@ -61,4 +79,5 @@ Scene::Scene(const Properties &scnProp) {
 }
 
 Scene::~Scene() {
+	delete infiniteLight;
 }
