@@ -31,12 +31,12 @@ bool Sphere::Intersect(Ray *ray) const {
 		det = sqrtf(det);
 
 	float t = b - det;
-	if (t > RAY_EPSILON)
+	if ((t > ray->mint) && ((t < ray->maxt)))
 		ray->maxt = t;
 	else {
 		t = b + det;
 
-		if (t > RAY_EPSILON)
+		if ((t > ray->mint) && ((t < ray->maxt)))
 			ray->maxt = t;
 		else
 			return false;

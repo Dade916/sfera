@@ -47,7 +47,7 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 	player = new GamePlayer(Point(vf[0], vf[1], vf[2]));
 
 	camera = new PerspectiveCamera(
-			player->pos + Vector(0.f, 5.f, 0.f),
+			player->pos + Vector(-1.f, 4.f, 3.f),
 			player->pos,
 			Vector(0.f, 0.f, 1.f));
 	camera->Update(gameConfig->GetScreenWidth(), gameConfig->GetScreenHeight());

@@ -59,11 +59,9 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 		const vector<Sphere> &spheres(scene.spheres);
 		size_t sphereIndex;
 		for (size_t s = 0; s < spheres.size(); ++s) {
-			const Sphere &sphere(spheres[s]);
-			if (sphere.Intersect(&ray)) {
+			if (spheres[s].Intersect(&ray)) {
 				hit = true;
 				sphereIndex = s;
-				break;
 			}
 		}
 
@@ -76,7 +74,8 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 			Vector wi;
 			float pdf;
 			bool specularBounce;
-			const Spectrum f = mat.Sample_f(-ray.d, &wi, N, N, rnd.floatValue(), rnd.floatValue(), rnd.floatValue(),
+			const Spectrum f = mat.Sample_f(-ray.d, &wi, N, N,
+					rnd.floatValue(), rnd.floatValue(), rnd.floatValue(),
 					&pdf, specularBounce);
 			if ((pdf <= 0.f) || f.Black())
 				return Spectrum();
