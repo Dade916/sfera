@@ -35,6 +35,9 @@ public:
 	~GameLevel();
 
 	const GameConfig *gameConfig;
+
+	unsigned int maxPathDiffuseBounces;
+	unsigned int maxPathSpecularGlossyBounces;
 	const Scene *scene;
 	TextureMapCache *texMapCache;
 	ToneMap *toneMap;

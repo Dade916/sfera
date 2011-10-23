@@ -47,7 +47,11 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 
 	const Scene &scene(*(gameLevel->scene));
 	Spectrum throughput(1.f, 1.f, 1.f);
-	unsigned int depth = 0;
+
+	unsigned int diffuseBounces = 0;
+	const unsigned int maxDiffuseBounces = gameLevel->maxPathDiffuseBounces;
+	unsigned int specularGlossyBounces = 0;
+	const unsigned int maxSpecularGlossyBounces = gameLevel->maxPathSpecularGlossyBounces;
 
 	for(;;) {
 		// Check for intersection
@@ -64,9 +68,6 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 		}
 
 		if (hit) {
-			if (depth > 3)
-				return Spectrum();
-
 			const Sphere &sphere(spheres[sphereIndex]);
 			const Point hitPoint(ray(ray.maxt));
 			const Normal N(Normalize(hitPoint - sphere.center));
@@ -79,10 +80,22 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 					&pdf, specularBounce);
 			if ((pdf <= 0.f) || f.Black())
 				return Spectrum();
+
+			if (specularBounce) {
+				++specularGlossyBounces;
+
+				if (specularGlossyBounces > maxSpecularGlossyBounces)
+					return Spectrum();
+			} else {
+				++diffuseBounces;
+
+				if (diffuseBounces > maxDiffuseBounces)
+					return Spectrum();
+			}
+
 			throughput *= f / pdf;
 
 			ray = Ray(hitPoint, wi);
-			++depth;
 		} else
 			return throughput * scene.infiniteLight->Le(ray.d);
 	}

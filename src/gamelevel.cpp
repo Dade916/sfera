@@ -27,6 +27,13 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 	texMapCache = new TextureMapCache();
 
 	//--------------------------------------------------------------------------
+	// Read the path tracing configuration
+	//--------------------------------------------------------------------------
+
+	maxPathDiffuseBounces = lvlProp.GetInt("path.maxdiffusebounces", 2);
+	maxPathSpecularGlossyBounces = lvlProp.GetInt("path.maxspecularglossybounces", 4);
+
+	//--------------------------------------------------------------------------
 	// Read the scene
 	//--------------------------------------------------------------------------
 
