@@ -7,8 +7,13 @@ film.tonemap.type=REINHARD02
 film.tonemap.prescale=1.0
 film.tonemap.postscale=1.2
 film.tonemap.burn=3.75
-# Scene
+# Materials
+scene.materials.whitematte.type=MATTE
+scene.materials.whitematte.params=0.75 0.75 0.75
+# Infinite light source
 scene.infinitelight.file=textures/hdr/sky.exr
 scene.infinitelight.gain=1.0 1.0 1.0
 scene.infinitelight.shift=0.0 0.0
+# Spheres
 scene.spheres.s01.geometry=0.0 0.0 0.0 1.0
+scene.spheres.s01.material=whitematte

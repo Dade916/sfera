@@ -56,6 +56,7 @@ set(Sfera_SRCS
 	renderer/cpu/singlecpurenderer.cpp
 	sdl/camera.cpp
 	sdl/light.cpp
+	sdl/material.cpp
 	sdl/scene.cpp
 	sdl/texmap.cpp
 	sfera.cpp
