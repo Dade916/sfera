@@ -1,6 +1,7 @@
 # Player
 player.position=0.0 0.0 1.0
 # Path
+path.epsilon=0.001
 path.maxdiffusebounces=2
 path.maxspecularglossybounces=4
 # Tone mapping

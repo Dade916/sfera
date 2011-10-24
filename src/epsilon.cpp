@@ -18,6 +18,6 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "geometry/ray.h"
+#include "epsilon.h"
 
-float RAY_EPSILON = 1e-4f;
+float EPSILON = 1e-3f;

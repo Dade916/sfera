@@ -67,6 +67,8 @@ void DisplaySession::RunLoop() {
 
 	SingleCPURenderer renderer(gameSession.currentLevel);
 
+	unsigned int frame = 0;
+	double frameStartTime = WallClockTime();
 	const double refreshTime = 1.0 / gameConfig->GetScreenRefreshCap();
 	double currentRefreshTime = 0.0;
 	bool quit = false;
@@ -97,6 +99,15 @@ void DisplaySession::RunLoop() {
 		if (currentRefreshTime < refreshTime) {
 			const Uint32 sleep = (Uint32)((refreshTime - currentRefreshTime) * 1000.0);
 			SDL_Delay(sleep);
+		}
+
+		++frame;
+		if (frame == 30) {
+			const double now = WallClockTime();
+			SFERA_LOG("Frame/sec: " << (30.0 / (now - frameStartTime)));
+
+			frameStartTime = now;
+			frame = 0;
 		}
 
 		const double t2 = WallClockTime();

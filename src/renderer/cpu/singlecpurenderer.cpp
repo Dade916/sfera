@@ -95,7 +95,6 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 					return radiance;
 			}
 
-
 			throughput *= f / pdf;
 
 			ray = Ray(hitPoint, wi);

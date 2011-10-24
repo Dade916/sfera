@@ -19,6 +19,7 @@
  ***************************************************************************/
 
 #include "gamelevel.h"
+#include "epsilon.h"
 
 GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameConfig(cfg) {
 	SFERA_LOG("Reading level: " << levelFileName);
@@ -30,6 +31,7 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 	// Read the path tracing configuration
 	//--------------------------------------------------------------------------
 
+	EPSILON = lvlProp.GetFloat("path.epsilon", 0.001f);
 	maxPathDiffuseBounces = lvlProp.GetInt("path.maxdiffusebounces", 2);
 	maxPathSpecularGlossyBounces = lvlProp.GetInt("path.maxspecularglossybounces", 4);
 

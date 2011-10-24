@@ -44,13 +44,13 @@ configure_file(
 
 set(Sfera_SRCS
 	displaysession.cpp
+	epsilon.cpp
 	gameconfig.cpp
 	gamelevel.cpp
 	gameplayer.cpp
 	gamesession.cpp
 	geometry/matrix4x4.cpp
 	geometry/transform.cpp
-	geometry/ray.cpp
 	geometry/sphere.cpp
 	pixel/tonemap.cpp
 	renderer/cpu/singlecpurenderer.cpp

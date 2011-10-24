@@ -91,7 +91,7 @@ void PerspectiveCamera::GenerateRay(
 	}
 
 	ray->d = Normalize(ray->d);
-	ray->mint = RAY_EPSILON;
+	ray->mint = EPSILON;
 	ray->maxt = (clipYon - clipHither) / ray->d.z;
 
 	c2w(*ray, ray);

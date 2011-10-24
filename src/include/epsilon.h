@@ -18,55 +18,9 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_RAY_H
-#define _SFERA_RAY_H
+#ifndef _SFERA_EPSILON_H
+#define	_SFERA_EPSILON_H
 
-#include "epsilon.h"
-#include "geometry/vector.h"
-#include "geometry/point.h"
+extern float EPSILON;
 
-class  Ray {
-public:
-	// Ray Public Methods
-	Ray() : maxt(std::numeric_limits<float>::infinity()) {
-		mint = EPSILON;
-	}
-
-	Ray(const Point &origin, const Vector &direction)
-		: o(origin), d(direction), maxt(std::numeric_limits<float>::infinity()) {
-		mint = EPSILON;
-	}
-
-	Ray(const Point &origin, const Vector &direction,
-		float start, float end = std::numeric_limits<float>::infinity())
-		: o(origin), d(direction), mint(start), maxt(end) { }
-
-	Point operator()(float t) const { return o + d * t; }
-	void GetDirectionSigns(int signs[3]) const {
-		signs[0] = d.x < 0.f;
-		signs[1] = d.y < 0.f;
-		signs[2] = d.z < 0.f;
-	}
-
-	// Ray Public Data
-	Point o;
-	Vector d;
-	mutable float mint, maxt;
-};
-
-inline std::ostream &operator<<(std::ostream &os, const Ray &r) {
-	os << "Ray[" << r.o << ", " << r.d << ", " << r.mint << "," << r.maxt << "]";
-	return os;
-}
-
-class RayHit {
-public:
-	float t;
-	float b1, b2; // Barycentric coordinates of the hit point
-	unsigned int index;
-
-	void SetMiss() { index = 0xffffffffu; };
-	bool Miss() const { return (index == 0xffffffffu); };
-};
-
-#endif	/* _SFERA_RAY_H */
+#endif	/* _SFERA_EPSILON_H */
