@@ -32,6 +32,8 @@ if (FreeImage_FOUND)
   include_directories(${FreeImage_INCLUDE_DIRS})
 endif ()
 
+#######################################################################
+
 # Find Boost
 set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     ON)
@@ -59,12 +61,15 @@ if (Boost_FOUND)
   link_directories(${Boost_LIBRARY_DIRS})
 endif ()
 
+#######################################################################
 
 find_package(OpenGL)
 
 if (OPENGL_FOUND)
   include_directories(${OPENGL_INCLUDE_PATH})
 endif()
+
+#######################################################################
 
 set(GLEW_ROOT                  "${GLEW_SEARCH_PATH}")
 if(NOT APPLE)
@@ -76,6 +81,7 @@ if (GLEW_FOUND)
   include_directories(${GLEW_INCLUDE_PATH})
 endif ()
 
+#######################################################################
 
 set(SDL_ROOT                  "${SDL_SEARCH_PATH}")
 find_package(SDL)
@@ -85,9 +91,20 @@ if (SDL_FOUND)
   include_directories(${SDL_INCLUDE_PATH})
 endif ()
 
+################################################################################
+
 set(OPENCL_ROOT                  "${OPENCL_SEARCH_PATH}")
 find_package(OpenCL)
 # OpenCL
 if (OPENCL_FOUND)
   include_directories(${OPENCL_INCLUDE_PATH})
+endif ()
+
+################################################################################
+
+set(BULLET_ROOT                  "${BULLET_SEARCH_PATH}")
+find_package(Bullet)
+# Bullet Physics
+if (BULLET_FOUND)
+  include_directories(${BULLET_INCLUDE_DIRS})
 endif ()

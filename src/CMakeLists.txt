@@ -54,6 +54,7 @@ set(Sfera_SRCS
 	geometry/sphere.cpp
 	pixel/tonemap.cpp
 	renderer/cpu/singlecpurenderer.cpp
+	physic/gamephysic.cpp
 	sdl/camera.cpp
 	sdl/light.cpp
 	sdl/material.cpp
@@ -72,3 +73,4 @@ TARGET_LINK_LIBRARIES(Sfera ${SDL_LIBRARY})
 TARGET_LINK_LIBRARIES(Sfera debug ${FreeImage_LIBRARY_DBG} optimized ${FreeImage_LIBRARY_REL} general ${FreeImage_LIBRARY_REL})
 TARGET_LINK_LIBRARIES(Sfera ${OPENCL_LIBRARY})
 TARGET_LINK_LIBRARIES(Sfera ${Boost_LIBRARIES})
+TARGET_LINK_LIBRARIES(Sfera ${BULLET_LIBRARIES})
