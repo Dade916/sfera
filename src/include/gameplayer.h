@@ -22,13 +22,17 @@
 #define	_SFERA_GAMEPLAYER_H
 
 #include "sfera.h"
+#include "utils/properties.h"
+#include "geometry/sphere.h"
+#include "sdl/material.h"
 
 class GamePlayer {
 public:
-	GamePlayer(const Point &p);
+	GamePlayer(const Properties &prop);
 	~GamePlayer();
 
-	Point pos;
+	Sphere body;
+	MatteMaterial material;
 };
 
 #endif	/* _SFERA_GAMEPLAYER_H */

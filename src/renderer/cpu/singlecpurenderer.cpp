@@ -55,10 +55,10 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 	const unsigned int maxSpecularGlossyBounces = gameLevel->maxPathSpecularGlossyBounces;
 
 	for(;;) {
-		// Check for intersection
-		bool hit = false;
+		// Check for intersection with static objects
 		const vector<Sphere> &spheres(scene.spheres);
-		size_t sphereIndex;
+		bool hit = false;
+		size_t sphereIndex = 0;
 		for (size_t s = 0; s < spheres.size(); ++s) {
 			if (spheres[s].Intersect(&ray)) {
 				hit = true;
@@ -66,18 +66,29 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 			}
 		}
 
-		if (hit) {
-			const Sphere &sphere(spheres[sphereIndex]);
-			const Point hitPoint(ray(ray.maxt));
-			const Normal N(Normalize(hitPoint - sphere.center));
+		const Sphere *sphere;
+		const Material *mat;
 
-			const Material &mat(*(scene.sphereMaterials[sphereIndex]));
-			radiance += throughput * mat.GetEmission();
+		// Check for intersection with the player body
+		if (gameLevel->player->body.Intersect(&ray)) {
+			hit = true;
+			sphere = &gameLevel->player->body;
+			mat = &gameLevel->player->material;
+		} else {
+			sphere = &spheres[sphereIndex];
+			mat = scene.sphereMaterials[sphereIndex];
+		}
+
+		if (hit) {
+			const Point hitPoint(ray(ray.maxt));
+			const Normal N(Normalize(hitPoint - sphere->center));
+
+			radiance += throughput * mat->GetEmission();
 
 			Vector wi;
 			float pdf;
 			bool diffuseBounce;
-			const Spectrum f = mat.Sample_f(-ray.d, &wi, N, N,
+			const Spectrum f = mat->Sample_f(-ray.d, &wi, N, N,
 					rnd.floatValue(), rnd.floatValue(), rnd.floatValue(),
 					&pdf, diffuseBounce);
 			if ((pdf <= 0.f) || f.Black())

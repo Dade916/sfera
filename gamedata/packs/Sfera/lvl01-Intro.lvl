@@ -1,5 +1,6 @@
 # Player
-player.position=0.0 0.0 1.0
+player.body.position=0.0 0.0 2.0
+player.body.radius=0.25
 # Path
 path.epsilon=0.001
 path.maxdiffusebounces=2

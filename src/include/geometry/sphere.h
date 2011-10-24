@@ -25,8 +25,9 @@
 
 class Sphere {
 public:
-	Sphere(const Point &c, const float r) : center(c), rad(r) {};
-	~Sphere() {};
+	Sphere() { };
+	Sphere(const Point &c, const float r) : center(c), rad(r) { };
+	~Sphere() { };
 
 	bool Intersect(Ray *ray) const;
 

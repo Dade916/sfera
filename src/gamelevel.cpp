@@ -45,12 +45,11 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 	// Read player information
 	//--------------------------------------------------------------------------
 
-	const std::vector<float> vf = Properties::GetParameters(lvlProp, "player.position", 3, "0.0 0.0 0.0");
-	player = new GamePlayer(Point(vf[0], vf[1], vf[2]));
+	player = new GamePlayer(lvlProp);
 
 	camera = new PerspectiveCamera(
-			player->pos + Vector(-1.f, 4.f, 3.f),
-			player->pos,
+			Point(-1.f, 4.f, 3.f),
+			Point(0.f, 0.f, 1.f),
 			Vector(0.f, 0.f, 1.f));
 	camera->Update(gameConfig->GetScreenWidth(), gameConfig->GetScreenHeight());
 
