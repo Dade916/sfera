@@ -23,7 +23,8 @@
 
 #include "sfera.h"
 #include "utils/properties.h"
-#include "geometry/sphere.h"
+#include "gamesphere.h"
+#include "sdl/material.h"
 #include "sdl/material.h"
 
 class GamePlayer {
@@ -31,7 +32,7 @@ public:
 	GamePlayer(const Properties &prop);
 	~GamePlayer();
 
-	Sphere body;
+	GameSphere body;
 	MatteMaterial material;
 };
 

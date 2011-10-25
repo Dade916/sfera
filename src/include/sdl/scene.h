@@ -26,7 +26,7 @@
 
 #include "sfera.h"
 #include "utils/properties.h"
-#include "geometry/sphere.h"
+#include "gamesphere.h"
 #include "sdl/material.h"
 #include "sdl/texmap.h"
 #include "sdl/light.h"
@@ -42,7 +42,7 @@ public:
 	map<std::string, size_t> materialIndices; // All materials indices
 
 	std::map<std::string, size_t> sphereIndices; // All object indices
-	vector<Sphere> spheres; // All sferes
+	vector<GameSphere> spheres; // All sferes
 	std::vector<Material *> sphereMaterials; // One for each object
 
 private:

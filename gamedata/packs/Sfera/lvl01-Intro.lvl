@@ -1,6 +1,7 @@
 # Player
 player.body.position=0.0 0.0 2.0
 player.body.radius=0.25
+player.body.mass=0.25
 # Path
 path.epsilon=0.001
 path.maxdiffusebounces=2
@@ -28,10 +29,14 @@ scene.infinitelight.gain=1.0 1.0 1.0
 scene.infinitelight.shift=0.0 0.0
 # Spheres
 scene.spheres.world.geometry=0.0 0.0 -10.0 10.0
+scene.spheres.world.mass=0.0
 scene.spheres.world.material=whitematte
 scene.spheres.s01.geometry=0.0 0.0 0.4 0.4
+scene.spheres.s01.mass=0.4
 scene.spheres.s01.material=mirror
 scene.spheres.s02.geometry=0.8 0.0 0.4 0.4
+scene.spheres.s02.mass=0.4
 scene.spheres.s02.material=redmatte
 scene.spheres.s03.geometry=-0.8 0.0 0.4 0.4
+scene.spheres.s03.mass=0.4
 scene.spheres.s03.material=light

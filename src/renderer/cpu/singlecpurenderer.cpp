@@ -56,32 +56,32 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 
 	for(;;) {
 		// Check for intersection with static objects
-		const vector<Sphere> &spheres(scene.spheres);
+		const vector<GameSphere> &spheres(scene.spheres);
 		bool hit = false;
 		size_t sphereIndex = 0;
 		for (size_t s = 0; s < spheres.size(); ++s) {
-			if (spheres[s].Intersect(&ray)) {
+			if (spheres[s].sphere.Intersect(&ray)) {
 				hit = true;
 				sphereIndex = s;
 			}
 		}
 
-		const Sphere *sphere;
+		const GameSphere *gamesphere;
 		const Material *mat;
 
 		// Check for intersection with the player body
-		if (gameLevel->player->body.Intersect(&ray)) {
+		if (gameLevel->player->body.sphere.Intersect(&ray)) {
 			hit = true;
-			sphere = &gameLevel->player->body;
+			gamesphere = &gameLevel->player->body;
 			mat = &gameLevel->player->material;
 		} else {
-			sphere = &spheres[sphereIndex];
+			gamesphere = &spheres[sphereIndex];
 			mat = scene.sphereMaterials[sphereIndex];
 		}
 
 		if (hit) {
 			const Point hitPoint(ray(ray.maxt));
-			const Normal N(Normalize(hitPoint - sphere->center));
+			const Normal N(Normalize(hitPoint - gamesphere->sphere.center));
 
 			radiance += throughput * mat->GetEmission();
 
@@ -123,8 +123,8 @@ void SingleCPURenderer::DrawFrame() {
 		for (unsigned int x = 0; x < width; ++x) {
 			Spectrum s = SampleImage(x + rnd.floatValue() - .5f, y + rnd.floatValue() - .5f);
 
-			//sampleFrameBuffer->SetPixel(x, y, s, 1.f);
-			sampleFrameBuffer->AddPixel(x, y, s, 1.f);
+			sampleFrameBuffer->SetPixel(x, y, s, 1.f);
+			//sampleFrameBuffer->AddPixel(x, y, s, 1.f);
 		}
 	}
 

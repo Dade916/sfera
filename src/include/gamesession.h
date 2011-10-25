@@ -34,7 +34,7 @@ public:
 
 	const GameConfig *gameConfig;
 	const string packName;
-	const GameLevel *currentLevel;
+	GameLevel *currentLevel;
 };
 
 #endif	/* _SFERA_GAMESESSION_H */

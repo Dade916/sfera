@@ -22,6 +22,7 @@
 #include "displaysession.h"
 #include "gamesession.h"
 #include "renderer/cpu/singlecpurenderer.h"
+#include "physic/gamephysic.h"
 
 static const string SFERA_LABEL = "Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSION_MINOR " (Written by David \"Dade\" Bucciarelli)";
 
@@ -65,6 +66,8 @@ void DisplaySession::RunLoop() {
 	GameSession gameSession(gameConfig, "Sfera");
 	gameSession.LoadLevel(1);
 
+	GamePhysic gamePhysic(gameSession.currentLevel);
+
 	SingleCPURenderer renderer(gameSession.currentLevel);
 
 	unsigned int frame = 0;
@@ -91,6 +94,8 @@ void DisplaySession::RunLoop() {
 			}
 
 		}
+
+		gamePhysic.DoStep();
 
 		renderer.DrawFrame();
 

@@ -19,12 +19,14 @@
  ***************************************************************************/
 
 #include "gameplayer.h"
+#include "gamesphere.h"
 
 GamePlayer::GamePlayer(const Properties &prop) : material(Spectrum(0.75f, 0.75f, 0.f)) {
 	const std::vector<float> vf = Properties::GetParameters(prop, "player.body.position", 3, "0.0 0.0 0.0");
-	body.center = Point(vf[0], vf[1], vf[2]);
+	body.sphere.center = Point(vf[0], vf[1], vf[2]);
 
-	body.rad = prop.GetFloat("player.body.radius", 1.f);
+	body.sphere.rad = prop.GetFloat("player.body.radius", 1.f);
+	body.mass = prop.GetFloat("player.body.mass", 1.f);
 }
 
 GamePlayer::~GamePlayer() {

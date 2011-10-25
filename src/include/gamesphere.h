@@ -18,32 +18,19 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_GAMELEVEL_H
-#define	_SFERA_GAMELEVEL_H
+#ifndef _SFERA_SDL_GAMESPHERE_H
+#define	_SFERA_SDL_GAMESPHERE_H
 
-#include "sfera.h"
-#include "gameconfig.h"
-#include "gameplayer.h"
-#include "sdl/scene.h"
-#include "sdl/camera.h"
-#include "sdl/texmap.h"
-#include "pixel/tonemap.h"
+#include "geometry/sphere.h"
 
-class GameLevel {
+class GameSphere {
 public:
-	GameLevel(const GameConfig *cfg, const string &levelFileName);
-	~GameLevel();
+	GameSphere() { }
+	GameSphere(const Point &c, const float r, const float m): sphere(c, r), mass(m) { }
+	~GameSphere() { }
 
-	const GameConfig *gameConfig;
-
-	unsigned int maxPathDiffuseBounces;
-	unsigned int maxPathSpecularGlossyBounces;
-	Scene *scene;
-	TextureMapCache *texMapCache;
-	ToneMap *toneMap;
-
-	GamePlayer *player;
-	PerspectiveCamera *camera;
+	Sphere sphere;
+	float mass;
 };
 
-#endif	/* _SFERA_GAMELEVEL_H */
+#endif	/* _SFERA_SDL_GAMESPHERE_H */
