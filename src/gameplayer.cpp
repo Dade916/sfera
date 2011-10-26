@@ -27,6 +27,8 @@ GamePlayer::GamePlayer(const Properties &prop) : material(Spectrum(0.75f, 0.75f,
 
 	body.sphere.rad = prop.GetFloat("player.body.radius", 1.f);
 	body.mass = prop.GetFloat("player.body.mass", 1.f);
+	body.staticObject = false;
+	body.attractorObject = false;
 }
 
 GamePlayer::~GamePlayer() {

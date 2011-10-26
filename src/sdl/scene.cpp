@@ -23,6 +23,8 @@
 #include "sdl/light.h"
 
 Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
+	gravityConstant = scnProp.GetFloat("scene.gravity.constant", 10.f);
+
 	//--------------------------------------------------------------------------
 	// Read the infinite light source
 	//--------------------------------------------------------------------------
@@ -89,9 +91,11 @@ Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
 		const vector<float> vf = Properties::GetParameters(scnProp, propRoot + ".geometry", 4, "0.0 0.0 0.0 1.0");
 		const float mass = scnProp.GetFloat(propRoot + ".mass", 1.f);
 		const bool staticObject = ("yes" == scnProp.GetString(propRoot + ".static", "no"));
+		const bool attractorObject = ("yes" == scnProp.GetString(propRoot + ".attractor", "no"));
 
 		sphereIndices[sphereName] = spheres.size();
-		spheres.push_back(GameSphere(Point(vf[0], vf[1], vf[2]), vf[3], mass, staticObject));
+		spheres.push_back(GameSphere(Point(vf[0], vf[1], vf[2]), vf[3], mass,
+				staticObject, attractorObject));
 
 		const double now = WallClockTime();
 		if (now - lastPrint > 2.0) {

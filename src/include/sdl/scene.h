@@ -36,6 +36,8 @@ public:
 	Scene(const Properties &scnProp, TextureMapCache *texMapCache);
 	~Scene();
 
+	float gravityConstant;
+
 	InfiniteLight *infiniteLight;
 
 	vector<Material *> materials; // All materials

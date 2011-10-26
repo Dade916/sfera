@@ -35,6 +35,7 @@ public:
 	void DoStep();
 
 private:
+	void UpdateGameSphere(GameSphere &gameSphere, btRigidBody *dynamicRigidBody);
 	void AddRigidBody(const GameSphere &gameSphere, const size_t index = 0);
 	void DeleteRigidBody(btRigidBody *rigidBody);
 
@@ -52,6 +53,8 @@ private:
 	// NOTE: the last one is always the player GameSphere
 	vector<btRigidBody *> dynamicRigidBodies;
 	vector<size_t> dynamicRigidBodyIndices;
+
+	vector<size_t> gravitySphereIndices;
 };
 
 #endif	/* _SFERA_GAMEPHYSIC_H */

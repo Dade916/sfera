@@ -26,13 +26,14 @@
 class GameSphere {
 public:
 	GameSphere() { }
-	GameSphere(const Point &c, const float r, const float m, const bool st) :
-		sphere(c, r), mass(m), staticObject(st) { }
+	GameSphere(const Point &c, const float r, const float m,
+		const bool st, const bool at) :
+		sphere(c, r), mass(m), staticObject(st), attractorObject(at) { }
 	~GameSphere() { }
 
 	Sphere sphere;
 	float mass;
-	bool staticObject;
+	bool staticObject, attractorObject;
 };
 
 #endif	/* _SFERA_SDL_GAMESPHERE_H */

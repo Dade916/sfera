@@ -75,6 +75,9 @@ void GamePhysic::AddRigidBody(const GameSphere &gameSphere, const size_t index) 
 		dynamicRigidBodies.push_back(rigidBody);
 		dynamicRigidBodyIndices.push_back(index);
 	}
+
+	if (gameSphere.attractorObject)
+		gravitySphereIndices.push_back(index);
 }
 
 void GamePhysic::DeleteRigidBody(btRigidBody *rigidBody) {
@@ -84,29 +87,41 @@ void GamePhysic::DeleteRigidBody(btRigidBody *rigidBody) {
 	delete rigidBody;
 }
 
+void GamePhysic::UpdateGameSphere(GameSphere &gameSphere, btRigidBody *dynamicRigidBody) {
+	btTransform trans;
+	dynamicRigidBody->getMotionState()->getWorldTransform(trans);
+
+	Sphere &sphere(gameSphere.sphere);
+	const btVector3 &orig = trans.getOrigin();
+	sphere.center.x = orig.getX();
+	sphere.center.y = orig.getY();
+	sphere.center.z = orig.getZ();
+
+	// Update gravity
+	vector<GameSphere> &gameSpheres(gameLevel->scene->spheres);
+	const float gravityConstant = gameLevel->scene->gravityConstant;
+	Vector F;
+	for (size_t j = 0; j < gravitySphereIndices.size(); ++j) {
+		GameSphere &gamePlanet(gameSpheres[gravitySphereIndices[j]]);
+		Vector dir = gamePlanet.sphere.center - gameSphere.sphere.center;
+		const float distance2 = dir.LengthSquared();
+		dir /= sqrtf(distance2);
+
+		F += dir * (gravityConstant * gameSphere.mass * gamePlanet.mass / distance2);
+	}
+
+	const Vector a = F / gameSphere.mass;
+	dynamicRigidBody->setGravity(btVector3(a.x, a.y, a.z));
+}
+
 void GamePhysic::DoStep() {
 	dynamicsWorld->stepSimulation(1 / 60.f, 10.f);
 
 	// Update the position of all dynamic spheres
 	vector<GameSphere> &gameSpheres(gameLevel->scene->spheres);
-	for (size_t i = 0; i < dynamicRigidBodies.size() - 1; ++i) {
-		btTransform trans;
-		dynamicRigidBodies[i]->getMotionState()->getWorldTransform(trans);
-
-		Sphere &sphere(gameSpheres[dynamicRigidBodyIndices[i]].sphere);
-		const btVector3 &orig = trans.getOrigin();
-		sphere.center.x = orig.getX();
-		sphere.center.y = orig.getY();
-		sphere.center.z = orig.getZ();
-	}
+	for (size_t i = 0; i < dynamicRigidBodies.size() - 1; ++i)
+		UpdateGameSphere(gameSpheres[dynamicRigidBodyIndices[i]], dynamicRigidBodies[i]);
 
 	// Update the player
-	btTransform trans;
-	dynamicRigidBodies[dynamicRigidBodies.size() - 1]->getMotionState()->getWorldTransform(trans);
-
-	Sphere &sphere(gameLevel->player->body.sphere);
-	const btVector3 &orig = trans.getOrigin();
-	sphere.center.x = orig.getX();
-	sphere.center.y = orig.getY();
-	sphere.center.z = orig.getZ();
+	UpdateGameSphere(gameLevel->player->body, dynamicRigidBodies[dynamicRigidBodies.size() - 1]);
 }
