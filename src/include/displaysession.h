@@ -32,6 +32,11 @@ public:
 	void RunLoop();
 
 	const GameConfig *gameConfig;
+
+private:
+	float startViewTheta, startViewPhi;
+	int mouseStartX, mouseStartY;
+	bool leftMouseDown;
 };
 
 #endif	/* _SFERA_DISPLAYSESSION_H */

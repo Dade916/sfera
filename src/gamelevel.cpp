@@ -42,18 +42,6 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 	scene = new Scene(lvlProp, texMapCache);
 
 	//--------------------------------------------------------------------------
-	// Read player information
-	//--------------------------------------------------------------------------
-
-	player = new GamePlayer(lvlProp);
-
-	camera = new PerspectiveCamera(
-			Point(-1.f, 4.f, 3.f),
-			Point(0.f, 0.f, 1.f),
-			Vector(0.f, 0.f, 1.f));
-	camera->Update(gameConfig->GetScreenWidth(), gameConfig->GetScreenHeight());
-
-	//--------------------------------------------------------------------------
 	// Read tone mapping information
 	//--------------------------------------------------------------------------
 
@@ -70,6 +58,18 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 		toneMap = new Reinhard02ToneMap(gamma, preScale, postScale, burn);
 	} else
 		throw std::runtime_error("Missing tone mapping definition");
+
+	//--------------------------------------------------------------------------
+	// Read player information
+	//--------------------------------------------------------------------------
+
+	player = new GamePlayer(lvlProp);
+
+	camera = new PerspectiveCamera(
+		Point(0.f, 0.f, 1.f),
+		Point(0.f, 0.f, 0.f),
+		Vector(0.f, 0.f, 1.f));
+	player->UpdateCamera(*camera, gameConfig->GetScreenWidth(), gameConfig->GetScreenHeight());
 }
 
 GameLevel::~GameLevel() {
@@ -78,4 +78,8 @@ GameLevel::~GameLevel() {
 	delete camera;
 	delete texMapCache;
 	delete toneMap;
+}
+
+void GameLevel::DoStep() {
+	player->UpdateCamera(*camera, gameConfig->GetScreenWidth(), gameConfig->GetScreenHeight());
 }

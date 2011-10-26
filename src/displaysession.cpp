@@ -27,6 +27,12 @@
 static const string SFERA_LABEL = "Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSION_MINOR " (Written by David \"Dade\" Bucciarelli)";
 
 DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
+	leftMouseDown = false;
+	mouseStartX = 0;
+	mouseStartY = 0;
+	startViewTheta = 0.f;
+	startViewPhi = 0.f;
+
 	const unsigned int width = gameConfig->GetScreenWidth();
 	const unsigned int height = gameConfig->GetScreenHeight();
 
@@ -65,10 +71,11 @@ DisplaySession::~DisplaySession() {
 void DisplaySession::RunLoop() {
 	GameSession gameSession(gameConfig, "Sfera");
 	gameSession.LoadLevel(1);
+	GameLevel *currentLevel = gameSession.currentLevel;
 
-	GamePhysic gamePhysic(gameSession.currentLevel);
+	GamePhysic gamePhysic(currentLevel);
 
-	SingleCPURenderer renderer(gameSession.currentLevel);
+	SingleCPURenderer renderer(currentLevel);
 
 	unsigned int frame = 0;
 	double frameStartTime = WallClockTime();
@@ -82,6 +89,38 @@ void DisplaySession::RunLoop() {
 
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
+				case SDL_MOUSEBUTTONDOWN: {
+					switch(event.button.button) {
+						case SDL_BUTTON_LEFT: {
+							leftMouseDown = true;
+							mouseStartX = event.button.x;
+							mouseStartY = event.button.y;
+							startViewTheta = currentLevel->player->viewTheta;
+							startViewPhi = currentLevel->player->viewPhi;
+							break;
+						}
+					}
+					break;
+				}
+				case SDL_MOUSEBUTTONUP: {
+					switch(event.button.button) {
+						case SDL_BUTTON_LEFT: {
+							leftMouseDown = false;
+							break;
+						}
+					}
+					break;
+				}
+				case SDL_MOUSEMOTION: {
+					if (leftMouseDown) {
+						const int deltaX = event.motion.x - mouseStartX;
+						const int deltaY = event.motion.y - mouseStartY;
+
+						currentLevel->player->viewTheta =  startViewTheta - deltaY / 200.f;
+						currentLevel->player->viewPhi = startViewPhi - deltaX / 200.f;
+					}
+					break;
+				}
 				case SDL_KEYUP:
 					if (event.key.keysym.sym == SDLK_ESCAPE)
 						quit = true;
@@ -96,6 +135,7 @@ void DisplaySession::RunLoop() {
 		}
 
 		gamePhysic.DoStep();
+		currentLevel->DoStep();
 
 		renderer.DrawFrame();
 

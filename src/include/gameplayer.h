@@ -25,15 +25,21 @@
 #include "utils/properties.h"
 #include "gamesphere.h"
 #include "sdl/material.h"
-#include "sdl/material.h"
+#include "sdl/camera.h"
 
 class GamePlayer {
 public:
 	GamePlayer(const Properties &prop);
 	~GamePlayer();
 
+	void UpdateCamera(PerspectiveCamera &camera,
+		const unsigned int filmWidth, const unsigned int filmHeight) const;
+
 	GameSphere body;
+	Vector gravity;
 	MatteMaterial material;
+
+	float viewPhi, viewTheta;
 };
 
 #endif	/* _SFERA_GAMEPLAYER_H */

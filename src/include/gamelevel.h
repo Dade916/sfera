@@ -34,6 +34,8 @@ public:
 	GameLevel(const GameConfig *cfg, const string &levelFileName);
 	~GameLevel();
 
+	void DoStep();
+
 	const GameConfig *gameConfig;
 
 	unsigned int maxPathDiffuseBounces;
