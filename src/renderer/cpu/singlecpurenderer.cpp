@@ -123,7 +123,8 @@ void SingleCPURenderer::DrawFrame() {
 		for (unsigned int x = 0; x < width; ++x) {
 			Spectrum s = SampleImage(x + rnd.floatValue() - .5f, y + rnd.floatValue() - .5f);
 
-			sampleFrameBuffer->SetPixel(x, y, s, 1.f);
+			sampleFrameBuffer->BlendPixel(x, y, s, .25f);
+			//sampleFrameBuffer->SetPixel(x, y, s, 1.f);
 			//sampleFrameBuffer->AddPixel(x, y, s, 1.f);
 		}
 	}

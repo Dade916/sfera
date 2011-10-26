@@ -1,5 +1,5 @@
 # Player
-player.body.position=0.0 0.0 2.0
+player.body.position=0.1 0.0 2.0
 player.body.radius=0.25
 player.body.mass=0.25
 # Path
@@ -24,12 +24,14 @@ scene.materials.light.type=MATTE
 scene.materials.light.params=0.75 0.75 0.75
 scene.materials.light.emission=10.0 10.0 10.0
 # Infinite light source
-scene.infinitelight.file=textures/hdr/sky.exr
+#scene.infinitelight.file=textures/hdr/sky.exr
+scene.infinitelight.file=textures/simple-blend.png
 scene.infinitelight.gain=1.0 1.0 1.0
 scene.infinitelight.shift=0.0 0.0
 # Spheres
-scene.spheres.world.geometry=0.0 0.0 -10.0 10.0
-scene.spheres.world.mass=0.0
+scene.spheres.world.geometry=0.0 0.0 -100.0 100.0
+scene.spheres.world.mass=1000.0
+scene.spheres.world.static=yes
 scene.spheres.world.material=whitematte
 scene.spheres.s01.geometry=0.0 0.0 0.4 0.4
 scene.spheres.s01.mass=0.4

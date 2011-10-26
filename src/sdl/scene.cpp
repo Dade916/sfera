@@ -88,9 +88,10 @@ Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
 		// Build the sphere
 		const vector<float> vf = Properties::GetParameters(scnProp, propRoot + ".geometry", 4, "0.0 0.0 0.0 1.0");
 		const float mass = scnProp.GetFloat(propRoot + ".mass", 1.f);
+		const bool staticObject = ("yes" == scnProp.GetString(propRoot + ".static", "no"));
 
 		sphereIndices[sphereName] = spheres.size();
-		spheres.push_back(GameSphere(Point(vf[0], vf[1], vf[2]), vf[3], mass));
+		spheres.push_back(GameSphere(Point(vf[0], vf[1], vf[2]), vf[3], mass, staticObject));
 
 		const double now = WallClockTime();
 		if (now - lastPrint > 2.0) {

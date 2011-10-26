@@ -51,6 +51,17 @@ public:
 
 	SamplePixel *GetPixels() const { return pixels; }
 
+	void BlendPixel(const unsigned int x, const unsigned int y, const Spectrum& r, const float w) {
+		assert (x >= 0);
+		assert (x < width);
+		assert (y >= 0);
+		assert (y < height);
+
+		SamplePixel *pixel = &pixels[x + y * width];
+		pixel->radiance = (1.f - w) * pixel->radiance + w * r;
+		pixel->weight = 1.f;
+	}
+
 	void AddPixel(const unsigned int x, const unsigned int y, const Spectrum& r, const float w) {
 		assert (x >= 0);
 		assert (x < width);

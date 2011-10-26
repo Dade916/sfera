@@ -57,22 +57,24 @@ GamePhysic::~GamePhysic() {
 void GamePhysic::AddRigidBody(const GameSphere &gameSphere, const size_t index) {
 	btCollisionShape *shape = new btSphereShape(gameSphere.sphere.rad);
 	btVector3 inertia(0.f, 0.f, 0.f);
-	shape->calculateLocalInertia(gameSphere.mass, inertia);
+	float mass = gameSphere.staticObject ? 0.f : gameSphere.mass;
+	shape->calculateLocalInertia(mass, inertia);
 
 	btDefaultMotionState *motionState = new btDefaultMotionState(btTransform(btQuaternion(0.f, 0.f, 0.f, 1.f),
 				btVector3(gameSphere.sphere.center.x, gameSphere.sphere.center.y, gameSphere.sphere.center.z)));
 
 	btRigidBody::btRigidBodyConstructionInfo
-			groundRigidBodyCI(gameSphere.mass, motionState, shape, inertia);
+			groundRigidBodyCI(mass, motionState, shape, inertia);
 
 	btRigidBody *rigidBody = new btRigidBody(groundRigidBodyCI);
 	dynamicsWorld->addRigidBody(rigidBody);
 
-	if (gameSphere.mass > 0.f) {
+	if (gameSphere.staticObject)
+		staticRigidBodies.push_back(rigidBody);
+	else {
 		dynamicRigidBodies.push_back(rigidBody);
 		dynamicRigidBodyIndices.push_back(index);
-	} else
-		staticRigidBodies.push_back(rigidBody);
+	}
 }
 
 void GamePhysic::DeleteRigidBody(btRigidBody *rigidBody) {
