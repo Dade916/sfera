@@ -81,7 +81,10 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 
 		if (hit) {
 			const Point hitPoint(ray(ray.maxt));
-			const Normal N(Normalize(hitPoint - gamesphere->sphere.center));
+			Normal N(Normalize(hitPoint - gamesphere->sphere.center));
+			// Check if I have to flip the normal
+			if (Dot(Vector(N), ray.d) > 0.f)
+				N = -N;
 
 			radiance += throughput * mat->GetEmission();
 
