@@ -31,8 +31,8 @@ scene.infinitelight.file=textures/simple-blend.png
 scene.infinitelight.gain=1.0 1.0 1.0
 scene.infinitelight.shift=0.0 0.0
 # Spheres
-scene.spheres.world.geometry=0.0 0.0 -100.0 100.0
-scene.spheres.world.mass=1000.0
+scene.spheres.world.geometry=0.0 0.0 -20.0 20.0
+scene.spheres.world.mass=100.0
 scene.spheres.world.static=yes
 scene.spheres.world.attractor=yes
 scene.spheres.world.material=whitematte

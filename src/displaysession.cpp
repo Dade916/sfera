@@ -137,10 +137,9 @@ void DisplaySession::RunLoop() {
 
 						currentLevel->player->viewDistance =  Max(
 								currentLevel->player->body.sphere.rad * 5.f,
-								Min(currentLevel->player->body.sphere.rad * 20.f,
+								Min(currentLevel->player->body.sphere.rad * 40.f,
 									startViewDistance + deltaY / 200.f));
 					}
-
 					break;
 				}
 				case SDL_KEYUP:

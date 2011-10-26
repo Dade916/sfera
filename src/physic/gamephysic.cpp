@@ -123,5 +123,14 @@ void GamePhysic::DoStep() {
 		UpdateGameSphere(gameSpheres[dynamicRigidBodyIndices[i]], dynamicRigidBodies[i]);
 
 	// Update the player
-	UpdateGameSphere(gameLevel->player->body, dynamicRigidBodies[dynamicRigidBodies.size() - 1]);
+	btRigidBody *playerRigidBody = dynamicRigidBodies[dynamicRigidBodies.size() - 1];
+	UpdateGameSphere(gameLevel->player->body, playerRigidBody);
+	/*const btVector3 &v = playerRigidBody->getGravity();
+	gameLevel->player->gravity.x = v.getX();
+	gameLevel->player->gravity.y = v.getY();
+	gameLevel->player->gravity.z = v.getZ();*/
+
+	/*Vector x, y;
+	CoordinateSystem(gameLevel->player->gravity, &x, &y);
+	playerRigidBody->applyCentralForce(btVector3(.1f*y.x, .1f*y.y, .1f*y.z));*/
 }
