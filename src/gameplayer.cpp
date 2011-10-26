@@ -33,6 +33,7 @@ GamePlayer::GamePlayer(const Properties &prop) :
 
 	viewPhi = 0.f;
 	viewTheta = M_PI / 2.f;
+	viewDistance = body.sphere.rad * 10.f;
 }
 
 GamePlayer::~GamePlayer() {
@@ -47,7 +48,7 @@ void GamePlayer::UpdateCamera(PerspectiveCamera &camera,
 	CoordinateSystem(camera.up, &x, &y);
 	const Vector dir = SphericalDirection(sinf(viewTheta), cosf(viewTheta), viewPhi, x, y, camera.up);
 
-	camera.orig = camera.target + 5.f * dir;
+	camera.orig = camera.target + viewDistance * dir;
 
 	camera.Update(filmWidth, filmHeight);
 }

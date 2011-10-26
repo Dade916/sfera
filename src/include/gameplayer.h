@@ -39,7 +39,7 @@ public:
 	Vector gravity;
 	MatteMaterial material;
 
-	float viewPhi, viewTheta;
+	float viewPhi, viewTheta, viewDistance;
 };
 
 #endif	/* _SFERA_GAMEPLAYER_H */

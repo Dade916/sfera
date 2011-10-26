@@ -28,6 +28,7 @@ static const string SFERA_LABEL = "Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSIO
 
 DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 	leftMouseDown = false;
+	rightMouseDown = false;
 	mouseStartX = 0;
 	mouseStartY = 0;
 	startViewTheta = 0.f;
@@ -99,6 +100,13 @@ void DisplaySession::RunLoop() {
 							startViewPhi = currentLevel->player->viewPhi;
 							break;
 						}
+						case SDL_BUTTON_RIGHT: {
+							rightMouseDown = true;
+							mouseStartX = event.button.x;
+							mouseStartY = event.button.y;
+							startViewDistance = currentLevel->player->viewDistance;
+							break;
+						}
 					}
 					break;
 				}
@@ -106,6 +114,10 @@ void DisplaySession::RunLoop() {
 					switch(event.button.button) {
 						case SDL_BUTTON_LEFT: {
 							leftMouseDown = false;
+							break;
+						}
+						case SDL_BUTTON_RIGHT: {
+							rightMouseDown = false;
 							break;
 						}
 					}
@@ -119,6 +131,16 @@ void DisplaySession::RunLoop() {
 						currentLevel->player->viewTheta =  startViewTheta - deltaY / 200.f;
 						currentLevel->player->viewPhi = startViewPhi - deltaX / 200.f;
 					}
+
+					if (rightMouseDown) {
+						const int deltaY = event.motion.y - mouseStartY;
+
+						currentLevel->player->viewDistance =  Max(
+								currentLevel->player->body.sphere.rad * 5.f,
+								Min(currentLevel->player->body.sphere.rad * 20.f,
+									startViewDistance + deltaY / 200.f));
+					}
+
 					break;
 				}
 				case SDL_KEYUP:

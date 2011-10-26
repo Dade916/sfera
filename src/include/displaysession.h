@@ -34,9 +34,9 @@ public:
 	const GameConfig *gameConfig;
 
 private:
-	float startViewTheta, startViewPhi;
+	float startViewTheta, startViewPhi, startViewDistance;
 	int mouseStartX, mouseStartY;
-	bool leftMouseDown;
+	bool leftMouseDown, rightMouseDown;
 };
 
 #endif	/* _SFERA_DISPLAYSESSION_H */
