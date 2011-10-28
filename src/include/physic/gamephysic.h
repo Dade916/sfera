@@ -23,6 +23,7 @@
 
 #include <vector>
 #include <btBulletDynamicsCommon.h>
+#include <boost/thread/thread.hpp>
 
 #include "sfera.h"
 #include "gamelevel.h"
@@ -34,12 +35,12 @@ public:
 
 	void DoStep();
 
+	GameLevel *gameLevel;
+
 private:
 	void UpdateGameSphere(GameSphere &gameSphere, btRigidBody *dynamicRigidBody);
 	void AddRigidBody(const GameSphere &gameSphere, const size_t index = 0);
 	void DeleteRigidBody(btRigidBody *rigidBody);
-
-	GameLevel *gameLevel;
 
 	btBroadphaseInterface *broadphase;
 	btDefaultCollisionConfiguration *collisionConfiguration;
@@ -55,6 +56,22 @@ private:
 	vector<size_t> dynamicRigidBodyIndices;
 
 	vector<size_t> gravitySphereIndices;
+};
+
+class PhysicThread {
+public:
+	PhysicThread(GamePhysic *physic);
+	~PhysicThread();
+
+	void Start();
+	void Stop();
+
+	GamePhysic *gamePhysic;
+
+private:
+	static void PhysicThreadImpl(PhysicThread *physicThread);
+
+	boost::thread *physicThread;
 };
 
 #endif	/* _SFERA_GAMEPHYSIC_H */

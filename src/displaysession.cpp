@@ -75,8 +75,13 @@ void DisplaySession::RunLoop() {
 	GameLevel *currentLevel = gameSession.currentLevel;
 
 	GamePhysic gamePhysic(currentLevel);
+	PhysicThread physicThread(&gamePhysic);
 
 	SingleCPURenderer renderer(currentLevel);
+
+	// Start the game
+
+	physicThread.Start();
 
 	unsigned int frame = 0;
 	double frameStartTime = WallClockTime();
@@ -155,7 +160,6 @@ void DisplaySession::RunLoop() {
 
 		}
 
-		gamePhysic.DoStep();
 		currentLevel->DoStep();
 
 		renderer.DrawFrame();
@@ -163,12 +167,12 @@ void DisplaySession::RunLoop() {
 		SDL_GL_SwapBuffers();
 
 		if (currentRefreshTime < refreshTime) {
-			const Uint32 sleep = (Uint32)((refreshTime - currentRefreshTime) * 1000.0);
-			SDL_Delay(sleep);
+			const unsigned int sleep = (unsigned int)((refreshTime - currentRefreshTime) * 1000.0);
+			boost::this_thread::sleep(boost::posix_time::millisec(sleep));
 		}
 
 		++frame;
-		if (frame == 30) {
+		if (frame == 90) {
 			const double now = WallClockTime();
 			SFERA_LOG("Frame/sec: " << (30.0 / (now - frameStartTime)));
 
@@ -182,5 +186,6 @@ void DisplaySession::RunLoop() {
 
 	SFERA_LOG("Done.");
 
+	physicThread.Stop();
 	SDL_Quit();
 }

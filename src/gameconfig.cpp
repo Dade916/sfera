@@ -26,6 +26,9 @@ const string GameConfig::SCREEN_HEIGHT = "screen.height";
 const string GameConfig::SCREEN_HEIGHT_DEFAULT = "360";
 const string GameConfig::SCREEN_REFRESH_CAP = "screen.refresh.cap";
 const string GameConfig::SCREEN_REFRESH_CAP_DEFAULT = "30";
+const string GameConfig::PHYSIC_REFRESH_RATE = "physic.refresh.rate";
+const string GameConfig::PHYSIC_REFRESH_RATE_DEFAULT = "120";
+
 
 GameConfig::GameConfig(const string &fileName) {
 	InitValues();
@@ -60,27 +63,17 @@ void GameConfig::LoadProperties(const Properties &prop) {
 	InitCachedValues();
 }
 
-unsigned int GameConfig::GetScreenWidth() const {
-	return screenWidth;
-}
-
-unsigned int GameConfig::GetScreenHeight() const {
-	return screenHeight;
-}
-
-unsigned int GameConfig::GetScreenRefreshCap() const {
-	return screenRefreshCap;
-}
-
 void GameConfig::InitValues() {
 	// Default configuration parameters
 	cfg.SetString(SCREEN_WIDTH, SCREEN_WIDTH_DEFAULT);
 	cfg.SetString(SCREEN_HEIGHT, SCREEN_HEIGHT_DEFAULT);
 	cfg.SetString(SCREEN_REFRESH_CAP, SCREEN_REFRESH_CAP_DEFAULT);
+	cfg.SetString(PHYSIC_REFRESH_RATE, PHYSIC_REFRESH_RATE_DEFAULT);
 }
 
 void GameConfig::InitCachedValues() {
 	screenWidth = (unsigned int)cfg.GetInt(SCREEN_WIDTH, atoi(SCREEN_WIDTH_DEFAULT.c_str()));
 	screenHeight = (unsigned int)cfg.GetInt(SCREEN_HEIGHT, atoi(SCREEN_HEIGHT_DEFAULT.c_str()));
 	screenRefreshCap = (unsigned int)cfg.GetInt(SCREEN_REFRESH_CAP, atoi(SCREEN_REFRESH_CAP_DEFAULT.c_str()));
+	physicRefreshRate = (unsigned int)cfg.GetInt(PHYSIC_REFRESH_RATE, atoi(PHYSIC_REFRESH_RATE_DEFAULT.c_str()));
 }

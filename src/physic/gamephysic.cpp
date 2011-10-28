@@ -20,6 +20,10 @@
 
 #include "physic/gamephysic.h"
 
+//------------------------------------------------------------------------------
+// GamePhysic
+//------------------------------------------------------------------------------
+
 GamePhysic::GamePhysic(GameLevel *level) : gameLevel(level) {
 	// Initialize Bullet Physics Engine
 	broadphase = new btDbvtBroadphase();
@@ -115,7 +119,7 @@ void GamePhysic::UpdateGameSphere(GameSphere &gameSphere, btRigidBody *dynamicRi
 }
 
 void GamePhysic::DoStep() {
-	dynamicsWorld->stepSimulation(1 / 60.f, 10.f);
+	dynamicsWorld->stepSimulation(1.f / gameLevel->gameConfig->GetPhysicRefreshRate(), 2, 1.f / 120.f);
 
 	// Update the position of all dynamic spheres
 	vector<GameSphere> &gameSpheres(gameLevel->scene->spheres);
@@ -125,12 +129,70 @@ void GamePhysic::DoStep() {
 	// Update the player
 	btRigidBody *playerRigidBody = dynamicRigidBodies[dynamicRigidBodies.size() - 1];
 	UpdateGameSphere(gameLevel->player->body, playerRigidBody);
-	/*const btVector3 &v = playerRigidBody->getGravity();
+	const btVector3 &v = playerRigidBody->getGravity();
 	gameLevel->player->gravity.x = v.getX();
 	gameLevel->player->gravity.y = v.getY();
-	gameLevel->player->gravity.z = v.getZ();*/
+	gameLevel->player->gravity.z = v.getZ();
 
 	/*Vector x, y;
 	CoordinateSystem(gameLevel->player->gravity, &x, &y);
 	playerRigidBody->applyCentralForce(btVector3(.1f*y.x, .1f*y.y, .1f*y.z));*/
+}
+
+//------------------------------------------------------------------------------
+// PhysicThread
+//------------------------------------------------------------------------------
+
+PhysicThread::PhysicThread(GamePhysic *physic) : gamePhysic(physic), physicThread(NULL) {
+}
+
+PhysicThread::~PhysicThread() {
+	if (physicThread)
+		Stop();
+}
+
+void PhysicThread::Start() {
+	physicThread = new boost::thread(boost::bind(PhysicThread::PhysicThreadImpl, this));
+}
+
+void PhysicThread::Stop() {
+	if (physicThread) {
+		physicThread->interrupt();
+		physicThread->join();
+		delete physicThread;
+		physicThread = NULL;
+	}
+}
+
+void PhysicThread::PhysicThreadImpl(PhysicThread *physicThread) {
+	try {
+		unsigned int frame = 0;
+		double frameStartTime = WallClockTime();
+		const double refreshTime = 1.0 / physicThread->gamePhysic->gameLevel->gameConfig->GetPhysicRefreshRate();
+		double currentRefreshTime = 0.0;
+
+		while (!boost::this_thread::interruption_requested()) {
+			const double t1 = WallClockTime();
+			physicThread->gamePhysic->DoStep();
+			const double t2 = WallClockTime();
+			currentRefreshTime = t2 - t1;
+
+			if (currentRefreshTime < refreshTime) {
+				const unsigned int sleep = (unsigned int)((refreshTime - currentRefreshTime) * 1000.0);
+				if (sleep > 0)
+					boost::this_thread::sleep(boost::posix_time::millisec(sleep));
+			}
+
+			++frame;
+			if (frame == 360) {
+				const double now = WallClockTime();
+				SFERA_LOG("Physic engine Hz: " << (120.0 / (now - frameStartTime)));
+
+				frameStartTime = now;
+				frame = 0;
+			}
+		}
+	} catch (boost::thread_interrupted) {
+		SFERA_LOG("[PhysicThread] Physic thread halted");
+	}
 }

@@ -34,9 +34,10 @@ public:
 
 	void LoadProperties(const Properties &prop);
 
-	unsigned int GetScreenWidth() const;
-	unsigned int GetScreenHeight() const;
-	unsigned int GetScreenRefreshCap() const;
+	unsigned int GetScreenWidth() const { return screenWidth; }
+	unsigned int GetScreenHeight() const { return screenHeight; }
+	unsigned int GetScreenRefreshCap() const { return screenRefreshCap; }
+	unsigned int GetPhysicRefreshRate() const { return physicRefreshRate; }
 
 private:
 	// List of possible properties
@@ -46,6 +47,8 @@ private:
 	const static string SCREEN_HEIGHT_DEFAULT;
 	const static string SCREEN_REFRESH_CAP;
 	const static string SCREEN_REFRESH_CAP_DEFAULT;
+	const static string PHYSIC_REFRESH_RATE;
+	const static string PHYSIC_REFRESH_RATE_DEFAULT;
 
 	void InitValues();
 	void InitCachedValues();
@@ -56,6 +59,7 @@ private:
 	unsigned int screenWidth;
 	unsigned int screenHeight;
 	unsigned int screenRefreshCap;
+	unsigned int physicRefreshRate;
 };
 
 #endif	/* _SFERA_GAMECONFIG_H */
