@@ -66,6 +66,7 @@ void GamePlayer::UpdateCamera(PerspectiveCamera &camera,
 
 	if (AbsDot(dir, camera.up) < 1.f - EPSILON) {
 		camera.orig = camera.target + viewDistance * dir;
+		camera.up = up;
 
 		camera.Update(filmWidth, filmHeight);
 	}

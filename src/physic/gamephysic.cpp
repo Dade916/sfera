@@ -134,9 +134,8 @@ void GamePhysic::DoStep() {
 	btRigidBody *playerRigidBody = dynamicRigidBodies[dynamicRigidBodies.size() - 1];
 	UpdateGameSphere(player.body, playerRigidBody);
 	const btVector3 &v = playerRigidBody->getGravity();
-	player.gravity.x = v.getX();
-	player.gravity.y = v.getY();
-	player.gravity.z = v.getZ();
+	player.SetGravity(Vector(v.getX(), v.getY(), v.getZ()));
+	player.UpdateLocalCoordSystem();
 
 	// Apply user inputs
 	if (player.inputGoForward) {
@@ -144,10 +143,7 @@ void GamePhysic::DoStep() {
 			0.9f * player.front.x,
 			0.9f * player.front.y,
 			0.9f * player.front.z));
-	}/* else {
-		playerRigidBody->setLinearVelocity(btVector3(0.f, 0.f, 0.f));
-		playerRigidBody->clearForces();
-	}*/
+	}
 }
 
 //------------------------------------------------------------------------------
