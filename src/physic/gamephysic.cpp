@@ -158,9 +158,9 @@ void GamePhysic::DoStep() {
 		player.inputJump = false;
 
 		playerRigidBody->applyCentralImpulse(btVector3(
-			1.1f * player.up.x,
-			1.1f * player.up.y,
-			1.1f * player.up.z));
+			2.4f * player.up.x,
+			2.4f * player.up.y,
+			2.4f * player.up.z));
 	}
 }
 
