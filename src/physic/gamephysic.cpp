@@ -141,9 +141,9 @@ void GamePhysic::DoStep() {
 	// Apply user inputs
 	if (player.inputGoForward) {
 		playerRigidBody->applyCentralForce(btVector3(
-			0.9f * player.moveDir.x,
-			0.9f * player.moveDir.y,
-			0.9f * player.moveDir.z));
+			0.9f * player.front.x,
+			0.9f * player.front.y,
+			0.9f * player.front.z));
 	}/* else {
 		playerRigidBody->setLinearVelocity(btVector3(0.f, 0.f, 0.f));
 		playerRigidBody->clearForces();

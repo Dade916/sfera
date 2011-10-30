@@ -81,6 +81,8 @@ GameLevel::~GameLevel() {
 }
 
 void GameLevel::DoStep() {
+	player->UpdateLocalCoordSystem();
 	player->ApplyInputs();
+	player->UpdatePuppet();
 	player->UpdateCamera(*camera, gameConfig->GetScreenWidth(), gameConfig->GetScreenHeight());
 }

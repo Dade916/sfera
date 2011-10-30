@@ -66,32 +66,37 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 			}
 		}
 
-		const GameSphere *gamesphere;
-		const Material *mat;
+		const Sphere *hitSphere = NULL;
+		const Material *hitMat = NULL;
+		if (hit) {
+			hitSphere = &spheres[sphereIndex].sphere;
+			hitMat = scene.sphereMaterials[sphereIndex];
+		}
 
 		// Check for intersection with the player body
-		if (gameLevel->player->body.sphere.Intersect(&ray)) {
-			hit = true;
-			gamesphere = &gameLevel->player->body;
-			mat = &gameLevel->player->material;
-		} else {
-			gamesphere = &spheres[sphereIndex];
-			mat = scene.sphereMaterials[sphereIndex];
+		for (size_t s = 0; s < GAMEPLAYER_PUPPET_SIZE; ++s) {
+			const Sphere *puppet = &(gameLevel->player->puppet[s]);
+
+			if (puppet->Intersect(&ray)) {
+				hit = true;
+				hitSphere = puppet;
+				hitMat = gameLevel->player->puppetMaterial[s];
+			}
 		}
 
 		if (hit) {
 			const Point hitPoint(ray(ray.maxt));
-			Normal N(Normalize(hitPoint - gamesphere->sphere.center));
+			Normal N(Normalize(hitPoint - hitSphere->center));
 			// Check if I have to flip the normal
 			if (Dot(Vector(N), ray.d) > 0.f)
 				N = -N;
 
-			radiance += throughput * mat->GetEmission();
+			radiance += throughput * hitMat->GetEmission();
 
 			Vector wi;
 			float pdf;
 			bool diffuseBounce;
-			const Spectrum f = mat->Sample_f(-ray.d, &wi, N, N,
+			const Spectrum f = hitMat->Sample_f(-ray.d, &wi, N, N,
 					rnd.floatValue(), rnd.floatValue(), rnd.floatValue(),
 					&pdf, diffuseBounce);
 			if ((pdf <= 0.f) || f.Black())

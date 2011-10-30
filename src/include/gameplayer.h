@@ -21,30 +21,44 @@
 #ifndef _SFERA_GAMEPLAYER_H
 #define	_SFERA_GAMEPLAYER_H
 
+#include <vector>
+
 #include "sfera.h"
 #include "utils/properties.h"
 #include "gamesphere.h"
 #include "sdl/material.h"
 #include "sdl/camera.h"
 
+#define GAMEPLAYER_PUPPET_SIZE 6
+
 class GamePlayer {
 public:
 	GamePlayer(const Properties &prop);
 	~GamePlayer();
 
+	void UpdateLocalCoordSystem() {
+		right = Cross(front, up);
+		front = Cross(up, right);
+	}
 	void ApplyInputs();
+	void UpdatePuppet();
 	void UpdateCamera(PerspectiveCamera &camera,
 		const unsigned int filmWidth, const unsigned int filmHeight) const;
 
+	void SetGravity(const Vector g) { gravity = g; up = Normalize(-gravity);}
+
 	GameSphere body;
+
 	Vector gravity; // Physic engine writes, other read
-	MatteMaterial material;
+	Vector up,front, right; // Normalized -gravity vector
+
+	Sphere puppet[GAMEPLAYER_PUPPET_SIZE];
+	MatteMaterial *puppetMaterial[GAMEPLAYER_PUPPET_SIZE];
 
 	// Camera position
 	float viewPhi, viewTheta, viewDistance; // User input write, other read
 
 	// Control
-	Vector moveDir;
 	bool inputGoForward, inputTurnLeft, inputTurnRight;
 };
 
