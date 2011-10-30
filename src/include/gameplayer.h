@@ -60,6 +60,7 @@ public:
 
 	// Control
 	bool inputGoForward, inputTurnLeft, inputTurnRight, inputSlowDown;
+	bool inputJump; // Set by user input, reset by physic engine
 };
 
 #endif	/* _SFERA_GAMEPLAYER_H */

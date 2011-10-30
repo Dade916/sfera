@@ -14,7 +14,7 @@ film.tonemap.prescale=1.0
 film.tonemap.postscale=1.2
 film.tonemap.burn=3.75
 ################################################################################
-scene.gravity.constant=200.0
+scene.gravity.constant=50.0
 # Materials
 scene.materials.whitematte.type=MATTE
 scene.materials.whitematte.params=0.75 0.75 0.75

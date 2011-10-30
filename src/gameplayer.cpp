@@ -39,6 +39,7 @@ GamePlayer::GamePlayer(const Properties &prop)  {
 	inputTurnLeft = false;
 	inputTurnRight = false;
 	inputSlowDown = false;
+	inputJump = false;
 
 	front = Vector(0.f, 1.f, 0.f);
 			

@@ -161,6 +161,9 @@ void DisplaySession::RunLoop() {
 						case SDLK_s:
 							currentLevel->player->inputSlowDown = true;
 							break;
+						case SDLK_SPACE:
+							currentLevel->player->inputJump = true;
+							break;
 						default:
 							break;
 					}

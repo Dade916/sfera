@@ -153,6 +153,15 @@ void GamePhysic::DoStep() {
 		playerRigidBody->setDamping(
 			PHYSIC_DEFAULT_LINEAR_DAMPING,
 			PHYSIC_DEFAULT_ANGULAR_DAMPING);
+
+	if (player.inputJump) {
+		player.inputJump = false;
+
+		playerRigidBody->applyCentralImpulse(btVector3(
+			1.1f * player.up.x,
+			1.1f * player.up.y,
+			1.1f * player.up.z));
+	}
 }
 
 //------------------------------------------------------------------------------
