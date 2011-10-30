@@ -147,10 +147,41 @@ void DisplaySession::RunLoop() {
 					}
 					break;
 				}
-				case SDL_KEYUP:
-					if (event.key.keysym.sym == SDLK_ESCAPE)
-						quit = true;
+				case SDL_KEYDOWN: {
+					switch (event.key.keysym.sym) {
+						case SDLK_w:
+							currentLevel->player->inputGoForward = true;
+							break;
+						case SDLK_a:
+							currentLevel->player->inputTurnLeft = true;
+							break;
+						case SDLK_d:
+							currentLevel->player->inputTurnRight = true;
+							break;
+						default:
+							break;
+					}
 					break;
+				}
+				case SDL_KEYUP: {
+					switch (event.key.keysym.sym) {
+						case SDLK_w:
+							currentLevel->player->inputGoForward = false;
+							break;
+						case SDLK_a:
+							currentLevel->player->inputTurnLeft = false;
+							break;
+						case SDLK_d:
+							currentLevel->player->inputTurnRight = false;
+							break;
+						case SDLK_ESCAPE:
+							quit = true;
+							break;
+						default:
+							break;
+					}
+					break;
+				}
 				case SDL_QUIT:
 					quit = true;
 					break;
@@ -174,7 +205,7 @@ void DisplaySession::RunLoop() {
 		++frame;
 		if (frame == 90) {
 			const double now = WallClockTime();
-			SFERA_LOG("Frame/sec: " << (30.0 / (now - frameStartTime)));
+			SFERA_LOG("Frame/sec: " << (90.0 / (now - frameStartTime)));
 
 			frameStartTime = now;
 			frame = 0;

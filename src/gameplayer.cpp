@@ -20,9 +20,11 @@
 
 #include "gameplayer.h"
 #include "gamesphere.h"
+#include "geometry/vector_normal.h"
 
 GamePlayer::GamePlayer(const Properties &prop) :
-	gravity(0.f, 0.f, -1.f), material(Spectrum(0.75f, 0.75f, 0.f)) {
+	gravity(0.f, 0.f, -1.f), material(Spectrum(0.75f, 0.75f, 0.f)),
+	moveDir(0.f, 1.f, 0.f) {
 	const std::vector<float> vf = Properties::GetParameters(prop, "player.body.position", 3, "0.0 0.0 0.0");
 	body.sphere.center = Point(vf[0], vf[1], vf[2]);
 
@@ -34,6 +36,10 @@ GamePlayer::GamePlayer(const Properties &prop) :
 	viewPhi = 0.f;
 	viewTheta = M_PI / 2.f;
 	viewDistance = body.sphere.rad * 20.f;
+
+	inputGoForward = false;
+	inputTurnLeft = false;
+	inputTurnRight = false;
 }
 
 GamePlayer::~GamePlayer() {
@@ -52,5 +58,25 @@ void GamePlayer::UpdateCamera(PerspectiveCamera &camera,
 		camera.orig = camera.target + viewDistance * dir;
 
 		camera.Update(filmWidth, filmHeight);
+	}
+}
+
+void GamePlayer::ApplyInputs() {
+	const Vector up = Normalize(-gravity);
+	const Vector right = Cross(moveDir, up);
+
+	moveDir = Cross(up, right);
+
+	// TODO: movements should be not refresh rate related
+	if (inputTurnLeft) {
+		// Rotate left
+		Transform t = Rotate(10.f, up);
+		moveDir = t(moveDir);
+	}
+
+	if (inputTurnRight) {
+		// Rotate right
+		Transform t = Rotate(-10.f, up);
+		moveDir = t(moveDir);
 	}
 }

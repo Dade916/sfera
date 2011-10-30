@@ -76,6 +76,9 @@ void GamePhysic::AddRigidBody(const GameSphere &gameSphere, const size_t index) 
 	if (gameSphere.staticObject)
 		staticRigidBodies.push_back(rigidBody);
 	else {
+		rigidBody->setActivationState(DISABLE_DEACTIVATION);
+		rigidBody->setDamping(0.05f, 0.7f);
+
 		dynamicRigidBodies.push_back(rigidBody);
 		dynamicRigidBodyIndices.push_back(index);
 	}
@@ -127,16 +130,24 @@ void GamePhysic::DoStep() {
 		UpdateGameSphere(gameSpheres[dynamicRigidBodyIndices[i]], dynamicRigidBodies[i]);
 
 	// Update the player
+	GamePlayer &player(*(gameLevel->player));
 	btRigidBody *playerRigidBody = dynamicRigidBodies[dynamicRigidBodies.size() - 1];
-	UpdateGameSphere(gameLevel->player->body, playerRigidBody);
+	UpdateGameSphere(player.body, playerRigidBody);
 	const btVector3 &v = playerRigidBody->getGravity();
-	gameLevel->player->gravity.x = v.getX();
-	gameLevel->player->gravity.y = v.getY();
-	gameLevel->player->gravity.z = v.getZ();
+	player.gravity.x = v.getX();
+	player.gravity.y = v.getY();
+	player.gravity.z = v.getZ();
 
-	/*Vector x, y;
-	CoordinateSystem(gameLevel->player->gravity, &x, &y);
-	playerRigidBody->applyCentralForce(btVector3(.1f*y.x, .1f*y.y, .1f*y.z));*/
+	// Apply user inputs
+	if (player.inputGoForward) {
+		playerRigidBody->applyCentralForce(btVector3(
+			0.9f * player.moveDir.x,
+			0.9f * player.moveDir.y,
+			0.9f * player.moveDir.z));
+	}/* else {
+		playerRigidBody->setLinearVelocity(btVector3(0.f, 0.f, 0.f));
+		playerRigidBody->clearForces();
+	}*/
 }
 
 //------------------------------------------------------------------------------
@@ -186,7 +197,7 @@ void PhysicThread::PhysicThreadImpl(PhysicThread *physicThread) {
 			++frame;
 			if (frame == 360) {
 				const double now = WallClockTime();
-				SFERA_LOG("Physic engine Hz: " << (120.0 / (now - frameStartTime)));
+				SFERA_LOG("Physic engine Hz: " << (360.0 / (now - frameStartTime)));
 
 				frameStartTime = now;
 				frame = 0;

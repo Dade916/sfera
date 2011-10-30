@@ -81,5 +81,6 @@ GameLevel::~GameLevel() {
 }
 
 void GameLevel::DoStep() {
+	player->ApplyInputs();
 	player->UpdateCamera(*camera, gameConfig->GetScreenWidth(), gameConfig->GetScreenHeight());
 }

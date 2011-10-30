@@ -32,14 +32,20 @@ public:
 	GamePlayer(const Properties &prop);
 	~GamePlayer();
 
+	void ApplyInputs();
 	void UpdateCamera(PerspectiveCamera &camera,
 		const unsigned int filmWidth, const unsigned int filmHeight) const;
 
 	GameSphere body;
-	Vector gravity;
+	Vector gravity; // Physic engine writes, other read
 	MatteMaterial material;
 
-	float viewPhi, viewTheta, viewDistance;
+	// Camera position
+	float viewPhi, viewTheta, viewDistance; // User input write, other read
+
+	// Control
+	Vector moveDir;
+	bool inputGoForward, inputTurnLeft, inputTurnRight;
 };
 
 #endif	/* _SFERA_GAMEPLAYER_H */
