@@ -32,7 +32,7 @@ GamePlayer::GamePlayer(const Properties &prop)  {
 	body.attractorObject = false;
 
 	viewPhi = 0.f;
-	viewTheta = M_PI / 2.f;
+	viewTheta = -M_PI / 2.f;
 	viewDistance = body.sphere.rad * 20.f;
 
 	inputGoForward = false;
@@ -60,10 +60,7 @@ void GamePlayer::UpdateCamera(PerspectiveCamera &camera,
 		const unsigned int filmWidth, const unsigned int filmHeight) const {
 	camera.target = body.sphere.center;
 
-	Vector x, y;
-	CoordinateSystem(camera.up, &x, &y);
-	const Vector dir = SphericalDirection(sinf(viewTheta), cosf(viewTheta), viewPhi, x, y, camera.up);
-
+	const Vector dir = SphericalDirection(sinf(viewTheta), cosf(viewTheta), viewPhi, front, right, up);
 	if (AbsDot(dir, camera.up) < 1.f - EPSILON) {
 		camera.orig = camera.target + viewDistance * dir;
 		camera.up = up;
