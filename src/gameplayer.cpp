@@ -31,13 +31,14 @@ GamePlayer::GamePlayer(const Properties &prop)  {
 	body.staticObject = false;
 	body.attractorObject = false;
 
-	viewPhi = 0.f;
+	viewPhi = M_PI / 8.f;
 	viewTheta = -M_PI / 2.f;
 	viewDistance = body.sphere.rad * 20.f;
 
 	inputGoForward = false;
 	inputTurnLeft = false;
 	inputTurnRight = false;
+	inputSlowDown = false;
 
 	front = Vector(0.f, 1.f, 0.f);
 			

@@ -59,7 +59,7 @@ public:
 	float viewPhi, viewTheta, viewDistance; // User input write, other read
 
 	// Control
-	bool inputGoForward, inputTurnLeft, inputTurnRight;
+	bool inputGoForward, inputTurnLeft, inputTurnRight, inputSlowDown;
 };
 
 #endif	/* _SFERA_GAMEPLAYER_H */

@@ -77,7 +77,7 @@ void GamePhysic::AddRigidBody(const GameSphere &gameSphere, const size_t index) 
 		staticRigidBodies.push_back(rigidBody);
 	else {
 		rigidBody->setActivationState(DISABLE_DEACTIVATION);
-		rigidBody->setDamping(0.05f, 0.7f);
+		rigidBody->setDamping(PHYSIC_DEFAULT_LINEAR_DAMPING, PHYSIC_DEFAULT_ANGULAR_DAMPING);
 
 		dynamicRigidBodies.push_back(rigidBody);
 		dynamicRigidBodyIndices.push_back(index);
@@ -144,6 +144,15 @@ void GamePhysic::DoStep() {
 			0.9f * player.front.y,
 			0.9f * player.front.z));
 	}
+
+	if (player.inputSlowDown)
+		playerRigidBody->setDamping(
+			10.f * PHYSIC_DEFAULT_LINEAR_DAMPING,
+			10.f * PHYSIC_DEFAULT_ANGULAR_DAMPING);
+	else
+		playerRigidBody->setDamping(
+			PHYSIC_DEFAULT_LINEAR_DAMPING,
+			PHYSIC_DEFAULT_ANGULAR_DAMPING);
 }
 
 //------------------------------------------------------------------------------

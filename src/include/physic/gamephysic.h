@@ -28,6 +28,9 @@
 #include "sfera.h"
 #include "gamelevel.h"
 
+#define PHYSIC_DEFAULT_ANGULAR_DAMPING 0.7f
+#define PHYSIC_DEFAULT_LINEAR_DAMPING 0.05f
+
 class GamePhysic {
 public:
 	GamePhysic(GameLevel *level);

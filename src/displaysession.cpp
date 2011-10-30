@@ -158,6 +158,9 @@ void DisplaySession::RunLoop() {
 						case SDLK_d:
 							currentLevel->player->inputTurnRight = true;
 							break;
+						case SDLK_s:
+							currentLevel->player->inputSlowDown = true;
+							break;
 						default:
 							break;
 					}
@@ -173,6 +176,9 @@ void DisplaySession::RunLoop() {
 							break;
 						case SDLK_d:
 							currentLevel->player->inputTurnRight = false;
+							break;
+						case SDLK_s:
+							currentLevel->player->inputSlowDown = false;
 							break;
 						case SDLK_ESCAPE:
 							quit = true;
