@@ -88,6 +88,7 @@ void DisplaySession::RunLoop() {
 	const double refreshTime = 1.0 / gameConfig->GetScreenRefreshCap();
 	double currentRefreshTime = 0.0;
 	bool quit = false;
+	double lastJumpTime = 0.0;
 	do {
 		const double t1 = WallClockTime();
 
@@ -161,9 +162,14 @@ void DisplaySession::RunLoop() {
 						case SDLK_s:
 							currentLevel->player->inputSlowDown = true;
 							break;
-						case SDLK_SPACE:
-							currentLevel->player->inputJump = true;
+						case SDLK_SPACE: {
+							const double now = WallClockTime();
+							if (now - lastJumpTime > 0.5) { // Not more often than every 0.5 secs
+								currentLevel->player->inputJump = true;
+								lastJumpTime = now;
+							}
 							break;
+						}
 						default:
 							break;
 					}
@@ -197,7 +203,6 @@ void DisplaySession::RunLoop() {
 				default:
 					break;
 			}
-
 		}
 
 		currentLevel->DoStep();
