@@ -68,9 +68,11 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 
 		const Sphere *hitSphere = NULL;
 		const Material *hitMat = NULL;
+		const TexMapInstance *texMap = NULL;
 		if (hit) {
 			hitSphere = &spheres[sphereIndex].sphere;
 			hitMat = scene.sphereMaterials[sphereIndex];
+			texMap = scene.sphereTexMaps[sphereIndex];
 		}
 
 		// Check for intersection with the player body
@@ -81,6 +83,7 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 				hit = true;
 				hitSphere = puppet;
 				hitMat = gameLevel->player->puppetMaterial[s];
+				texMap = NULL;
 			}
 		}
 
@@ -96,11 +99,17 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 			Vector wi;
 			float pdf;
 			bool diffuseBounce;
-			const Spectrum f = hitMat->Sample_f(-ray.d, &wi, N, N,
+			Spectrum f = hitMat->Sample_f(-ray.d, &wi, N, N,
 					rnd.floatValue(), rnd.floatValue(), rnd.floatValue(),
 					&pdf, diffuseBounce);
 			if ((pdf <= 0.f) || f.Black())
 				return radiance;
+
+			// Check if there is a texture map to apply
+			if (texMap) {
+				const Vector dir = Normalize(hitPoint - hitSphere->center);
+				f *= texMap->SphericalMap(dir);
+			}
 
 			if (diffuseBounce) {
 				++diffuseBounces;

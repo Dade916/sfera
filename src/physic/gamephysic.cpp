@@ -122,7 +122,7 @@ void GamePhysic::UpdateGameSphere(GameSphere &gameSphere, btRigidBody *dynamicRi
 }
 
 void GamePhysic::DoStep() {
-	dynamicsWorld->stepSimulation(1.f / gameLevel->gameConfig->GetPhysicRefreshRate(), 2, 1.f / 120.f);
+	dynamicsWorld->stepSimulation(1.f / gameLevel->gameConfig->GetPhysicRefreshRate(), 4);
 
 	// Update the position of all dynamic spheres
 	vector<GameSphere> &gameSpheres(gameLevel->scene->spheres);
@@ -209,9 +209,9 @@ void PhysicThread::PhysicThreadImpl(PhysicThread *physicThread) {
 			}
 
 			++frame;
-			if (frame == 360) {
+			if (frame == 300) {
 				const double now = WallClockTime();
-				SFERA_LOG("Physic engine Hz: " << (360.0 / (now - frameStartTime)));
+				SFERA_LOG("Physic engine Hz: " << (300.0 / (now - frameStartTime)));
 
 				frameStartTime = now;
 				frame = 0;

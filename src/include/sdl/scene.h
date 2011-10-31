@@ -41,14 +41,17 @@ public:
 	InfiniteLight *infiniteLight;
 
 	vector<Material *> materials; // All materials
-	map<std::string, size_t> materialIndices; // All materials indices
+	map<string, size_t> materialIndices; // All materials indices
 
-	std::map<std::string, size_t> sphereIndices; // All object indices
+	map<string, size_t> sphereIndices; // All object indices
 	vector<GameSphere> spheres; // All sferes
-	std::vector<Material *> sphereMaterials; // One for each object
+	vector<Material *> sphereMaterials; // One for each object
+	vector<TexMapInstance *> sphereTexMaps; // One for each object
+	vector<BumpMapInstance *> sphereBumpMaps; // One for each object
+
 
 private:
-	void CreateMaterial(const std::string &propName, const Properties &prop);
+	void CreateMaterial(const string &propName, const Properties &prop);
 };
 
 #endif	/* _SFERA_SDL_SCENE_H */

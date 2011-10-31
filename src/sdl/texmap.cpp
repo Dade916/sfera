@@ -283,34 +283,10 @@ TextureMap *TextureMapCache::GetTextureMap(const std::string &fileName) {
 	}
 }
 
-TexMapInstance *TextureMapCache::AddTextureMap(const std::string &fileName, TextureMap *tm) {
-	// Check if the texture map has been already loaded
-	std::map<std::string, TextureMap *>::const_iterator it = maps.find(fileName);
-
-	if (it == maps.end()) {
-		SFERA_LOG("AddTexMap: " << fileName);
-		maps.insert(std::make_pair(fileName, tm));
-		TexMapInstance *texm = new TexMapInstance(tm);
-		texInstances.push_back(texm);
-		return (texm);
-	} else
-		std::runtime_error("Cannot add texture map: " + fileName + " to the cache. An instance exists already");
-
-	return NULL;
-}
-
-TextureMap *TextureMapCache::FindTextureMap(const std::string &fileName) {
-	// Check if the texture map has been already loaded
-	std::map<std::string, TextureMap *>::const_iterator it = maps.find(fileName);
-	if (it == maps.end())
-		return NULL;
-	else
-		return (it->second);
-}
-
-TexMapInstance *TextureMapCache::GetTexMapInstance(const std::string &fileName) {
+TexMapInstance *TextureMapCache::GetTexMapInstance(const std::string &fileName,
+		const float shiftU, const float shiftV, const float scaleU, const float scaleV) {
 	TextureMap *tm = GetTextureMap(fileName);
-	TexMapInstance *texm = new TexMapInstance(tm);
+	TexMapInstance *texm = new TexMapInstance(tm, shiftU, shiftV, scaleU, scaleV);
 	texInstances.push_back(texm);
 
 	return texm;

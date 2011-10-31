@@ -27,7 +27,7 @@ const string GameConfig::SCREEN_HEIGHT_DEFAULT = "360";
 const string GameConfig::SCREEN_REFRESH_CAP = "screen.refresh.cap";
 const string GameConfig::SCREEN_REFRESH_CAP_DEFAULT = "30";
 const string GameConfig::PHYSIC_REFRESH_RATE = "physic.refresh.rate";
-const string GameConfig::PHYSIC_REFRESH_RATE_DEFAULT = "120";
+const string GameConfig::PHYSIC_REFRESH_RATE_DEFAULT = "60";
 
 
 GameConfig::GameConfig(const string &fileName) {

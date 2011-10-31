@@ -131,12 +131,26 @@ private:
 
 class TexMapInstance {
 public:
-	TexMapInstance(const TextureMap *tm) : texMap(tm) { }
+	TexMapInstance(const TextureMap *tm, const float tu, const float tv,
+			const float su, const float sv) : texMap(tm),
+			shiftU(su), shiftV(sv), scaleU(su), scaleV(sv) { }
 
 	const TextureMap *GetTexMap() const { return texMap; }
+	float GetShiftU() const { return shiftU; }
+	float GetShiftV() const { return shiftV; }
+	float GetScaleU() const { return scaleU; }
+	float GetScaleV() const { return scaleV; }
+
+	Spectrum SphericalMap(const Vector &dir) const {
+		const UV uv(SphericalPhi(dir) * INV_TWOPI * scaleU + shiftU,
+				SphericalTheta(dir) * INV_PI  * scaleV + shiftV);
+		return texMap->GetColor(uv);
+	}
 
 private:
 	const TextureMap *texMap;
+	float shiftU, shiftV;
+	float scaleU, scaleV;
 };
 
 class BumpMapInstance {
@@ -167,23 +181,12 @@ public:
 	TextureMapCache();
 	~TextureMapCache();
 
-	TexMapInstance *GetTexMapInstance(const std::string &fileName);
+	TexMapInstance *GetTexMapInstance(const std::string &fileName,
+		const float shiftU, const float shiftV, const float scaleU, const float scaleV);
 	BumpMapInstance *GetBumpMapInstance(const std::string &fileName, const float scale);
 
 	void GetTexMaps(std::vector<TextureMap *> &tms);
 	unsigned int GetSize()const { return maps.size(); }
-
-	/**
-	 * Method to retrieve an already cached diffuse map. This is used when adding an alpha map
-	 * stored in a separate file.
-	 */
-	TextureMap *FindTextureMap(const std::string &fileName);
-
-	/**
-	 * Method used to add an existing texture to the cache. Without this
-	 * the only other method is GetTextureMap() but that creates a new texture from scratch
-	 */
-	TexMapInstance *AddTextureMap(const std::string &fileName, TextureMap *tm);
   
 private:
 	TextureMap *GetTextureMap(const std::string &fileName);

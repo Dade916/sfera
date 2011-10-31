@@ -31,14 +31,15 @@ Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
 
 	const vector<string> ilParams = scnProp.GetStringVector("scene.infinitelight.file", "");
 	if (ilParams.size() > 0) {
-		TexMapInstance *tex = texMapCache->GetTexMapInstance(ilParams.at(0));
+		TexMapInstance *tex = texMapCache->GetTexMapInstance(ilParams[0],
+				0.f, 0.f, 1.f, 1.f);
 		infiniteLight = new InfiniteLight(tex);
 
 		vector<float> vf = Properties::GetParameters(scnProp, "scene.infinitelight.gain", 3, "1.0 1.0 1.0");
-		infiniteLight->SetGain(Spectrum(vf.at(0), vf.at(1), vf.at(2)));
+		infiniteLight->SetGain(Spectrum(vf[0], vf[1], vf[2]));
 
 		vf = Properties::GetParameters(scnProp, "scene.infinitelight.shift", 2, "0.0 0.0");
-		infiniteLight->SetShift(vf.at(0), vf.at(1));
+		infiniteLight->SetShift(vf[0], vf[1]);
 	} else
 		throw runtime_error("Missing infinite light source definition");
 
@@ -111,6 +112,18 @@ Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
 			throw std::runtime_error("Unknown material: " + matName);
 		Material *mat = materials[materialIndices[matName]];
 		sphereMaterials.push_back(mat);
+
+		// Get the texture map
+		const std::string texName = scnProp.GetString(propRoot + ".texmap.file", "");
+		if (texName != "") {
+			const vector<float> vfshift = Properties::GetParameters(scnProp, propRoot + ".texmap.shift", 2, "0.0 0.0");
+			const vector<float> vfscale = Properties::GetParameters(scnProp, propRoot + ".texmap.scale", 2, "1.0 1.0");
+
+			TexMapInstance *tmi = texMapCache->GetTexMapInstance(texName,
+					vfshift[0], vfshift[1], vfscale[0], vfscale[1]);
+			sphereTexMaps.push_back(tmi);
+		} else
+			sphereTexMaps.push_back(NULL);
 	}
 	SFERA_LOG("Spheres count: " << spheres.size());
 }
@@ -131,37 +144,37 @@ void Scene::CreateMaterial(const string &propName, const Properties &prop) {
 	Material *mat;
 	if (matType == "MATTE") {
 		const vector<float> vf = Properties::GetParameters(prop, propName + ".params", 3, "1.0 1.0 1.0");
-		const Spectrum col(vf.at(0), vf.at(1), vf.at(2));
+		const Spectrum col(vf[0], vf[1], vf[2]);
 
 			mat = new MatteMaterial(col);
 	} else if (matType == "MIRROR") {
 		const vector<float> vf = Properties::GetParameters(prop, propName, 4, "1.0 1.0 1.0 1.0");
-		const Spectrum col(vf.at(0), vf.at(1), vf.at(2));
+		const Spectrum col(vf[0], vf[1], vf[2]);
 
-		mat = new MirrorMaterial(col, vf.at(3) != 0.f);
+		mat = new MirrorMaterial(col, vf[3] != 0.f);
 	} else if (matType == "GLASS") {
 		const vector<float> vf = Properties::GetParameters(prop, propName, 10, "1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.5 1.0 1.0");
-		const Spectrum Krfl(vf.at(0), vf.at(1), vf.at(2));
-		const Spectrum Ktrn(vf.at(3), vf.at(4), vf.at(5));
+		const Spectrum Krfl(vf[0], vf[1], vf[2]);
+		const Spectrum Ktrn(vf[3], vf[4], vf[5]);
 
-		mat = new GlassMaterial(Krfl, Ktrn, vf.at(6), vf.at(7), vf.at(8) != 0.f, vf.at(9) != 0.f);
+		mat = new GlassMaterial(Krfl, Ktrn, vf[6], vf[7], vf[8] != 0.f, vf[9] != 0.f);
 	} else if (matType == "METAL") {
 		const vector<float> vf = Properties::GetParameters(prop, propName, 5, "1.0 1.0 1.0 10.0 1.0");
-		const Spectrum col(vf.at(0), vf.at(1), vf.at(2));
+		const Spectrum col(vf[0], vf[1], vf[2]);
 
-		mat = new MetalMaterial(col, vf.at(3), vf.at(4) != 0.f);
+		mat = new MetalMaterial(col, vf[3], vf[4] != 0.f);
 	} else if (matType == "ALLOY") {
 		const vector<float> vf = Properties::GetParameters(prop, propName, 9, "1.0 1.0 1.0 1.0 1.0 1.0 10.0 0.8 1.0");
-		const Spectrum Kdiff(vf.at(0), vf.at(1), vf.at(2));
-		const Spectrum Krfl(vf.at(3), vf.at(4), vf.at(5));
+		const Spectrum Kdiff(vf[0], vf[1], vf[2]);
+		const Spectrum Krfl(vf[3], vf[4], vf[5]);
 
-		mat = new AlloyMaterial(Kdiff, Krfl, vf.at(6), vf.at(7), vf.at(8) != 0.f);
+		mat = new AlloyMaterial(Kdiff, Krfl, vf[6], vf[7], vf[8] != 0.f);
 	} else
 		throw runtime_error("Unknown material type " + matType);
 
 	if (prop.IsDefined(propName + ".emission")) {
 		const vector<float> vf = Properties::GetParameters(prop, propName + ".emission", 3, "0.0 0.0 0.0");
-		const Spectrum e(vf.at(0), vf.at(1), vf.at(2));
+		const Spectrum e(vf[0], vf[1], vf[2]);
 
 		mat->SetEmission(e);
 	}

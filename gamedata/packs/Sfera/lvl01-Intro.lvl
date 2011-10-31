@@ -30,11 +30,14 @@ scene.infinitelight.file=textures/hdr/Ridgecrest_Road_Ref.exr
 scene.infinitelight.gain=1.0 1.0 1.0
 scene.infinitelight.shift=0.0 0.0
 # Spheres
-scene.spheres.world1.geometry=0.0 0.0 -10.0 10.0
+scene.spheres.world1.geometry=0.0 0.0 -8.0 8.0
 scene.spheres.world1.mass=100.0
 scene.spheres.world1.static=yes
 scene.spheres.world1.attractor=yes
 scene.spheres.world1.material=whitematte
+scene.spheres.world1.texmap.file=textures/planet_Klendathu1200.png
+#scene.spheres.world1.texmap.file=textures/test-map01.jpg
+#scene.spheres.world1.texmap.scale=10 20
 #scene.spheres.world2.geometry=0.0 0.0 20.0 10.0
 #scene.spheres.world2.mass=100.0
 #scene.spheres.world2.static=yes
