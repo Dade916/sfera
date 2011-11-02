@@ -7,7 +7,7 @@ player.body.angulardamping=0.5
 # Path
 path.epsilon=0.001
 path.maxdiffusebounces=2
-path.maxspecularglossybounces=4
+path.maxspecularglossybounces=3
 # Tone mapping
 #film.tonemap.type=LINEAR
 #film.tonemap.linear.scale=1.0

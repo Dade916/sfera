@@ -73,7 +73,7 @@ Spectrum MatteMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 	}
 	*pdf /=  dp;
 
-	diffuseBounce = false;
+	diffuseBounce = true;
 
 	return KdOverPI;
 }
