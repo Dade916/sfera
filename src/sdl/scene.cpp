@@ -124,6 +124,19 @@ Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
 			sphereTexMaps.push_back(tmi);
 		} else
 			sphereTexMaps.push_back(NULL);
+
+		// Get the bump map
+		const std::string bumpName = scnProp.GetString(propRoot + ".bumpmap.file", "");
+		if (bumpName != "") {
+			const vector<float> vfshift = Properties::GetParameters(scnProp, propRoot + ".bumpmap.shift", 2, "0.0 0.0");
+			const vector<float> vfscaleuv = Properties::GetParameters(scnProp, propRoot + ".bumpmap.scaleuv", 2, "1.0 1.0");
+			const float scale = scnProp.GetFloat(propRoot + ".bumpmap.scale", 1.f);
+
+			BumpMapInstance *bmi = texMapCache->GetBumpMapInstance(bumpName,
+					vfshift[0], vfshift[1], vfscaleuv[0], vfscaleuv[1], scale);
+			sphereBumpMaps.push_back(bmi);
+		} else
+			sphereBumpMaps.push_back(NULL);
 	}
 	SFERA_LOG("Spheres count: " << spheres.size());
 }

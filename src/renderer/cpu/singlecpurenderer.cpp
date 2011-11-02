@@ -55,7 +55,7 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 	const unsigned int maxSpecularGlossyBounces = gameLevel->maxPathSpecularGlossyBounces;
 
 	for(;;) {
-		// Check for intersection with static objects
+		// Check for intersection with objects
 		const vector<GameSphere> &spheres(scene.spheres);
 		bool hit = false;
 		size_t sphereIndex = 0;
@@ -69,10 +69,12 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 		const Sphere *hitSphere = NULL;
 		const Material *hitMat = NULL;
 		const TexMapInstance *texMap = NULL;
+		const BumpMapInstance *bumpMap = NULL;
 		if (hit) {
 			hitSphere = &spheres[sphereIndex].sphere;
 			hitMat = scene.sphereMaterials[sphereIndex];
 			texMap = scene.sphereTexMaps[sphereIndex];
+			bumpMap = scene.sphereBumpMaps[sphereIndex];
 		}
 
 		// Check for intersection with the player body
@@ -84,22 +86,29 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 				hitSphere = puppet;
 				hitMat = gameLevel->player->puppetMaterial[s];
 				texMap = NULL;
+				bumpMap = NULL;
 			}
 		}
 
 		if (hit) {
 			const Point hitPoint(ray(ray.maxt));
 			Normal N(Normalize(hitPoint - hitSphere->center));
+
 			// Check if I have to flip the normal
-			if (Dot(Vector(N), ray.d) > 0.f)
-				N = -N;
+			Normal ShadeN = (Dot(Vector(N), ray.d) > 0.f) ? (-N) : N;
+			if (bumpMap) {
+				// Apply bump mapping
+				const Vector dir = Normalize(hitPoint - hitSphere->center);
+
+				ShadeN = bumpMap->SphericalMap(dir, ShadeN);
+			}
 
 			radiance += throughput * hitMat->GetEmission();
 
 			Vector wi;
 			float pdf;
 			bool diffuseBounce;
-			Spectrum f = hitMat->Sample_f(-ray.d, &wi, N, N,
+			Spectrum f = hitMat->Sample_f(-ray.d, &wi, N, ShadeN,
 					rnd.floatValue(), rnd.floatValue(), rnd.floatValue(),
 					&pdf, diffuseBounce);
 			if ((pdf <= 0.f) || f.Black())

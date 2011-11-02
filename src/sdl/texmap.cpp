@@ -53,7 +53,6 @@ TextureMap::TextureMap(const std::string &fileName) {
 			SFERA_LOG("HDR RGB (128bit) texture map size: " << width << "x" << height << " (" <<
 					width * height * sizeof(Spectrum) / 1024 << "Kbytes)");
 			pixels = new Spectrum[width * height];
-			alpha = NULL;
 
 			for (unsigned int y = 0; y < height; ++y) {
 				FIRGBAF *pixel = (FIRGBAF *)bits;
@@ -71,7 +70,6 @@ TextureMap::TextureMap(const std::string &fileName) {
 			SFERA_LOG("HDR RGB (96bit) texture map size: " << width << "x" << height << " (" <<
 					width * height * sizeof(Spectrum) / 1024 << "Kbytes)");
 			pixels = new Spectrum[width * height];
-			alpha = NULL;
 
 			for (unsigned int y = 0; y < height; ++y) {
 				FIRGBF *pixel = (FIRGBF *)bits;
@@ -90,7 +88,6 @@ TextureMap::TextureMap(const std::string &fileName) {
 					width * height * (sizeof(Spectrum) + sizeof(float)) / 1024 << "Kbytes)");
 			const unsigned int pixelCount = width * height;
 			pixels = new Spectrum[pixelCount];
-			alpha = new float[pixelCount];
 
 			for (unsigned int y = 0; y < height; ++y) {
 				BYTE *pixel = (BYTE *)bits;
@@ -99,7 +96,6 @@ TextureMap::TextureMap(const std::string &fileName) {
 					pixels[offset].r = pixel[FI_RGBA_RED] / 255.f;
 					pixels[offset].g = pixel[FI_RGBA_GREEN] / 255.f;
 					pixels[offset].b = pixel[FI_RGBA_BLUE] / 255.f;
-					alpha[offset] = pixel[FI_RGBA_ALPHA] / 255.f;
 					pixel += 4;
 				}
 
@@ -110,7 +106,6 @@ TextureMap::TextureMap(const std::string &fileName) {
 			SFERA_LOG("RGB texture map size: " << width << "x" << height << " (" <<
 					width * height * sizeof(Spectrum) / 1024 << "Kbytes)");
 			pixels = new Spectrum[width * height];
-			alpha = NULL;
 
 			for (unsigned int y = 0; y < height; ++y) {
 				BYTE *pixel = (BYTE *)bits;
@@ -130,7 +125,6 @@ TextureMap::TextureMap(const std::string &fileName) {
 					width * height * sizeof (Spectrum) / 1024 << "Kbytes)");
 
 			pixels = new Spectrum[width * height];
-			alpha = NULL;
 
 			for (unsigned int y = 0; y < height; ++y) {
 				BYTE pixel;
@@ -159,98 +153,8 @@ TextureMap::TextureMap(const std::string &fileName) {
 	DuDv.v = 1.f / height;
 }
 
-TextureMap::TextureMap(Spectrum *cols, const unsigned int w, const unsigned int h) {
-	pixels = cols;
-	alpha = NULL;
-	width = w;
-	height = h;
-
-	DuDv.u = 1.f / width;
-	DuDv.v = 1.f / height;
-}
-
 TextureMap::~TextureMap() {
 	delete[] pixels;
-	delete[] alpha;
-}
-
-TextureMap::TextureMap(const std::string& baseFileName, const float red, const float green, const float blue) {
-	SFERA_LOG("Creating blank texture from: " << baseFileName);
-
-	FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(baseFileName.c_str(), 0);
-	if (fif == FIF_UNKNOWN)
-		fif = FreeImage_GetFIFFromFilename(baseFileName.c_str());
-
-	if ((fif != FIF_UNKNOWN) && FreeImage_FIFSupportsReading(fif)) {
-		FIBITMAP *dib = FreeImage_Load(fif, baseFileName.c_str(), 0);
-
-		if (!dib)
-			throw std::runtime_error("Unable to read base texture map: " + baseFileName);
-
-		width = FreeImage_GetWidth(dib);
-		height = FreeImage_GetHeight(dib);
-		FreeImage_Unload(dib);
-
-		const unsigned int numPixels = width*height;
-		pixels = new Spectrum[numPixels];
-		alpha = NULL;
-
-		SFERA_LOG("Initializing the texture with " << red << ", " << green << ", " << blue << " for " << numPixels << " pixels");
-		for (unsigned int i = 0; i < numPixels; i++) {
-			pixels[i].r = red;
-			pixels[i].g = green;
-			pixels[i].b = blue;
-		}
-	}
-	DuDv.u = 1.f / width;
-	DuDv.v = 1.f / height;
-}
-
-void TextureMap::AddAlpha(const std::string &alphaMapFileName) {
-	// Don't overwrite a pre-existing alpha
-	if (alpha != NULL) {
-		return;
-	}
-
-	FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(alphaMapFileName.c_str(), 0);
-	if (fif == FIF_UNKNOWN)
-		fif = FreeImage_GetFIFFromFilename(alphaMapFileName.c_str());
-
-	if ((fif != FIF_UNKNOWN) && FreeImage_FIFSupportsReading(fif)) {
-		FIBITMAP *dib = FreeImage_Load(fif, alphaMapFileName.c_str(), 0);
-
-		if (!dib)
-			throw std::runtime_error("Unable to read alpha map: " + alphaMapFileName);
-
-		unsigned int alphaWidth = FreeImage_GetWidth(dib);
-		unsigned int alphaHeight = FreeImage_GetHeight(dib);
-
-		unsigned int pitch = FreeImage_GetPitch(dib);
-		unsigned int bpp = FreeImage_GetBPP(dib);
-		BYTE *bits = (BYTE *) FreeImage_GetBits(dib);
-
-		const unsigned int pixelCount = alphaWidth * alphaHeight;
-		alpha = new float[pixelCount];
-		if (alpha == NULL) {
-			SFERA_LOG("Error: could not allocate alpha channel for map " << alphaMapFileName);
-			return;
-		}
-
-		unsigned short int pixelIncrement = bpp / 8; // I'm well aware of the assumption risk. Alphamaps are usually RGB or greyscale (1bpp)
-		for (unsigned int y = 0; y < alphaHeight; ++y) {
-			BYTE *pixel = (BYTE *) bits;
-			for (unsigned int x = 0; x < alphaWidth; ++x) {
-				const unsigned int offset = x + (alphaHeight - y - 1) * alphaWidth;
-				alpha[offset] = *pixel / 255.f;
-				pixel += pixelIncrement;
-			}
-
-			// Next line
-			bits += pitch;
-		}
-
-		FreeImage_Unload(dib);
-	}
 }
 
 TextureMapCache::TextureMapCache() {
@@ -292,9 +196,11 @@ TexMapInstance *TextureMapCache::GetTexMapInstance(const std::string &fileName,
 	return texm;
 }
 
-BumpMapInstance *TextureMapCache::GetBumpMapInstance(const std::string &fileName, const float scale) {
+BumpMapInstance *TextureMapCache::GetBumpMapInstance(const std::string &fileName,
+		const float shiftU, const float shiftV, const float scaleU, const float scaleV,
+		const float scale) {
 	TextureMap *tm = GetTextureMap(fileName);
-	BumpMapInstance *bm = new BumpMapInstance(tm, scale);
+	BumpMapInstance *bm = new BumpMapInstance(tm, shiftU, shiftV, scaleU, scaleV, scale);
 	bumpInstances.push_back(bm);
 
 	return bm;

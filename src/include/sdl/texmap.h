@@ -25,6 +25,8 @@
 #include <vector>
 #include <map>
 
+#include "geometry/vector.h"
+#include "geometry/normal.h"
 #include "geometry/uv.h"
 #include "pixel/spectrum.h"
 
@@ -32,12 +34,6 @@ class TextureMap {
 public:
 	TextureMap(const std::string &fileName);
 	TextureMap(Spectrum *cols, const unsigned int w, const unsigned int h);
-
-	/**
-	 * Creates a 24-bpp texture with size based on another bitmap, usually an alpha map, and initialized each pixel
-	 * with a given color.
-	 */
-	TextureMap(const std::string& baseFileName, const float red, const float green, const float blue);
 
 	~TextureMap();
 
@@ -60,37 +56,6 @@ public:
 				ds * dt * GetTexel(s0 + 1, t0 + 1);
 	};
 
-	/**
-	 * Add an alpha map to a texture that didn't have it built in. This is usually employed to
-	 * support separate alpha maps stored as greyscale bitmaps (usualluy jpegs). The format
-	 * comes in handy also when using procedural textures. In this scheme pure white (1.0,1.0,1.0)
-	 * means solid and pure black (0,0,0) means transparent. Levels of grey detemine partial transparent
-	 * areas.
-	 */
-	void AddAlpha(const std::string &alphaMap);
-
-	const bool HasAlpha() const { return alpha != NULL; }
-	float GetAlpha(const UV &uv) const {
-		assert (alpha != NULL);
-
-		const float s = uv.u * width - 0.5f;
-		const float t = uv.v * height - 0.5f;
-
-		const int s0 = Floor2Int(s);
-		const int t0 = Floor2Int(t);
-
-		const float ds = s - s0;
-		const float dt = t - t0;
-
-		const float ids = 1.f - ds;
-		const float idt = 1.f - dt;
-
-		return ids * idt * GetAlphaTexel(s0, t0) +
-				ids * dt * GetAlphaTexel(s0, t0 + 1) +
-				ds * idt * GetAlphaTexel(s0 + 1, t0) +
-				ds * dt * GetAlphaTexel(s0 + 1, t0 + 1);
-	}
-
 	const UV &GetDuDv() const {
 		return DuDv;
 	}
@@ -98,7 +63,6 @@ public:
 	unsigned int GetWidth() const { return width; }
 	unsigned int GetHeight() const { return height; }
 	const Spectrum *GetPixels() const { return pixels; };
-	const float *GetAlphas() const { return alpha; };
 
 private:
 	const Spectrum &GetTexel(const int s, const int t) const {
@@ -112,20 +76,8 @@ private:
 		return pixels[index];
 	}
 
-	const float &GetAlphaTexel(const unsigned int s, const unsigned int t) const {
-		const unsigned int u = Mod(s, width);
-		const unsigned int v = Mod(t, height);
-
-		const unsigned index = v * width + u;
-		assert (index >= 0);
-		assert (index < width * height);
-
-		return alpha[index];
-	}
-
 	unsigned int width, height;
 	Spectrum *pixels;
-	float *alpha;
 	UV DuDv;
 };
 
@@ -155,25 +107,46 @@ private:
 
 class BumpMapInstance {
 public:
-	BumpMapInstance(const TextureMap *tm, const float valueScale) :
-		texMap(tm), scale(valueScale) { }
+	BumpMapInstance(const TextureMap *tm, const float tu, const float tv,
+			const float su, const float sv, const float s) : texMap(tm),
+			shiftU(su), shiftV(sv), scaleU(su), scaleV(sv), scale(s) { }
 
 	const TextureMap *GetTexMap() const { return texMap; }
+	float GetShiftU() const { return shiftU; }
+	float GetShiftV() const { return shiftV; }
+	float GetScaleU() const { return scaleU; }
+	float GetScaleV() const { return scaleV; }
 	float GetScale() const { return scale; }
 
+	Normal SphericalMap(const Vector &dir, const Normal &N) const {
+		const UV uv(SphericalPhi(dir) * INV_TWOPI * scaleU + shiftU,
+				SphericalTheta(dir) * INV_PI  * scaleV + shiftV);
+
+		const UV &dudv = texMap->GetDuDv();
+
+		const float b0 = texMap->GetColor(uv).Filter();
+
+		const UV uvdu(uv.u + dudv.u, uv.v);
+		const float bu = texMap->GetColor(uvdu).Filter();
+
+		const UV uvdv(uv.u, uv.v + dudv.v);
+		const float bv = texMap->GetColor(uvdv).Filter();
+
+		const Vector bump(scale * (bu - b0), scale * (bv - b0), 1.f);
+
+		Vector v1, v2;
+		CoordinateSystem(Vector(N), &v1, &v2);
+		return Normalize(Normal(
+				v1.x * bump.x + v2.x * bump.y + N.x * bump.z,
+				v1.y * bump.x + v2.y * bump.y + N.y * bump.z,
+				v1.z * bump.x + v2.z * bump.y + N.z * bump.z));
+	}
+
 private:
 	const TextureMap *texMap;
+	float shiftU, shiftV;
+	float scaleU, scaleV;
 	const float scale;
-};
-
-class NormalMapInstance {
-public:
-	NormalMapInstance(const TextureMap *tm) : texMap(tm) { }
-
-	const TextureMap *GetTexMap() const { return texMap; }
-
-private:
-	const TextureMap *texMap;
 };
 
 class TextureMapCache {
@@ -183,7 +156,9 @@ public:
 
 	TexMapInstance *GetTexMapInstance(const std::string &fileName,
 		const float shiftU, const float shiftV, const float scaleU, const float scaleV);
-	BumpMapInstance *GetBumpMapInstance(const std::string &fileName, const float scale);
+	BumpMapInstance *GetBumpMapInstance(const std::string &fileName,
+		const float shiftU, const float shiftV, const float scaleU, const float scaleV,
+		const float scale);
 
 	void GetTexMaps(std::vector<TextureMap *> &tms);
 	unsigned int GetSize()const { return maps.size(); }
