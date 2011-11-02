@@ -211,6 +211,9 @@ void DisplaySession::RunLoop() {
 
 		SDL_GL_SwapBuffers();
 
+		const double t2 = WallClockTime();
+		currentRefreshTime = t2 - t1;
+
 		if (currentRefreshTime < refreshTime) {
 			const unsigned int sleep = (unsigned int)((refreshTime - currentRefreshTime) * 1000.0);
 			boost::this_thread::sleep(boost::posix_time::millisec(sleep));
@@ -224,9 +227,6 @@ void DisplaySession::RunLoop() {
 			frameStartTime = now;
 			frame = 0;
 		}
-
-		const double t2 = WallClockTime();
-		currentRefreshTime = t2 - t1;
 	} while(!quit);
 
 	SFERA_LOG("Done.");

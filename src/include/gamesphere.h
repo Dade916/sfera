@@ -26,13 +26,16 @@
 class GameSphere {
 public:
 	GameSphere() { }
-	GameSphere(const Point &c, const float r, const float m,
+	GameSphere(const Point &c, const float r,
+		const float m, const float linearDamp, const float angularDamp,
 		const bool st, const bool at) :
-		sphere(c, r), mass(m), staticObject(st), attractorObject(at) { }
+		sphere(c, r),
+		mass(m), linearDamping(linearDamp), angularDamping(angularDamp),
+		staticObject(st), attractorObject(at) { }
 	~GameSphere() { }
 
 	Sphere sphere;
-	float mass;
+	float mass, linearDamping, angularDamping;
 	bool staticObject, attractorObject;
 };
 

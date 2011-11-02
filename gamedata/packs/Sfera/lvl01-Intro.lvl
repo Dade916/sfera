@@ -1,7 +1,9 @@
 # Player
 player.body.position=0.1 1.0 2.0
 player.body.radius=0.25
-player.body.mass=0.25
+player.body.mass=0.3
+player.body.lineardamping=0.95
+player.body.angulardamping=0.5
 # Path
 path.epsilon=0.001
 path.maxdiffusebounces=2
@@ -31,7 +33,7 @@ scene.infinitelight.gain=1.0 1.0 1.0
 scene.infinitelight.shift=0.0 0.0
 # Spheres
 scene.spheres.world1.geometry=0.0 0.0 -8.0 8.0
-scene.spheres.world1.mass=100.0
+scene.spheres.world1.mass=50.0
 scene.spheres.world1.static=yes
 scene.spheres.world1.attractor=yes
 scene.spheres.world1.material=whitematte

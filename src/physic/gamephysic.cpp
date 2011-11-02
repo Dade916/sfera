@@ -77,7 +77,7 @@ void GamePhysic::AddRigidBody(const GameSphere &gameSphere, const size_t index) 
 		staticRigidBodies.push_back(rigidBody);
 	else {
 		rigidBody->setActivationState(DISABLE_DEACTIVATION);
-		rigidBody->setDamping(PHYSIC_DEFAULT_LINEAR_DAMPING, PHYSIC_DEFAULT_ANGULAR_DAMPING);
+		rigidBody->setDamping(gameSphere.linearDamping, gameSphere.angularDamping);
 
 		dynamicRigidBodies.push_back(rigidBody);
 		dynamicRigidBodyIndices.push_back(index);
@@ -138,21 +138,22 @@ void GamePhysic::DoStep() {
 	player.UpdateLocalCoordSystem();
 
 	// Apply user inputs
-	if (player.inputGoForward) {
+	if (player.inputGoForward)
 		playerRigidBody->applyCentralForce(btVector3(
-			0.9f * player.front.x,
-			0.9f * player.front.y,
-			0.9f * player.front.z));
-	}
+			.9f * player.front.x,
+			.9f * player.front.y,
+			.9f * player.front.z));
+	else
+		playerRigidBody->clearForces();
 
 	if (player.inputSlowDown)
 		playerRigidBody->setDamping(
-			10.f * PHYSIC_DEFAULT_LINEAR_DAMPING,
-			10.f * PHYSIC_DEFAULT_ANGULAR_DAMPING);
+			10.f * player.body.linearDamping,
+			10.f * player.body.angularDamping);
 	else
 		playerRigidBody->setDamping(
-			PHYSIC_DEFAULT_LINEAR_DAMPING,
-			PHYSIC_DEFAULT_ANGULAR_DAMPING);
+			player.body.linearDamping,
+			player.body.angularDamping);
 
 	if (player.inputJump) {
 		player.inputJump = false;

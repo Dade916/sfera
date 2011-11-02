@@ -21,6 +21,7 @@
 #include "sfera.h"
 #include "sdl/sdl.h"
 #include "sdl/light.h"
+#include "physic/gamephysic.h"
 
 Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
 	gravityConstant = scnProp.GetFloat("scene.gravity.constant", 10.f);
@@ -91,11 +92,14 @@ Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
 		// Build the sphere
 		const vector<float> vf = Properties::GetParameters(scnProp, propRoot + ".geometry", 4, "0.0 0.0 0.0 1.0");
 		const float mass = scnProp.GetFloat(propRoot + ".mass", 1.f);
+		const float linearDamping = scnProp.GetFloat(propRoot + ".lineardamping", PHYSIC_DEFAULT_ANGULAR_DAMPING);
+		const float angularDamping = scnProp.GetFloat(propRoot + ".angulardamping", PHYSIC_DEFAULT_LINEAR_DAMPING);
 		const bool staticObject = ("yes" == scnProp.GetString(propRoot + ".static", "no"));
 		const bool attractorObject = ("yes" == scnProp.GetString(propRoot + ".attractor", "no"));
 
 		sphereIndices[sphereName] = spheres.size();
-		spheres.push_back(GameSphere(Point(vf[0], vf[1], vf[2]), vf[3], mass,
+		spheres.push_back(GameSphere(Point(vf[0], vf[1], vf[2]), vf[3],
+				mass, linearDamping, angularDamping,
 				staticObject, attractorObject));
 
 		const double now = WallClockTime();
