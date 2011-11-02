@@ -205,7 +205,7 @@ void DisplaySession::RunLoop() {
 			}
 		}
 
-		currentLevel->DoStep();
+		currentLevel->Refresh();
 
 		renderer.DrawFrame();
 

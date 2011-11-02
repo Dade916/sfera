@@ -34,7 +34,7 @@ public:
 	GameLevel(const GameConfig *cfg, const string &levelFileName);
 	~GameLevel();
 
-	void DoStep();
+	void Refresh();
 
 	const GameConfig *gameConfig;
 

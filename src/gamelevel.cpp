@@ -80,7 +80,7 @@ GameLevel::~GameLevel() {
 	delete toneMap;
 }
 
-void GameLevel::DoStep() {
+void GameLevel::Refresh() {
 	player->UpdateLocalCoordSystem();
 	player->ApplyInputs();
 	player->UpdatePuppet();
