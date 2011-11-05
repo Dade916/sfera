@@ -18,28 +18,58 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_CPURENDERER_H
-#define	_SFERA_CPURENDERER_H
+#ifndef _SFERA_BVHACCEL_H
+#define	_SFERA_BVHACCEL_H
 
-#include "utils/randomgen.h"
-#include "renderer/levelrenderer.h"
-#include "pixel/framebuffer.h"
+#include <vector>
+
 #include "acceleretor/acceleretor.h"
 
-class SingleCPURenderer : public LevelRenderer {
-public:
-	SingleCPURenderer(const GameLevel *level);
-	~SingleCPURenderer();
-
-	void DrawFrame();
-
-private:
-	Spectrum SampleImage(const Accelerator &accel, const float u0, const float u1);
-
-	RandomGenerator rnd;
-
-	SampleFrameBuffer *sampleFrameBuffer;
-	FrameBuffer *frameBuffer;
+struct BVHAccelTreeNode {
+	Sphere bsphere;
+	unsigned int primitiveIndex;
+	BVHAccelTreeNode *leftChild;
+	BVHAccelTreeNode *rightSibling;
 };
 
-#endif	/* _SFERA_CPURENDERER_H */
+struct BVHAccelArrayNode {
+	Sphere bsphere;
+	unsigned int primitiveIndex;
+	unsigned int skipIndex;
+};
+
+// BVHAccel Declarations
+class BVHAccel : public Accelerator {
+public:
+	// BVHAccel Public Methods
+	BVHAccel(const vector<const Sphere *> &spheres,
+			const unsigned int treetype, const int icost,
+			const int tcost, const float ebonus);
+	~BVHAccel();
+
+	AcceleratorType GetType() const { return ACCEL_BVH; }
+
+	bool Intersect(Ray *ray, unsigned int *primitiveIndex) const;
+
+private:
+	// For some debuging
+	static bool CheckBoundingSpheres(const Sphere &parentSphere, const BVHAccelTreeNode *bvhTree);
+
+	// BVHAccel Private Methods
+	void Init(const vector<const Sphere *> &spheres);
+	BVHAccelTreeNode *BuildHierarchy(vector<BVHAccelTreeNode *> &list,
+			const unsigned int begin, const unsigned int end, const unsigned int axis);
+	void FindBestSplit(vector<BVHAccelTreeNode *> &list,
+		const unsigned int begin, const unsigned int end, float *splitValue, unsigned int *bestAxis);
+	unsigned int BuildArray(BVHAccelTreeNode *node, const unsigned int offset);
+	void FreeHierarchy(BVHAccelTreeNode *node);
+
+	unsigned int treeType;
+	int isectCost, traversalCost;
+	float emptyBonus;
+
+	unsigned int nNodes;
+	BVHAccelArrayNode *bvhTree;
+};
+
+#endif	/* _SFERA_BVHACCEL_H */

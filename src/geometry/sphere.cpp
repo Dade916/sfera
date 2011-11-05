@@ -18,6 +18,8 @@
  *                                                                         *
  ***************************************************************************/
 
+#include <limits>
+
 #include "geometry/sphere.h"
 
 bool Sphere::Intersect(Ray *ray) const {
@@ -40,6 +42,31 @@ bool Sphere::Intersect(Ray *ray) const {
 			ray->maxt = t;
 		else
 			return false;
+	}
+
+	return true;
+}
+
+bool Sphere::IntersectP(const Ray *ray, float *hitT) const {
+	const Vector op = center - ray->o;
+	const float b = Dot(op, ray->d);
+
+	float det = b * b - Dot(op, op) + rad * rad;
+	if (det < 0.f)
+		return false;
+	else
+		det = sqrtf(det);
+
+	float t = b - det;
+	if ((t > ray->mint) && ((t < ray->maxt)))
+		*hitT = t;
+	else {
+		t = b + det;
+
+		if ((t > ray->mint) && ((t < ray->maxt)))
+			*hitT = t;
+		else
+			*hitT = std::numeric_limits<float>::infinity();
 	}
 
 	return true;

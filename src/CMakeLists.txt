@@ -43,6 +43,7 @@ configure_file(
 #############################################################################
 
 set(Sfera_SRCS
+	acceleretor/bvhaccel.cpp
 	displaysession.cpp
 	epsilon.cpp
 	gameconfig.cpp

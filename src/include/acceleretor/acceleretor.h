@@ -18,28 +18,26 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_CPURENDERER_H
-#define	_SFERA_CPURENDERER_H
+#ifndef _SFERA_ACCELERETOR_H
+#define	_SFERA_ACCELERETOR_H
 
-#include "utils/randomgen.h"
-#include "renderer/levelrenderer.h"
-#include "pixel/framebuffer.h"
-#include "acceleretor/acceleretor.h"
+#include "sfera.h"
+#include "geometry/sphere.h"
 
-class SingleCPURenderer : public LevelRenderer {
+typedef enum {
+	ACCEL_BVH
+} AcceleratorType;
+
+class Accelerator {
 public:
-	SingleCPURenderer(const GameLevel *level);
-	~SingleCPURenderer();
+	Accelerator() { }
+	virtual ~Accelerator() { }
 
-	void DrawFrame();
+	virtual AcceleratorType GetType() const = 0;
 
-private:
-	Spectrum SampleImage(const Accelerator &accel, const float u0, const float u1);
+	virtual void Init(const vector<const Sphere *> &spheres) = 0;
 
-	RandomGenerator rnd;
-
-	SampleFrameBuffer *sampleFrameBuffer;
-	FrameBuffer *frameBuffer;
+	virtual bool Intersect(Ray *ray, unsigned int *primitiveIndex) const = 0;
 };
 
-#endif	/* _SFERA_CPURENDERER_H */
+#endif	/* _SFERA_ACCELERETOR_H */

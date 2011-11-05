@@ -59,14 +59,4 @@ inline std::ostream &operator<<(std::ostream &os, const Ray &r) {
 	return os;
 }
 
-class RayHit {
-public:
-	float t;
-	float b1, b2; // Barycentric coordinates of the hit point
-	unsigned int index;
-
-	void SetMiss() { index = 0xffffffffu; };
-	bool Miss() const { return (index == 0xffffffffu); };
-};
-
 #endif	/* _SFERA_RAY_H */

@@ -1,5 +1,5 @@
 # Player
-player.body.position=0.1 1.0 2.0
+player.body.position=0.1 1.0 0.4
 player.body.radius=0.25
 player.body.mass=0.3
 player.body.lineardamping=0.95
@@ -38,12 +38,7 @@ scene.spheres.world1.static=yes
 scene.spheres.world1.attractor=yes
 scene.spheres.world1.material=whitematte
 scene.spheres.world1.texmap.file=textures/planet_Klendathu1200.png
-#scene.spheres.world1.texmap.file=textures/test-map01.jpg
-#scene.spheres.world1.texmap.shift=0.5 0.3
-#scene.spheres.world1.texmap.scale=10 20
 scene.spheres.world1.bumpmap.file=textures/planet_Klendathu1200-bumpmap.png
-#scene.spheres.world1.bumpmap.shift=0.5 0.3
-#scene.spheres.world1.bumpmap.scaleuv=10 20
 scene.spheres.world1.bumpmap.scale=5.0
 #scene.spheres.world2.geometry=0.0 0.0 20.0 10.0
 #scene.spheres.world2.mass=100.0

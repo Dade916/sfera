@@ -19,6 +19,7 @@
  ***************************************************************************/
 
 #include "renderer/cpu/singlecpurenderer.h"
+#include "acceleretor/bvhaccel.h"
 
 SingleCPURenderer::SingleCPURenderer(const GameLevel *level) :
 	LevelRenderer(level), rnd(1) {
@@ -30,7 +31,7 @@ SingleCPURenderer::SingleCPURenderer(const GameLevel *level) :
 			gameLevel->gameConfig->GetScreenHeight());
 
 	sampleFrameBuffer->Clear();
-	frameBuffer->Clear();
+	frameBuffer->Clear();	
 }
 
 SingleCPURenderer::~SingleCPURenderer() {
@@ -38,7 +39,8 @@ SingleCPURenderer::~SingleCPURenderer() {
 	delete frameBuffer;
 }
 
-Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
+Spectrum SingleCPURenderer::SampleImage(const Accelerator &accel,
+		const float u0, const float u1) {
 	Ray ray;
 	gameLevel->camera->GenerateRay(
 		u0, u1,
@@ -54,43 +56,31 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 	unsigned int specularGlossyBounces = 0;
 	const unsigned int maxSpecularGlossyBounces = gameLevel->maxPathSpecularGlossyBounces;
 
+	const vector<GameSphere> &spheres(scene.spheres);
 	for(;;) {
 		// Check for intersection with objects
-		const vector<GameSphere> &spheres(scene.spheres);
-		bool hit = false;
-		size_t sphereIndex = 0;
-		for (size_t s = 0; s < spheres.size(); ++s) {
-			if (spheres[s].sphere.Intersect(&ray)) {
-				hit = true;
-				sphereIndex = s;
-			}
-		}
+		unsigned int sphereIndex;
+		if (accel.Intersect(&ray, &sphereIndex)) {
+			const Sphere *hitSphere;
+			const Material *hitMat;
+			const TexMapInstance *texMap;
+			const BumpMapInstance *bumpMap;
 
-		const Sphere *hitSphere = NULL;
-		const Material *hitMat = NULL;
-		const TexMapInstance *texMap = NULL;
-		const BumpMapInstance *bumpMap = NULL;
-		if (hit) {
-			hitSphere = &spheres[sphereIndex].sphere;
-			hitMat = scene.sphereMaterials[sphereIndex];
-			texMap = scene.sphereTexMaps[sphereIndex];
-			bumpMap = scene.sphereBumpMaps[sphereIndex];
-		}
-
-		// Check for intersection with the player body
-		for (size_t s = 0; s < GAMEPLAYER_PUPPET_SIZE; ++s) {
-			const Sphere *puppet = &(gameLevel->player->puppet[s]);
-
-			if (puppet->Intersect(&ray)) {
-				hit = true;
-				hitSphere = puppet;
-				hitMat = gameLevel->player->puppetMaterial[s];
+			if (sphereIndex >= spheres.size()) {
+				// I'm hitting the puppet
+				const unsigned int puppetIndex = sphereIndex - spheres.size();
+				
+				hitSphere = &(gameLevel->player->puppet[puppetIndex]);
+				hitMat = gameLevel->player->puppetMaterial[puppetIndex];
 				texMap = NULL;
 				bumpMap = NULL;
+			} else {
+				hitSphere = &spheres[sphereIndex].sphere;
+				hitMat = scene.sphereMaterials[sphereIndex];
+				texMap = scene.sphereTexMaps[sphereIndex];
+				bumpMap = scene.sphereBumpMaps[sphereIndex];
 			}
-		}
 
-		if (hit) {
 			const Point hitPoint(ray(ray.maxt));
 			Normal N(Normalize(hitPoint - hitSphere->center));
 
@@ -141,13 +131,38 @@ Spectrum SingleCPURenderer::SampleImage(const float u0, const float u1) {
 }
 
 void SingleCPURenderer::DrawFrame() {
+	//--------------------------------------------------------------------------
+	// Build the Accelerator
+	//--------------------------------------------------------------------------
+
+	const int treeType = 4; // Tree type to generate (2 = binary, 4 = quad, 8 = octree)
+	const int isectCost = 80;
+	const int travCost = 10;
+	const float emptyBonus = 0.5f;
+
+	const vector<GameSphere> &spheres(gameLevel->scene->spheres);
+	vector<const Sphere *> sphereList(gameLevel->scene->spheres.size() + GAMEPLAYER_PUPPET_SIZE);
+	for (size_t s = 0; s < spheres.size(); ++s)
+		sphereList[s] = &(spheres[s].sphere);
+	for (size_t s = 0; s < GAMEPLAYER_PUPPET_SIZE; ++s) {
+		const Sphere *puppet = &(gameLevel->player->puppet[s]);
+
+		sphereList[s + spheres.size()] = puppet;
+	}
+
+	BVHAccel accel(sphereList, treeType, isectCost, travCost, emptyBonus);
+
+	//--------------------------------------------------------------------------
+	// Render
+	//--------------------------------------------------------------------------
+
 	const unsigned int width = gameLevel->gameConfig->GetScreenWidth();
 	const unsigned int height = gameLevel->gameConfig->GetScreenHeight();
 
-	// Render
 	for (unsigned int y = 0; y < height; ++y) {
 		for (unsigned int x = 0; x < width; ++x) {
-			Spectrum s = SampleImage(x + rnd.floatValue() - .5f, y + rnd.floatValue() - .5f);
+			Spectrum s = SampleImage(accel,
+					x + rnd.floatValue() - .5f, y + rnd.floatValue() - .5f);
 
 			sampleFrameBuffer->BlendPixel(x, y, s, .33f);
 			//sampleFrameBuffer->SetPixel(x, y, s, 1.f);

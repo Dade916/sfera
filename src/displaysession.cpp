@@ -220,9 +220,9 @@ void DisplaySession::RunLoop() {
 		}
 
 		++frame;
-		if (frame == 90) {
+		if (frame == 30) {
 			const double now = WallClockTime();
-			SFERA_LOG("Frame/sec: " << (90.0 / (now - frameStartTime)));
+			SFERA_LOG("Frame/sec: " << fixed << setprecision(1) << (30.0 / (now - frameStartTime)));
 
 			frameStartTime = now;
 			frame = 0;

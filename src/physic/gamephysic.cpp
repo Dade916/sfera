@@ -212,7 +212,7 @@ void PhysicThread::PhysicThreadImpl(PhysicThread *physicThread) {
 			++frame;
 			if (frame == 300) {
 				const double now = WallClockTime();
-				SFERA_LOG("Physic engine Hz: " << (300.0 / (now - frameStartTime)));
+				SFERA_LOG("Physic engine Hz: " << fixed << setprecision(1) << (300.0 / (now - frameStartTime)));
 
 				frameStartTime = now;
 				frame = 0;
