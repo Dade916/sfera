@@ -168,7 +168,7 @@ void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	const GameConfig &gameConfig(*(gameLevel->gameConfig));
 	const unsigned int width = gameConfig.GetScreenWidth();
 	const unsigned int height = gameConfig.GetScreenHeight();
-	const unsigned int samplePerPass = gameConfig.GetSingleCPUSamplePerPass();
+	const unsigned int samplePerPass = gameConfig.GetRendererSamplePerPass();
 
 	// Render the frame
 	const float sampleScale = 1.f / samplePerPass;
@@ -191,11 +191,11 @@ void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	// Apply a gaussian filter: approximated by applying a box filter multiple times
 	//--------------------------------------------------------------------------
 
-	const unsigned int filterPassCount = gameConfig.GetSingleCPUGhostFilterIterations();
+	const unsigned int filterPassCount = gameConfig.GetRendererGhostFilterIterations();
 	if (filterPassCount > 0) {
 		for (unsigned int i = 0; i < filterPassCount; ++i)
 			FrameBuffer::ApplyBoxFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
-					width, height, gameConfig.GetSingleCPUGhostFilterRaidus());
+					width, height, gameConfig.GetRendererGhostFilterRaidus());
 	}
 
 	//--------------------------------------------------------------------------
@@ -215,8 +215,8 @@ void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 		k = dt / 5.f;
 	}
 
-	const float blendFactor = (1.f - k) * gameConfig.GetSingleCPUGhostFactorCameraEdit() +
-		k * gameConfig.GetSingleCPUGhostFactorNoCameraEdit();
+	const float blendFactor = (1.f - k) * gameConfig.GetRendererGhostFactorCameraEdit() +
+		k * gameConfig.GetRendererGhostFactorNoCameraEdit();
 
 	for (unsigned int y = 0; y < height; ++y) {
 		for (unsigned int x = 0; x < width; ++x) {

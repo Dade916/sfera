@@ -28,16 +28,16 @@ const string GameConfig::SCREEN_REFRESH_CAP = "screen.refresh.cap";
 const string GameConfig::SCREEN_REFRESH_CAP_DEFAULT = "30";
 const string GameConfig::PHYSIC_REFRESH_RATE = "physic.refresh.rate";
 const string GameConfig::PHYSIC_REFRESH_RATE_DEFAULT = "60";
-const string GameConfig::RENDERER_SINGLECPU_SAMPLEPERPASS = "renderer.singlecpu.sampleperpass";
-const string GameConfig::RENDERER_SINGLECPU_SAMPLEPERPASS_DEFAULT = "1";
-const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT = "renderer.singlecpu.ghostfactor.cameraedit";
-const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT_DEFAULT = "0.9";
-const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT = "renderer.singlecpu.ghostfactor.nocameraedit";
-const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT = "0.05";
-const string GameConfig::RENDERER_SINGLECPU_FILTER_RADIUS = "renderer.singlecpu.filter.radius";
-const string GameConfig::RENDERER_SINGLECPU_FILTER_RADIUS_DEFAULT = "1";
-const string GameConfig::RENDERER_SINGLECPU_FILTER_ITERATIONS = "renderer.singlecpu.filter.iterations";
-const string GameConfig::RENDERER_SINGLECPU_FILTER_ITERATIONS_DEFAULT = "3";
+const string GameConfig::RENDERER_SAMPLEPERPASS = "renderer.singlecpu.sampleperpass";
+const string GameConfig::RENDERER_SAMPLEPERPASS_DEFAULT = "1";
+const string GameConfig::RENDERER_GHOSTFACTOR_CAMERAEDIT = "renderer.ghostfactor.cameraedit";
+const string GameConfig::RENDERER_GHOSTFACTOR_CAMERAEDIT_DEFAULT = "0.9";
+const string GameConfig::RENDERER_GHOSTFACTOR_NOCAMERAEDIT = "renderer.ghostfactor.nocameraedit";
+const string GameConfig::RENDERER_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT = "0.05";
+const string GameConfig::RENDERER_FILTER_RADIUS = "renderer.filter.radius";
+const string GameConfig::RENDERER_FILTER_RADIUS_DEFAULT = "1";
+const string GameConfig::RENDERER_FILTER_ITERATIONS = "renderer.filter.iterations";
+const string GameConfig::RENDERER_FILTER_ITERATIONS_DEFAULT = "3";
 
 GameConfig::GameConfig(const string &fileName) {
 	InitValues();
@@ -78,11 +78,11 @@ void GameConfig::InitValues() {
 	cfg.SetString(SCREEN_HEIGHT, SCREEN_HEIGHT_DEFAULT);
 	cfg.SetString(SCREEN_REFRESH_CAP, SCREEN_REFRESH_CAP_DEFAULT);
 	cfg.SetString(PHYSIC_REFRESH_RATE, PHYSIC_REFRESH_RATE_DEFAULT);
-	cfg.SetString(RENDERER_SINGLECPU_SAMPLEPERPASS, RENDERER_SINGLECPU_SAMPLEPERPASS_DEFAULT);
-	cfg.SetString(RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT, RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT_DEFAULT);
-	cfg.SetString(RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT, RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT);
-	cfg.SetString(RENDERER_SINGLECPU_FILTER_RADIUS, RENDERER_SINGLECPU_FILTER_RADIUS_DEFAULT);
-	cfg.SetString(RENDERER_SINGLECPU_FILTER_ITERATIONS, RENDERER_SINGLECPU_FILTER_ITERATIONS_DEFAULT);
+	cfg.SetString(RENDERER_SAMPLEPERPASS, RENDERER_SAMPLEPERPASS_DEFAULT);
+	cfg.SetString(RENDERER_GHOSTFACTOR_CAMERAEDIT, RENDERER_GHOSTFACTOR_CAMERAEDIT_DEFAULT);
+	cfg.SetString(RENDERER_GHOSTFACTOR_NOCAMERAEDIT, RENDERER_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT);
+	cfg.SetString(RENDERER_FILTER_RADIUS, RENDERER_FILTER_RADIUS_DEFAULT);
+	cfg.SetString(RENDERER_FILTER_ITERATIONS, RENDERER_FILTER_ITERATIONS_DEFAULT);
 }
 
 void GameConfig::InitCachedValues() {
@@ -90,9 +90,9 @@ void GameConfig::InitCachedValues() {
 	screenHeight = (unsigned int)cfg.GetInt(SCREEN_HEIGHT, atoi(SCREEN_HEIGHT_DEFAULT.c_str()));
 	screenRefreshCap = (unsigned int)cfg.GetInt(SCREEN_REFRESH_CAP, atoi(SCREEN_REFRESH_CAP_DEFAULT.c_str()));
 	physicRefreshRate = (unsigned int)cfg.GetInt(PHYSIC_REFRESH_RATE, atoi(PHYSIC_REFRESH_RATE_DEFAULT.c_str()));
-	singlecpuSamplePerPass = (unsigned int)cfg.GetInt(RENDERER_SINGLECPU_SAMPLEPERPASS, atoi(RENDERER_SINGLECPU_SAMPLEPERPASS_DEFAULT.c_str()));
-	singlecpuGhostFactorCameraEdit = cfg.GetFloat(RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT, atof(RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT_DEFAULT.c_str()));
-	singlecpuGhostFactorNoCameraEdit = cfg.GetFloat(RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT, atof(RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT.c_str()));
-	singlecpufilterRadius = (unsigned int)cfg.GetInt(RENDERER_SINGLECPU_FILTER_RADIUS, atoi(RENDERER_SINGLECPU_FILTER_RADIUS_DEFAULT.c_str()));
-	singlecpufilterIterations = (unsigned int)cfg.GetInt(RENDERER_SINGLECPU_FILTER_ITERATIONS, atoi(RENDERER_SINGLECPU_FILTER_ITERATIONS_DEFAULT.c_str()));
+	rendererSamplePerPass = (unsigned int)cfg.GetInt(RENDERER_SAMPLEPERPASS, atoi(RENDERER_SAMPLEPERPASS_DEFAULT.c_str()));
+	rendererGhostFactorCameraEdit = cfg.GetFloat(RENDERER_GHOSTFACTOR_CAMERAEDIT, atof(RENDERER_GHOSTFACTOR_CAMERAEDIT_DEFAULT.c_str()));
+	rendererGhostFactorNoCameraEdit = cfg.GetFloat(RENDERER_GHOSTFACTOR_NOCAMERAEDIT, atof(RENDERER_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT.c_str()));
+	rendererFilterRadius = (unsigned int)cfg.GetInt(RENDERER_FILTER_RADIUS, atoi(RENDERER_FILTER_RADIUS_DEFAULT.c_str()));
+	rendererFilterIterations = (unsigned int)cfg.GetInt(RENDERER_FILTER_ITERATIONS, atoi(RENDERER_FILTER_ITERATIONS_DEFAULT.c_str()));
 }

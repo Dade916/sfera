@@ -40,11 +40,11 @@ public:
 	unsigned int GetPhysicRefreshRate() const { return physicRefreshRate; }
 
 	// SINGLECPU parameters
-	unsigned int GetSingleCPUSamplePerPass() const { return singlecpuSamplePerPass; }
-	float GetSingleCPUGhostFactorCameraEdit() const { return singlecpuGhostFactorCameraEdit; }
-	float GetSingleCPUGhostFactorNoCameraEdit() const { return singlecpuGhostFactorNoCameraEdit; }
-	unsigned int GetSingleCPUGhostFilterRaidus() const { return singlecpufilterRadius; }
-	unsigned int GetSingleCPUGhostFilterIterations() const { return singlecpufilterIterations; }
+	unsigned int GetRendererSamplePerPass() const { return rendererSamplePerPass; }
+	float GetRendererGhostFactorCameraEdit() const { return rendererGhostFactorCameraEdit; }
+	float GetRendererGhostFactorNoCameraEdit() const { return rendererGhostFactorNoCameraEdit; }
+	unsigned int GetRendererGhostFilterRaidus() const { return rendererFilterRadius; }
+	unsigned int GetRendererGhostFilterIterations() const { return rendererFilterIterations; }
 
 private:
 	// List of possible properties
@@ -56,16 +56,16 @@ private:
 	const static string SCREEN_REFRESH_CAP_DEFAULT;
 	const static string PHYSIC_REFRESH_RATE;
 	const static string PHYSIC_REFRESH_RATE_DEFAULT;
-	const static string RENDERER_SINGLECPU_SAMPLEPERPASS;
-	const static string RENDERER_SINGLECPU_SAMPLEPERPASS_DEFAULT;
-	const static string RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT;
-	const static string RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT_DEFAULT;
-	const static string RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT;
-	const static string RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT;
-	const static string RENDERER_SINGLECPU_FILTER_RADIUS;
-	const static string RENDERER_SINGLECPU_FILTER_RADIUS_DEFAULT;
-	const static string RENDERER_SINGLECPU_FILTER_ITERATIONS;
-	const static string RENDERER_SINGLECPU_FILTER_ITERATIONS_DEFAULT;
+	const static string RENDERER_SAMPLEPERPASS;
+	const static string RENDERER_SAMPLEPERPASS_DEFAULT;
+	const static string RENDERER_GHOSTFACTOR_CAMERAEDIT;
+	const static string RENDERER_GHOSTFACTOR_CAMERAEDIT_DEFAULT;
+	const static string RENDERER_GHOSTFACTOR_NOCAMERAEDIT;
+	const static string RENDERER_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT;
+	const static string RENDERER_FILTER_RADIUS;
+	const static string RENDERER_FILTER_RADIUS_DEFAULT;
+	const static string RENDERER_FILTER_ITERATIONS;
+	const static string RENDERER_FILTER_ITERATIONS_DEFAULT;
 
 	void InitValues();
 	void InitCachedValues();
@@ -78,11 +78,11 @@ private:
 	unsigned int screenRefreshCap;
 	unsigned int physicRefreshRate;
 
-	unsigned int singlecpuSamplePerPass;
-	float singlecpuGhostFactorCameraEdit;
-	float singlecpuGhostFactorNoCameraEdit;
-	unsigned int singlecpufilterRadius;
-	unsigned int singlecpufilterIterations;
+	unsigned int rendererSamplePerPass;
+	float rendererGhostFactorCameraEdit;
+	float rendererGhostFactorNoCameraEdit;
+	unsigned int rendererFilterRadius;
+	unsigned int rendererFilterIterations;
 
 };
 
