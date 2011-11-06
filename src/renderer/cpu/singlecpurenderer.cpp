@@ -26,6 +26,9 @@
 
 SingleCPURenderer::SingleCPURenderer(const GameLevel *level) :
 	LevelRenderer(level), rnd(1) {
+	passSampleFrameBuffer = new SampleFrameBuffer(
+			gameLevel->gameConfig->GetScreenWidth(),
+			gameLevel->gameConfig->GetScreenHeight());
 	sampleFrameBuffer = new SampleFrameBuffer(
 			gameLevel->gameConfig->GetScreenWidth(),
 			gameLevel->gameConfig->GetScreenHeight());
@@ -33,11 +36,13 @@ SingleCPURenderer::SingleCPURenderer(const GameLevel *level) :
 			gameLevel->gameConfig->GetScreenWidth(),
 			gameLevel->gameConfig->GetScreenHeight());
 
+	passSampleFrameBuffer->Clear();
 	sampleFrameBuffer->Clear();
 	frameBuffer->Clear();	
 }
 
 SingleCPURenderer::~SingleCPURenderer() {
+	delete passSampleFrameBuffer;
 	delete sampleFrameBuffer;
 	delete frameBuffer;
 }
@@ -47,7 +52,7 @@ Spectrum SingleCPURenderer::SampleImage(const Accelerator &accel,
 	Ray ray;
 	gameLevel->camera->GenerateRay(
 		u0, u1,
-		sampleFrameBuffer->GetWidth(), sampleFrameBuffer->GetHeight(),
+		passSampleFrameBuffer->GetWidth(), passSampleFrameBuffer->GetHeight(),
 		&ray, rnd.floatValue(), rnd.floatValue());
 
 	const Scene &scene(*(gameLevel->scene));
@@ -162,16 +167,31 @@ void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	const GameConfig &gameConfig(*(gameLevel->gameConfig));
 	const unsigned int width = gameConfig.GetScreenWidth();
 	const unsigned int height = gameConfig.GetScreenHeight();
+	const unsigned int samplePerPass = gameConfig.GetSingleCPUSamplePerPass();
+
+	// Render the frame
+	for (unsigned int i = 0; i < samplePerPass; ++i) {
+		for (unsigned int y = 0; y < height; ++y) {
+			for (unsigned int x = 0; x < width; ++x) {
+				Spectrum s = SampleImage(accel,
+						x + rnd.floatValue() - .5f, y + rnd.floatValue() - .5f);
+
+				if (i == 0)
+					passSampleFrameBuffer->SetPixel(x, y, s, 1.f);
+				else
+					passSampleFrameBuffer->AddPixel(x, y, s, 1.f);
+			}
+		}
+	}
+
+	// Render the new frame with the old one
 	const float blendFactor = editActionList.Has(CAMERA_EDIT) ?
 		gameConfig.GetSingleCPUGhostFactorCameraEdit() :
 		gameConfig.GetSingleCPUGhostFactorNoCameraEdit();
-
 	for (unsigned int y = 0; y < height; ++y) {
 		for (unsigned int x = 0; x < width; ++x) {
-			Spectrum s = SampleImage(accel,
-					x + rnd.floatValue() - .5f, y + rnd.floatValue() - .5f);
-
-			sampleFrameBuffer->BlendPixel(x, y, s, blendFactor);
+			const SamplePixel *p = passSampleFrameBuffer->GetPixel(x, y);
+			sampleFrameBuffer->BlendPixel(x, y, p->radiance / p->weight, blendFactor);
 		}
 	}
 

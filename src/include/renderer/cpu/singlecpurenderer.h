@@ -38,6 +38,7 @@ private:
 
 	RandomGenerator rnd;
 
+	SampleFrameBuffer *passSampleFrameBuffer;
 	SampleFrameBuffer *sampleFrameBuffer;
 	FrameBuffer *frameBuffer;
 };
