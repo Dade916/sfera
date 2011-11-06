@@ -263,9 +263,10 @@ void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	// Apply a gaussian filter: approximated by applying a box filter multiple times
 	//--------------------------------------------------------------------------
 
-	const unsigned int filterPassCount = 3;
+	const unsigned int filterPassCount = gameConfig.GetSingleCPUGhostFilterIterations();
 	for (unsigned int i = 0; i < filterPassCount; ++i)
-		ApplyBoxFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(), width, height, 1);
+		ApplyBoxFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(), width, height,
+				gameConfig.GetSingleCPUGhostFilterRaidus());
 
 	//--------------------------------------------------------------------------
 	// Blend the new frame with the old one
