@@ -34,13 +34,21 @@ public:
 	void DrawFrame(const EditActionList &editActionList);
 
 private:
+	static void ApplyBoxFilterX(const Pixel *src, Pixel *dst,
+		const unsigned int width, const unsigned int height, const unsigned int radius);
+	static void ApplyBoxFilterY(const Pixel *src, Pixel *dst,
+		const unsigned int width, const unsigned int height, const unsigned int radius);
+	static void ApplyBoxFilter(Pixel *frameBuffer, Pixel *tmpFrameBuffer,
+		const unsigned int width, const unsigned int height, const unsigned int radius);
+
 	Spectrum SampleImage(const Accelerator &accel, const float u0, const float u1);
 
 	RandomGenerator rnd;
 
-	SampleFrameBuffer *passSampleFrameBuffer;
-	SampleFrameBuffer *sampleFrameBuffer;
+	FrameBuffer *passFrameBuffer;
+	FrameBuffer *filterFrameBuffer;
 	FrameBuffer *frameBuffer;
+	FrameBuffer *toneMapFrameBuffer;
 
 	double timeSinceLastCameraEdit, timeSinceLastNoCameraEdit;
 };

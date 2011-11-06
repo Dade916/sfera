@@ -35,7 +35,6 @@ const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT_DEFAULT = "0.
 const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT = "renderer.singlecpu.ghostfactor.nocameraedit";
 const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT = "0.05";
 
-
 GameConfig::GameConfig(const string &fileName) {
 	InitValues();
 

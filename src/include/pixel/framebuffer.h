@@ -165,6 +165,25 @@ public:
 		pixels[index] = r;
 	}
 
+	void AddPixel(const unsigned int x, const unsigned int y, const Spectrum& r) {
+		assert (x >= 0);
+		assert (x < width);
+		assert (y >= 0);
+		assert (y < height);
+
+		pixels[x + y * width] += r;
+	}
+
+	void BlendPixel(const unsigned int x, const unsigned int y, const Spectrum& r, const float w) {
+		assert (x >= 0);
+		assert (x < width);
+		assert (y >= 0);
+		assert (y < height);
+
+		Pixel *pixel = &pixels[x + y * width];
+		*pixel = (1.f - w) * (*pixel) + w * r;
+	}
+
 	Pixel *GetPixel(const unsigned int x, const unsigned int y) const {
 		assert (x >= 0);
 		assert (x < width);

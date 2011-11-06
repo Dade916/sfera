@@ -40,29 +40,16 @@ void ToneMap::InitGammaTable(const float gamma) {
 // Linear tonemapping
 //------------------------------------------------------------------------------
 
-void LinearToneMap::Map(SampleFrameBuffer *src, FrameBuffer *dst) const {
+void LinearToneMap::Map(FrameBuffer *src, FrameBuffer *dst) const {
 	assert (src->GetWidth() == dst->GetWidth());
 	assert (src->GetHeight() == dst->GetHeight());
 
 	const unsigned int pixelCount = src->GetWidth() * src->GetHeight();
-	const SamplePixel *samplePixels = src->GetPixels();
+	const Pixel *samplePixels = src->GetPixels();
 	Pixel *pixels = dst->GetPixels();
 
 	for (unsigned int i = 0; i < pixelCount; ++i) {
-		const float weight = samplePixels->weight;
-
-		if (weight > 0.f) {
-			const float invWeight = scale / weight;
-
-			const Spectrum &radiance(samplePixels->radiance);
-			pixels->r = Radiance2PixelFloat(radiance.r * invWeight);
-			pixels->g = Radiance2PixelFloat(radiance.g * invWeight);
-			pixels->b = Radiance2PixelFloat(radiance.b * invWeight);
-		} else {
-			pixels->r = 0.f;
-			pixels->g = 0.f;
-			pixels->b = 0.f;
-		}
+		*pixels = Radiance2Pixel(*samplePixels);
 
 		++samplePixels;
 		++pixels;
@@ -73,12 +60,12 @@ void LinearToneMap::Map(SampleFrameBuffer *src, FrameBuffer *dst) const {
 // Reinhard02 tonemapping
 //------------------------------------------------------------------------------
 
-void Reinhard02ToneMap::Map(SampleFrameBuffer *src, FrameBuffer *dst) const {
+void Reinhard02ToneMap::Map(FrameBuffer *src, FrameBuffer *dst) const {
 	assert (src->GetWidth() == dst->GetWidth());
 	assert (src->GetHeight() == dst->GetHeight());
 
 	const unsigned int pixelCount = src->GetWidth() * src->GetHeight();
-	const SamplePixel *samplePixels = src->GetPixels();
+	const Pixel *samplePixels = src->GetPixels();
 	Pixel *pixels = dst->GetPixels();
 
 	const float alpha = .1f;
@@ -86,20 +73,12 @@ void Reinhard02ToneMap::Map(SampleFrameBuffer *src, FrameBuffer *dst) const {
 	// Use the frame buffer as temporary storage and calculate the avarage luminance
 	float Ywa = 0.f;
 	for (unsigned int i = 0; i < pixelCount; ++i) {
-		const float weight = samplePixels->weight;
+		// Convert to XYZ color space
+		pixels->r = 0.412453f * samplePixels->r + 0.357580f * samplePixels->g + 0.180423f * samplePixels->b;
+		pixels->g = 0.212671f * samplePixels->r + 0.715160f * samplePixels->g + 0.072169f * samplePixels->b;
+		pixels->b = 0.019334f * samplePixels->r + 0.119193f * samplePixels->g + 0.950227f * samplePixels->b;
 
-		if (weight > 0.f) {
-			const float invWeight = 1.f / weight;
-
-			Spectrum rgb = samplePixels->radiance * invWeight;
-
-			// Convert to XYZ color space
-			pixels->r = 0.412453f * rgb.r + 0.357580f * rgb.g + 0.180423f * rgb.b;
-			pixels->g = 0.212671f * rgb.r + 0.715160f * rgb.g + 0.072169f * rgb.b;
-			pixels->b = 0.019334f * rgb.r + 0.119193f * rgb.g + 0.950227f * rgb.b;
-
-			Ywa += pixels->g;
-		}
+		Ywa += pixels->g;
 
 		++samplePixels;
 		++pixels;
@@ -127,9 +106,7 @@ void Reinhard02ToneMap::Map(SampleFrameBuffer *src, FrameBuffer *dst) const {
 		pixels->b =  0.055648f * xyz.r - 0.204043f * xyz.g + 1.057311f * xyz.b;
 
 		// Gamma correction
-		pixels->r = Radiance2PixelFloat(pixels->r);
-		pixels->g = Radiance2PixelFloat(pixels->g);
-		pixels->b = Radiance2PixelFloat(pixels->b);
+		*pixels = Radiance2Pixel(*pixels);
 
 		++pixels;
 	}

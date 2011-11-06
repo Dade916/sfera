@@ -40,7 +40,7 @@ public:
 	virtual ~ToneMap() { }
 
 	virtual ToneMapType GetType() const = 0;
-	virtual void Map(SampleFrameBuffer *src, FrameBuffer *dst) const = 0;
+	virtual void Map(FrameBuffer *src, FrameBuffer *dst) const = 0;
 
 protected:
 	void InitGammaTable(const float gamma = 2.2f);
@@ -69,7 +69,7 @@ public:
 	}
 
 	ToneMapType GetType() const { return TONEMAP_LINEAR; }
-	void Map(SampleFrameBuffer *src, FrameBuffer *dst) const;
+	void Map(FrameBuffer *src, FrameBuffer *dst) const;
 
 	float scale;
 };
@@ -84,7 +84,7 @@ public:
 	}
 
 	ToneMapType GetType() const { return TONEMAP_REINHARD02; }
-	void Map(SampleFrameBuffer *src, FrameBuffer *dst) const;
+	void Map(FrameBuffer *src, FrameBuffer *dst) const;
 
 	float preScale, postScale, burn;
 };
