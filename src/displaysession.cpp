@@ -23,6 +23,7 @@
 #include "gamesession.h"
 #include "renderer/cpu/singlecpurenderer.h"
 #include "physic/gamephysic.h"
+#include "sdl/editaction.h"
 
 static const string SFERA_LABEL = "Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSION_MINOR " (Written by David \"Dade\" Bucciarelli)";
 
@@ -89,9 +90,11 @@ void DisplaySession::RunLoop() {
 	double currentRefreshTime = 0.0;
 	bool quit = false;
 	double lastJumpTime = 0.0;
+	EditActionList editActionList;
 	do {
 		const double t1 = WallClockTime();
 
+		editActionList.Reset();
 		SDL_Event event;
 
 		while (SDL_PollEvent(&event)) {
@@ -206,8 +209,11 @@ void DisplaySession::RunLoop() {
 		}
 
 		currentLevel->Refresh();
+		// Check if the camera has changed
+		if (currentLevel->camera->IsChangedSinceLastUpdate())
+			editActionList.AddAction(CAMERA_EDIT);
 
-		renderer.DrawFrame();
+		renderer.DrawFrame(editActionList);
 
 		SDL_GL_SwapBuffers();
 

@@ -38,6 +38,9 @@ public:
 	unsigned int GetScreenHeight() const { return screenHeight; }
 	unsigned int GetScreenRefreshCap() const { return screenRefreshCap; }
 	unsigned int GetPhysicRefreshRate() const { return physicRefreshRate; }
+	unsigned int GetSingleCPUSamplePerPass() const { return singlecpuSamplePerPass; }
+	float GetSingleCPUGhostFactorCameraEdit() const { return singlecpuGhostFactorCameraEdit; }
+	float GetSingleCPUGhostFactorNoCameraEdit() const { return singlecpuGhostFactorNoCameraEdit; }
 
 private:
 	// List of possible properties
@@ -49,6 +52,12 @@ private:
 	const static string SCREEN_REFRESH_CAP_DEFAULT;
 	const static string PHYSIC_REFRESH_RATE;
 	const static string PHYSIC_REFRESH_RATE_DEFAULT;
+	const static string RENDERER_SINGLECPU_SAMPLEPERPASS;
+	const static string RENDERER_SINGLECPU_SAMPLEPERPASS_DEFAULT;
+	const static string RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT;
+	const static string RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT_DEFAULT;
+	const static string RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT;
+	const static string RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT;
 
 	void InitValues();
 	void InitCachedValues();
@@ -60,6 +69,9 @@ private:
 	unsigned int screenHeight;
 	unsigned int screenRefreshCap;
 	unsigned int physicRefreshRate;
+	unsigned int singlecpuSamplePerPass;
+	float singlecpuGhostFactorCameraEdit;
+	float singlecpuGhostFactorNoCameraEdit;
 };
 
 #endif	/* _SFERA_GAMECONFIG_H */

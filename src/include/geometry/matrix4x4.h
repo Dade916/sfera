@@ -70,6 +70,17 @@ public:
 
 	Matrix4x4 Inverse() const;
 
+	bool IsEqual(const Matrix4x4 &mt) const {
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
+				if (m[i][j] != mt.m[i][j])
+					return false;
+			}
+		}
+
+		return true;
+	}
+
 	friend std::ostream &operator<<(std::ostream &, const Matrix4x4 &);
 
 	float m[4][4];

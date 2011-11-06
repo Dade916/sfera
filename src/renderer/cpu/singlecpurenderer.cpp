@@ -18,6 +18,9 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "sdl/editaction.h"
+
+
 #include "renderer/cpu/singlecpurenderer.h"
 #include "acceleretor/bvhaccel.h"
 
@@ -130,7 +133,7 @@ Spectrum SingleCPURenderer::SampleImage(const Accelerator &accel,
 	}
 }
 
-void SingleCPURenderer::DrawFrame() {
+void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	//--------------------------------------------------------------------------
 	// Build the Accelerator
 	//--------------------------------------------------------------------------
@@ -156,17 +159,19 @@ void SingleCPURenderer::DrawFrame() {
 	// Render
 	//--------------------------------------------------------------------------
 
-	const unsigned int width = gameLevel->gameConfig->GetScreenWidth();
-	const unsigned int height = gameLevel->gameConfig->GetScreenHeight();
+	const GameConfig &gameConfig(*(gameLevel->gameConfig));
+	const unsigned int width = gameConfig.GetScreenWidth();
+	const unsigned int height = gameConfig.GetScreenHeight();
+	const float blendFactor = editActionList.Has(CAMERA_EDIT) ?
+		gameConfig.GetSingleCPUGhostFactorCameraEdit() :
+		gameConfig.GetSingleCPUGhostFactorNoCameraEdit();
 
 	for (unsigned int y = 0; y < height; ++y) {
 		for (unsigned int x = 0; x < width; ++x) {
 			Spectrum s = SampleImage(accel,
 					x + rnd.floatValue() - .5f, y + rnd.floatValue() - .5f);
 
-			sampleFrameBuffer->BlendPixel(x, y, s, .33f);
-			//sampleFrameBuffer->SetPixel(x, y, s, 1.f);
-			//sampleFrameBuffer->AddPixel(x, y, s, 1.f);
+			sampleFrameBuffer->BlendPixel(x, y, s, blendFactor);
 		}
 	}
 

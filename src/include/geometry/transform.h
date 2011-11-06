@@ -64,6 +64,11 @@ public:
 	Matrix4x4 GetMatrix() const {
 		return m;
 	}
+
+	bool IsEqual(const Transform &t) const {
+		return m.IsEqual(t.m);
+	}
+
 	bool HasScale() const;
 	inline Point operator()(const Point &pt) const;
 	inline void operator()(const Point &pt, Point *ptrans) const;

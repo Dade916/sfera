@@ -23,7 +23,20 @@
 #include "sdl/camera.h"
 
 void PerspectiveCamera::Update(const unsigned int filmWidth, const unsigned int filmHeight) {
-	// Used to move trnslate the camera
+	// Check if the camera parameters have changed since the last update
+	if ((DistanceSquared(lastUpdateOrig, orig) < EPSILON * EPSILON) &&
+		(DistanceSquared(lastUpdateTarget, target) < EPSILON * EPSILON) &&
+		(Dot(lastUpdateUp, up) > .99f)) {
+		changedSinceLastUpdate = false;
+		return;
+	} else {
+		lastUpdateOrig = orig;
+		lastUpdateTarget = target;
+		lastUpdateUp = up;
+		changedSinceLastUpdate = true;
+	}
+
+	// Used to move translate the camera
 	dir = target - orig;
 	dir = Normalize(dir);
 

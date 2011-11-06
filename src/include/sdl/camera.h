@@ -21,17 +21,22 @@
 #ifndef _SFERA_SDL_CAMERA_H
 #define	_SFERA_SDL_CAMERA_H
 
+#include <limits>
+
 #include "geometry/transform.h"
 
 class PerspectiveCamera {
 public:
 	PerspectiveCamera(const Point &o, const Point &t, const Vector &u) :
 		orig(o), target(t), up(Normalize(u)), fieldOfView(45.f), clipHither(1e-3f), clipYon(1e30f),
-		lensRadius(0.f), focalDistance(10.f) {
+		lensRadius(0.f), focalDistance(10.f), changedSinceLastUpdate(true) {
+		const float nan = std::numeric_limits<float>::quiet_NaN();
+		lastUpdateOrig = Point(nan, nan, nan);
+		lastUpdateTarget = Point(nan, nan, nan);
+		lastUpdateUp = Vector(nan, nan, nan);
 	}
 
-	~PerspectiveCamera() {
-	}
+	~PerspectiveCamera() { }
 
 	void TranslateLeft(const float k) {
 		Vector t = -k * Normalize(x);
@@ -81,6 +86,7 @@ public:
 	}
 
 	void Update(const unsigned int filmWidth, const unsigned int filmHeight);
+	bool IsChangedSinceLastUpdate() const { return changedSinceLastUpdate; }
 
 	void GenerateRay(
 		const float screenX, const float screenY,
@@ -101,12 +107,18 @@ public:
 	// User defined values
 	Point orig, target;
 	Vector up;
-	float fieldOfView, clipHither, clipYon, lensRadius, focalDistance;
 
 private:
+	Point lastUpdateOrig, lastUpdateTarget;
+	Vector lastUpdateUp;
+
+	float fieldOfView, clipHither, clipYon, lensRadius, focalDistance;
+
 	// Calculated values
 	Vector dir, x, y;
 	Transform RasterToCamera, CameraToWorld;
+
+	bool changedSinceLastUpdate;
 };
 
 #endif	/* _SFERA_SDL_CAMERA_H */

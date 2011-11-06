@@ -18,20 +18,56 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_LEVELRENDERER_H
-#define	_SFERA_LEVELRENDERER_H
+#ifndef _SFERA_EDITACTION_H
+#define	_SFERA_EDITACTION_H
 
-#include "gamelevel.h"
-#include "sdl/editaction.h"
+#include <set>
 
-class LevelRenderer {
-public:
-	LevelRenderer(const GameLevel *level) : gameLevel(level) { }
-	~LevelRenderer() { }
+#include "sfera.h"
 
-	virtual void DrawFrame(const EditActionList &editActionList) = 0;
-
-	const GameLevel *gameLevel;
+enum EditAction {
+	CAMERA_EDIT // Use this for any Camera parameter editing
 };
 
-#endif	/* _SFERA_LEVELRENDERER_H */
+class EditActionList {
+public:
+	EditActionList() { };
+	~EditActionList() { };
+
+	void Reset() { actions.clear(); }
+	void AddAction(const EditAction a) { actions.insert(a); };
+	void AddAllAction() {
+		AddAction(CAMERA_EDIT);
+	}
+	bool Has(const EditAction a) const { return (actions.find(a) != actions.end()); };
+	size_t Size() const { return actions.size(); };
+
+	friend std::ostream &operator<<(std::ostream &os, const EditActionList &eal);
+private:
+	set<EditAction> actions;
+};
+
+inline std::ostream &operator<<(std::ostream &os, const EditActionList &eal) {
+	os << "EditActionList[";
+
+	bool sep = false;
+	for (set<EditAction>::const_iterator it = eal.actions.begin(); it!=eal.actions.end(); ++it) {
+		if (sep)
+			os << ", ";
+
+		switch (*it) {
+			case CAMERA_EDIT:
+				os << "CAMERA_EDIT";
+				break;
+			default:
+				os << "UNKNOWN[" << *it << "]";
+				break;
+		}
+	}
+
+	os << "]";
+
+	return os;
+}
+
+#endif	/* _SFERA_EDITACTION_H */

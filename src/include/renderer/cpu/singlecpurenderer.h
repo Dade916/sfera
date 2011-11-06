@@ -31,7 +31,7 @@ public:
 	SingleCPURenderer(const GameLevel *level);
 	~SingleCPURenderer();
 
-	void DrawFrame();
+	void DrawFrame(const EditActionList &editActionList);
 
 private:
 	Spectrum SampleImage(const Accelerator &accel, const float u0, const float u1);
