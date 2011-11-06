@@ -27,6 +27,8 @@
 
 #include "utils/oclutils.h"
 
+#if !defined(SFERA_DISABLE_OPENCL)
+
 // Helper function to get error string
 std::string OCLErrorString(cl_int error) {
 	switch (error) {
@@ -134,3 +136,5 @@ std::string OCLErrorString(cl_int error) {
 			return boost::lexical_cast<std::string > (error);
 	}
 }
+
+#endif

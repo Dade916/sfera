@@ -151,8 +151,10 @@ int main(int argc, char *argv[]) {
 		displaySession.RunLoop();
 
 		delete config;
+#if !defined(SFERA_DISABLE_OPENCL)
 	} catch (cl::Error err) {
 		SFERA_LOG("OpenCL ERROR: " << err.what() << "(" << OCLErrorString(err.err()) << ")");
+#endif
 	} catch (runtime_error err) {
 		SFERA_LOG("RUNTIME ERROR: " << err.what());
 	} catch (exception err) {

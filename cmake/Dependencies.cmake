@@ -93,11 +93,13 @@ endif ()
 
 ################################################################################
 
-set(OPENCL_ROOT                  "${OPENCL_SEARCH_PATH}")
-find_package(OpenCL)
-# OpenCL
-if (OPENCL_FOUND)
-  include_directories(${OPENCL_INCLUDE_PATH})
+if (NOT SFERA_DISABLE_OPENCL)
+  set(OPENCL_ROOT                  "${OPENCL_SEARCH_PATH}")
+  find_package(OpenCL)
+  # OpenCL
+  if (OPENCL_FOUND)
+    include_directories(${OPENCL_INCLUDE_PATH})
+  endif ()
 endif ()
 
 ################################################################################

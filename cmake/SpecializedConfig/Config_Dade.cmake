@@ -6,6 +6,7 @@
 ###########################################################################
 
 #cmake -DSfera_CUSTOM_CONFIG=cmake/SpecializedConfig/Config_Dade.cmake .
+#cmake -DSfera_CUSTOM_CONFIG=cmake/SpecializedConfig/Config_Dade.cmake -DSFERA_DISABLE_OPENCL=1 .
 
 MESSAGE(STATUS "Using Dade's Linux Configuration settings")
 

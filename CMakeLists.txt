@@ -87,7 +87,7 @@ if (NOT GLEW_FOUND)
 	MESSAGE(FATAL_ERROR "--> Could not locate required GLEW files - Please check ${GLEW_SEARCH_PATH}")
 endif()
 
-if (NOT OPENCL_FOUND)
+if (NOT OPENCL_FOUND AND NOT SFERA_DISABLE_OPENCL)
 	MESSAGE(FATAL_ERROR "--> Could not locate required OpenCL files - Please check ${OPENCL_SEARCH_PATH}")
 endif()
 
@@ -99,6 +99,9 @@ if (NOT BULLET_FOUND)
 	MESSAGE(FATAL_ERROR "--> Could not locate required Bullet Physics files - Please check ${BULLET_SEARCH_PATH}")
 endif()
 
+if (SFERA_DISABLE_OPENCL)
+	ADD_DEFINITIONS("-DSFERA_DISABLE_OPENCL")
+endif()
 
 ###########################################################################
 #
@@ -114,4 +117,5 @@ add_subdirectory(src)
 # For non win32 we'll have to copy everything to a single dir
 #
 ###########################################################################
+
 INCLUDE(AssembleBinDirs)

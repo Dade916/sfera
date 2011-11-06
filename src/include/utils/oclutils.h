@@ -26,6 +26,8 @@
 
 #include "sfera.h"
 
+#if !defined(SFERA_DISABLE_OPENCL)
 extern std::string OCLErrorString(cl_int error);
+#endif
 
 #endif	/* _SFERA_OCL_UTILS_H */

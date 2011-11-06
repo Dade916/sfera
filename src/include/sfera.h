@@ -43,12 +43,14 @@
 
 #include "sferacfg.h"
 
+#if !defined(SFERA_DISABLE_OPENCL)
 #define __CL_ENABLE_EXCEPTIONS
 
 #if defined(__APPLE__)
 #include <OpenCL/cl.hpp>
 #else
 #include <CL/cl.hpp>
+#endif
 #endif
 
 #include "geometry/vector.h"
