@@ -31,9 +31,9 @@ const string GameConfig::PHYSIC_REFRESH_RATE_DEFAULT = "60";
 const string GameConfig::RENDERER_SINGLECPU_SAMPLEPERPASS = "renderer.singlecpu.sampleperpass";
 const string GameConfig::RENDERER_SINGLECPU_SAMPLEPERPASS_DEFAULT = "1";
 const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT = "renderer.singlecpu.ghostfactor.cameraedit";
-const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT_DEFAULT = "0.75";
+const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_CAMERAEDIT_DEFAULT = "0.9";
 const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT = "renderer.singlecpu.ghostfactor.nocameraedit";
-const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT = "0.33";
+const string GameConfig::RENDERER_SINGLECPU_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT = "0.05";
 
 
 GameConfig::GameConfig(const string &fileName) {

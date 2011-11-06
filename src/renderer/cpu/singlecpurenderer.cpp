@@ -25,7 +25,8 @@
 #include "acceleretor/bvhaccel.h"
 
 SingleCPURenderer::SingleCPURenderer(const GameLevel *level) :
-	LevelRenderer(level), rnd(1) {
+	LevelRenderer(level), rnd(1), timeSinceLastCameraEdit(WallClockTime()),
+		timeSinceLastNoCameraEdit(WallClockTime()) {
 	passSampleFrameBuffer = new SampleFrameBuffer(
 			gameLevel->gameConfig->GetScreenWidth(),
 			gameLevel->gameConfig->GetScreenHeight());
@@ -38,7 +39,7 @@ SingleCPURenderer::SingleCPURenderer(const GameLevel *level) :
 
 	passSampleFrameBuffer->Clear();
 	sampleFrameBuffer->Clear();
-	frameBuffer->Clear();	
+	frameBuffer->Clear();
 }
 
 SingleCPURenderer::~SingleCPURenderer() {
@@ -184,10 +185,23 @@ void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 		}
 	}
 
-	// Render the new frame with the old one
-	const float blendFactor = editActionList.Has(CAMERA_EDIT) ?
-		gameConfig.GetSingleCPUGhostFactorCameraEdit() :
-		gameConfig.GetSingleCPUGhostFactorNoCameraEdit();
+	// Blend the new frame with the old one
+	float k;
+	if (editActionList.Has(CAMERA_EDIT)) {
+		timeSinceLastCameraEdit = WallClockTime();
+
+		const double dt = Min(WallClockTime() - timeSinceLastNoCameraEdit, 2.0);
+		k = 1.f - dt / 2.f;
+	} else {
+		timeSinceLastNoCameraEdit = WallClockTime();
+
+		const double dt = Min(WallClockTime() - timeSinceLastCameraEdit, 5.0);
+		k = dt / 5.f;
+	}
+
+	const float blendFactor = (1.f - k) * gameConfig.GetSingleCPUGhostFactorCameraEdit() +
+		k * gameConfig.GetSingleCPUGhostFactorNoCameraEdit();
+
 	for (unsigned int y = 0; y < height; ++y) {
 		for (unsigned int x = 0; x < width; ++x) {
 			const SamplePixel *p = passSampleFrameBuffer->GetPixel(x, y);

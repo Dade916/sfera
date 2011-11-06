@@ -41,6 +41,8 @@ private:
 	SampleFrameBuffer *passSampleFrameBuffer;
 	SampleFrameBuffer *sampleFrameBuffer;
 	FrameBuffer *frameBuffer;
+
+	double timeSinceLastCameraEdit, timeSinceLastNoCameraEdit;
 };
 
 #endif	/* _SFERA_CPURENDERER_H */
