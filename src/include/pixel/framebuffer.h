@@ -203,6 +203,13 @@ public:
 	unsigned int GetWidth() const { return width; }
 	unsigned int GetHeight() const { return height; }
 
+	static void ApplyBoxFilterX(const Pixel *src, Pixel *dst,
+		const unsigned int width, const unsigned int height, const unsigned int radius);
+	static void ApplyBoxFilterY(const Pixel *src, Pixel *dst,
+		const unsigned int width, const unsigned int height, const unsigned int radius);
+	static void ApplyBoxFilter(Pixel *frameBuffer, Pixel *tmpFrameBuffer,
+		const unsigned int width, const unsigned int height, const unsigned int radius);
+
 private:
 	const unsigned int width, height;
 

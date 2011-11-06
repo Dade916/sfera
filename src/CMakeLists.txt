@@ -53,6 +53,7 @@ set(Sfera_SRCS
 	geometry/matrix4x4.cpp
 	geometry/transform.cpp
 	geometry/sphere.cpp
+	pixel/framebuffer.cpp
 	pixel/tonemap.cpp
 	renderer/cpu/singlecpurenderer.cpp
 	physic/gamephysic.cpp

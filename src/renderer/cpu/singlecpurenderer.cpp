@@ -139,78 +139,6 @@ Spectrum SingleCPURenderer::SampleImage(const Accelerator &accel,
 	}
 }
 
-void SingleCPURenderer::ApplyBoxFilterX(const Pixel *src, Pixel *dest,
-	const unsigned int width, const unsigned int height, const unsigned int radius) {
-    const float scale = 1.0f / (float)((radius << 1) + 1);
-
-    // Do left edge
-    Pixel t = src[0] * radius;
-    for (unsigned int x = 0; x < (radius + 1); ++x)
-        t += src[x];
-    dest[0] = t * scale;
-
-    for (unsigned int x = 1; x < (radius + 1); ++x) {
-        t += src[x + radius];
-        t -= src[0];
-        dest[x] = t * scale;
-    }
-
-    // Main loop
-    for (unsigned int x = (radius + 1); x < width - radius; ++x) {
-        t += src[x + radius];
-        t -= src[x - radius - 1];
-        dest[x] = t * scale;
-    }
-
-    // Do right edge
-    for (unsigned int x = width - radius; x < width; ++x) {
-        t += src[width - 1];
-        t -= src[x - radius - 1];
-        dest[x] = t * scale;
-    }
-}
-
-void SingleCPURenderer::ApplyBoxFilterY(const Pixel *src, Pixel *dst,
-	const unsigned int width, const unsigned int height, const unsigned int radius) {
-    const float scale = 1.0f / (float)((radius << 1) + 1);
-
-    // Do left edge
-    Pixel t = src[0] * radius;
-    for (unsigned int y = 0; y < (radius + 1); ++y) {
-        t += src[y * width];
-    }
-    dst[0] = t * scale;
-
-    for (unsigned int y = 1; y < (radius + 1); ++y) {
-        t += src[(y + radius) * width];
-        t -= src[0];
-        dst[y * width] = t * scale;
-    }
-
-    // Main loop
-    for (unsigned int y = (radius + 1); y < (height - radius); ++y) {
-        t += src[(y + radius) * width];
-        t -= src[((y - radius) * width) - width];
-        dst[y * width] = t * scale;
-    }
-
-    // Do right edge
-    for (unsigned int y = height - radius; y < height; ++y) {
-        t += src[(height - 1) * width];
-        t -= src[((y - radius) * width) - width];
-        dst[y * width] = t * scale;
-    }
-}
-
-void SingleCPURenderer::ApplyBoxFilter(Pixel *frameBuffer, Pixel *tmpFrameBuffer,
-	const unsigned int width, const unsigned int height, const unsigned int radius) {
-	for (unsigned int i = 0; i < height; ++i)
-		ApplyBoxFilterX(&frameBuffer[i * width], &tmpFrameBuffer[i * width], width, height, radius);
-
-	for (unsigned int i = 0; i < width; ++i)
-		ApplyBoxFilterY(&tmpFrameBuffer[i], &frameBuffer[i], width, height, radius);
-}
-
 void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	//--------------------------------------------------------------------------
 	// Build the Accelerator
@@ -264,9 +192,11 @@ void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	//--------------------------------------------------------------------------
 
 	const unsigned int filterPassCount = gameConfig.GetSingleCPUGhostFilterIterations();
-	for (unsigned int i = 0; i < filterPassCount; ++i)
-		ApplyBoxFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(), width, height,
-				gameConfig.GetSingleCPUGhostFilterRaidus());
+	if (filterPassCount > 0) {
+		for (unsigned int i = 0; i < filterPassCount; ++i)
+			FrameBuffer::ApplyBoxFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
+					width, height, gameConfig.GetSingleCPUGhostFilterRaidus());
+	}
 
 	//--------------------------------------------------------------------------
 	// Blend the new frame with the old one
