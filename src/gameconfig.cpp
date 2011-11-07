@@ -28,12 +28,14 @@ const string GameConfig::SCREEN_REFRESH_CAP = "screen.refresh.cap";
 const string GameConfig::SCREEN_REFRESH_CAP_DEFAULT = "30";
 const string GameConfig::PHYSIC_REFRESH_RATE = "physic.refresh.rate";
 const string GameConfig::PHYSIC_REFRESH_RATE_DEFAULT = "60";
-const string GameConfig::RENDERER_SAMPLEPERPASS = "renderer.singlecpu.sampleperpass";
+const string GameConfig::RENDERER_SAMPLEPERPASS = "renderer.sampleperpass";
 const string GameConfig::RENDERER_SAMPLEPERPASS_DEFAULT = "1";
 const string GameConfig::RENDERER_GHOSTFACTOR_CAMERAEDIT = "renderer.ghostfactor.cameraedit";
 const string GameConfig::RENDERER_GHOSTFACTOR_CAMERAEDIT_DEFAULT = "0.9";
 const string GameConfig::RENDERER_GHOSTFACTOR_NOCAMERAEDIT = "renderer.ghostfactor.nocameraedit";
 const string GameConfig::RENDERER_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT = "0.05";
+const string GameConfig::RENDERER_FILTER_TYPE = "renderer.filter.type";
+const string GameConfig::RENDERER_FILTER_TYPE_DEFAULT = "BLUR_LIGHT";
 const string GameConfig::RENDERER_FILTER_RADIUS = "renderer.filter.radius";
 const string GameConfig::RENDERER_FILTER_RADIUS_DEFAULT = "1";
 const string GameConfig::RENDERER_FILTER_ITERATIONS = "renderer.filter.iterations";
@@ -81,6 +83,7 @@ void GameConfig::InitValues() {
 	cfg.SetString(RENDERER_SAMPLEPERPASS, RENDERER_SAMPLEPERPASS_DEFAULT);
 	cfg.SetString(RENDERER_GHOSTFACTOR_CAMERAEDIT, RENDERER_GHOSTFACTOR_CAMERAEDIT_DEFAULT);
 	cfg.SetString(RENDERER_GHOSTFACTOR_NOCAMERAEDIT, RENDERER_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT);
+	cfg.SetString(RENDERER_FILTER_TYPE, RENDERER_FILTER_TYPE_DEFAULT);
 	cfg.SetString(RENDERER_FILTER_RADIUS, RENDERER_FILTER_RADIUS_DEFAULT);
 	cfg.SetString(RENDERER_FILTER_ITERATIONS, RENDERER_FILTER_ITERATIONS_DEFAULT);
 }
@@ -90,9 +93,23 @@ void GameConfig::InitCachedValues() {
 	screenHeight = (unsigned int)cfg.GetInt(SCREEN_HEIGHT, atoi(SCREEN_HEIGHT_DEFAULT.c_str()));
 	screenRefreshCap = (unsigned int)cfg.GetInt(SCREEN_REFRESH_CAP, atoi(SCREEN_REFRESH_CAP_DEFAULT.c_str()));
 	physicRefreshRate = (unsigned int)cfg.GetInt(PHYSIC_REFRESH_RATE, atoi(PHYSIC_REFRESH_RATE_DEFAULT.c_str()));
+
 	rendererSamplePerPass = (unsigned int)cfg.GetInt(RENDERER_SAMPLEPERPASS, atoi(RENDERER_SAMPLEPERPASS_DEFAULT.c_str()));
 	rendererGhostFactorCameraEdit = cfg.GetFloat(RENDERER_GHOSTFACTOR_CAMERAEDIT, atof(RENDERER_GHOSTFACTOR_CAMERAEDIT_DEFAULT.c_str()));
 	rendererGhostFactorNoCameraEdit = cfg.GetFloat(RENDERER_GHOSTFACTOR_NOCAMERAEDIT, atof(RENDERER_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT.c_str()));
+
+	string filterType = cfg.GetString(RENDERER_FILTER_TYPE, RENDERER_FILTER_RADIUS_DEFAULT);
+	if (filterType == "NO_FILTER")
+		rendererFilterType = NO_FILTER;
+	else if (filterType == "BLUR_LIGHT")
+		rendererFilterType = BLUR_LIGHT;
+	else if (filterType == "BLUR_HEAVY")
+		rendererFilterType = BLUR_HEAVY;
+	else if (filterType == "BOX")
+		rendererFilterType = BOX;
+	else
+		throw runtime_error("Unknown filter type: " + filterType);
+
 	rendererFilterRadius = (unsigned int)cfg.GetInt(RENDERER_FILTER_RADIUS, atoi(RENDERER_FILTER_RADIUS_DEFAULT.c_str()));
 	rendererFilterIterations = (unsigned int)cfg.GetInt(RENDERER_FILTER_ITERATIONS, atoi(RENDERER_FILTER_ITERATIONS_DEFAULT.c_str()));
 }

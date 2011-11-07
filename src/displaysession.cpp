@@ -39,7 +39,7 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 	const unsigned int height = gameConfig->GetScreenHeight();
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
-		throw std::runtime_error("Unable to initialize SDL");
+		throw runtime_error("Unable to initialize SDL");
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
@@ -55,7 +55,7 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 	SDL_Surface *surface = SDL_SetVideoMode(width, height, 32,
 			SDL_HWSURFACE | SDL_OPENGL);
 	if (!surface)
-		throw std::runtime_error("Unable to create SDL window");
+		throw runtime_error("Unable to create SDL window");
 
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);

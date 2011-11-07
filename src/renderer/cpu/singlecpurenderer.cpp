@@ -191,11 +191,30 @@ void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	// Apply a gaussian filter: approximated by applying a box filter multiple times
 	//--------------------------------------------------------------------------
 
-	const unsigned int filterPassCount = gameConfig.GetRendererGhostFilterIterations();
-	if (filterPassCount > 0) {
-		for (unsigned int i = 0; i < filterPassCount; ++i)
-			FrameBuffer::ApplyBoxFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
-					width, height, gameConfig.GetRendererGhostFilterRaidus());
+	switch (gameConfig.GetRendererFilterType()) {
+		case NO_FILTER:
+			break;
+		case BLUR_LIGHT: {
+			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+			for (unsigned int i = 0; i < filterPassCount; ++i)
+				FrameBuffer::ApplyBlurLightFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
+						width, height);
+			break;
+		}
+		case BLUR_HEAVY: {
+			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+			for (unsigned int i = 0; i < filterPassCount; ++i)
+				FrameBuffer::ApplyBlurHeavyFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
+						width, height);
+			break;
+		}
+		case BOX: {
+			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+			for (unsigned int i = 0; i < filterPassCount; ++i)
+				FrameBuffer::ApplyBoxFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
+						width, height, gameConfig.GetRendererFilterRaidus());
+			break;
+		}
 	}
 
 	//--------------------------------------------------------------------------

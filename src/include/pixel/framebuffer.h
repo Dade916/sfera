@@ -203,14 +203,31 @@ public:
 	unsigned int GetWidth() const { return width; }
 	unsigned int GetHeight() const { return height; }
 
+	static void ApplyBoxFilter(Pixel *frameBuffer, Pixel *tmpFrameBuffer,
+		const unsigned int width, const unsigned int height, const unsigned int radius);
+	static void ApplyBlurLightFilter(Pixel *frameBuffer, Pixel *tmpFrameBuffer,
+		const unsigned int width, const unsigned int height);
+	static void ApplyBlurHeavyFilter(Pixel *frameBuffer, Pixel *tmpFrameBuffer,
+		const unsigned int width, const unsigned int height);
+
+private:
 	static void ApplyBoxFilterX(const Pixel *src, Pixel *dst,
 		const unsigned int width, const unsigned int height, const unsigned int radius);
 	static void ApplyBoxFilterY(const Pixel *src, Pixel *dst,
 		const unsigned int width, const unsigned int height, const unsigned int radius);
-	static void ApplyBoxFilter(Pixel *frameBuffer, Pixel *tmpFrameBuffer,
-		const unsigned int width, const unsigned int height, const unsigned int radius);
+	static void ApplyBoxFilterXR1(const Pixel *src, Pixel *dst,
+		const unsigned int width, const unsigned int height);
+	static void ApplyBoxFilterYR1(const Pixel *src, Pixel *dst,
+		const unsigned int width, const unsigned int height);
+	static void ApplyBlurLightFilterXR1(const Pixel *src, Pixel *dst,
+		const unsigned int width, const unsigned int height);
+	static void ApplyBlurLightFilterYR1(const Pixel *src, Pixel *dst,
+		const unsigned int width, const unsigned int height);
+	static void ApplyBlurHeavyFilterXR1(const Pixel *src, Pixel *dst,
+		const unsigned int width, const unsigned int height);
+	static void ApplyBlurHeavyFilterYR1(const Pixel *src, Pixel *dst,
+		const unsigned int width, const unsigned int height);
 
-private:
 	const unsigned int width, height;
 
 	Pixel *pixels;

@@ -24,6 +24,10 @@
 #include "sfera.h"
 #include "utils/properties.h"
 
+typedef enum {
+	NO_FILTER, BLUR_LIGHT, BLUR_HEAVY, BOX
+} FilterType;
+
 class GameConfig {
 public:
 	GameConfig(const string &fileName);
@@ -39,12 +43,13 @@ public:
 	unsigned int GetScreenRefreshCap() const { return screenRefreshCap; }
 	unsigned int GetPhysicRefreshRate() const { return physicRefreshRate; }
 
-	// SINGLECPU parameters
+	// Renderer parameters
 	unsigned int GetRendererSamplePerPass() const { return rendererSamplePerPass; }
 	float GetRendererGhostFactorCameraEdit() const { return rendererGhostFactorCameraEdit; }
 	float GetRendererGhostFactorNoCameraEdit() const { return rendererGhostFactorNoCameraEdit; }
-	unsigned int GetRendererGhostFilterRaidus() const { return rendererFilterRadius; }
-	unsigned int GetRendererGhostFilterIterations() const { return rendererFilterIterations; }
+	FilterType GetRendererFilterType() const { return rendererFilterType; }
+	unsigned int GetRendererFilterRaidus() const { return rendererFilterRadius; }
+	unsigned int GetRendererFilterIterations() const { return rendererFilterIterations; }
 
 private:
 	// List of possible properties
@@ -62,6 +67,8 @@ private:
 	const static string RENDERER_GHOSTFACTOR_CAMERAEDIT_DEFAULT;
 	const static string RENDERER_GHOSTFACTOR_NOCAMERAEDIT;
 	const static string RENDERER_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT;
+	const static string RENDERER_FILTER_TYPE;
+	const static string RENDERER_FILTER_TYPE_DEFAULT;
 	const static string RENDERER_FILTER_RADIUS;
 	const static string RENDERER_FILTER_RADIUS_DEFAULT;
 	const static string RENDERER_FILTER_ITERATIONS;
@@ -81,9 +88,9 @@ private:
 	unsigned int rendererSamplePerPass;
 	float rendererGhostFactorCameraEdit;
 	float rendererGhostFactorNoCameraEdit;
+	FilterType rendererFilterType;
 	unsigned int rendererFilterRadius;
 	unsigned int rendererFilterIterations;
-
 };
 
 #endif	/* _SFERA_GAMECONFIG_H */
