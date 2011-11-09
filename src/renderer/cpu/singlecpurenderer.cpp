@@ -48,12 +48,15 @@ SingleCPURenderer::~SingleCPURenderer() {
 	delete toneMapFrameBuffer;
 }
 
-Spectrum SingleCPURenderer::SampleImage(const Accelerator &accel,
-		const float u0, const float u1) {
+Spectrum SingleCPURenderer::SampleImage(
+		const GameLevel *gameLevel,
+		RandomGenerator &rnd, const Accelerator &accel,
+		const unsigned int screenWidth, const unsigned int screenHeight,
+		const float screenX, const float screenY) {
 	Ray ray;
 	gameLevel->camera->GenerateRay(
-		u0, u1,
-		passFrameBuffer->GetWidth(), passFrameBuffer->GetHeight(),
+		screenX, screenY,
+		screenWidth, screenHeight,
 		&ray, rnd.floatValue(), rnd.floatValue());
 
 	const Scene &scene(*(gameLevel->scene));
@@ -175,7 +178,8 @@ void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	for (unsigned int i = 0; i < samplePerPass; ++i) {
 		for (unsigned int y = 0; y < height; ++y) {
 			for (unsigned int x = 0; x < width; ++x) {
-				Spectrum s = SampleImage(accel,
+				Spectrum s = SampleImage(gameLevel, rnd, accel,
+						width, height,
 						x + rnd.floatValue() - .5f, y + rnd.floatValue() - .5f) *
 						sampleScale;
 

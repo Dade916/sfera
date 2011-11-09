@@ -22,6 +22,7 @@
 #include "displaysession.h"
 #include "gamesession.h"
 #include "renderer/cpu/singlecpurenderer.h"
+#include "renderer/cpu/multicpurenderer.h"
 #include "physic/gamephysic.h"
 #include "sdl/editaction.h"
 
@@ -78,7 +79,8 @@ void DisplaySession::RunLoop() {
 	GamePhysic gamePhysic(currentLevel);
 	PhysicThread physicThread(&gamePhysic);
 
-	SingleCPURenderer renderer(currentLevel);
+	//SingleCPURenderer renderer(currentLevel);
+	MultiCPURenderer renderer(currentLevel);
 
 	// Start the game
 

@@ -18,38 +18,56 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_SINGLECPURENDERER_H
-#define	_SFERA_SINGLECPURENDERER_H
+#ifndef _SFERA_MULTICPURENDERER_H
+#define	_SFERA_MULTICPURENDERER_H
 
-#include "gamelevel.h"
 #include "utils/randomgen.h"
 #include "renderer/levelrenderer.h"
 #include "pixel/framebuffer.h"
 #include "acceleretor/acceleretor.h"
 
-class SingleCPURenderer : public LevelRenderer {
+class MultiCPURendererThread;
+
+class MultiCPURenderer : public LevelRenderer {
 public:
-	SingleCPURenderer(const GameLevel *level);
-	~SingleCPURenderer();
+	MultiCPURenderer(const GameLevel *level);
+	~MultiCPURenderer();
 
 	void DrawFrame(const EditActionList &editActionList);
 
-	static Spectrum SampleImage(
-		const GameLevel *gameLevel,
-		RandomGenerator &rnd, const Accelerator &accel,
-		const unsigned int screenWidth, const unsigned int screenHeight,
-		const float screenX, const float screenY);
+	friend class MultiCPURendererThread;
 
 private:
+	size_t threadCount;
+	vector<MultiCPURendererThread *> renderThread;
+	boost::barrier *barrier;
 
-	RandomGenerator rnd;
-
-	FrameBuffer *passFrameBuffer;
-	FrameBuffer *filterFrameBuffer;
+	vector<FrameBuffer *> passFrameBuffer;
+	vector<FrameBuffer *> filterFrameBuffer;
 	FrameBuffer *frameBuffer;
 	FrameBuffer *toneMapFrameBuffer;
+
+	Accelerator *accel;
 
 	double timeSinceLastCameraEdit, timeSinceLastNoCameraEdit;
 };
 
-#endif	/* _SFERA_SINGLECPURENDERER_H */
+class MultiCPURendererThread {
+public:
+	MultiCPURendererThread(const size_t threadIndex, MultiCPURenderer *multiCPURenderer);
+	~MultiCPURendererThread();
+
+	void Start();
+	void Stop();
+
+private:
+	static void MultiCPURenderThreadImpl(MultiCPURendererThread *renderThread);
+
+	size_t index;
+	boost::thread *renderThread;
+
+	MultiCPURenderer *renderer;
+	RandomGenerator rnd;
+};
+
+#endif	/* _SFERA_MULTICPURENDERER_H */

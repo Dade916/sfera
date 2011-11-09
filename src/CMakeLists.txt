@@ -56,6 +56,7 @@ set(Sfera_SRCS
 	pixel/framebuffer.cpp
 	pixel/tonemap.cpp
 	renderer/cpu/singlecpurenderer.cpp
+	renderer/cpu/multicpurenderer.cpp
 	physic/gamephysic.cpp
 	sdl/camera.cpp
 	sdl/light.cpp
