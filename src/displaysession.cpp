@@ -44,7 +44,7 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 	if (TTF_Init() < 0)
 		throw runtime_error("Unable to initialize SDL TrueType library");
 
-	font = TTF_OpenFont("gamedata/fonts/Vera.ttf", 12);
+	font = TTF_OpenFont("gamedata/fonts/Vera.ttf", 24);
 	if (!font)
 		throw runtime_error("Unable to open gamedata/fonts/Vera.ttf font file");
 
@@ -80,7 +80,6 @@ DisplaySession::~DisplaySession() {
 void DisplaySession::RenderText(const string &text, const unsigned int x, const unsigned int y) const {
 	static SDL_Color white = { 255, 255, 255 };
 	SDL_Surface *initial = TTF_RenderText_Blended(font, text.c_str(), white);
-
 
 	int w = RoundUpPow2(initial->w);
 	int h = RoundUpPow2(initial->h);
@@ -266,8 +265,11 @@ void DisplaySession::RunLoop() {
 		renderer.DrawFrame(editActionList);
 
 		// Draw text
+		glBlendFunc(GL_ONE, GL_ONE);
+		glEnable(GL_BLEND);
 		glColor3f(1.0f, 0.0f, 0.0f);
-		RenderText("Test 123 !!", 50, 100);
+		RenderText("Test 123 !!", 0, 0);
+		glDisable(GL_BLEND);
 
 		SDL_GL_SwapBuffers();
 

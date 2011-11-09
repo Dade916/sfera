@@ -115,13 +115,11 @@ void MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	// Merge all thread frames
 	//--------------------------------------------------------------------------
 
-	const float invThreadCount = 1.f / threadCount;
-	for (size_t i = 0; i < threadCount; ++i) {
+	for (size_t i = 1; i < threadCount; ++i) {
 		for (unsigned int y = 0; y < height; ++y) {
 			for (unsigned int x = 0; x < width; ++x) {
-				Pixel p = *(passFrameBuffer[i]->GetPixel(x, y));
-				p *= invThreadCount;
-				passFrameBuffer[0]->AddPixel(x, y, p);
+				const Pixel *p = passFrameBuffer[i]->GetPixel(x, y);
+				passFrameBuffer[0]->AddPixel(x, y, *p);
 			}
 		}
 	}
@@ -204,6 +202,7 @@ void MultiCPURendererThread::MultiCPURenderThreadImpl(MultiCPURendererThread *re
 		const unsigned int width = gameConfig.GetScreenWidth();
 		const unsigned int height = gameConfig.GetScreenHeight();
 		const unsigned int samplePerPass = gameConfig.GetRendererSamplePerPass();
+		const float sampleScale = 1.f / (samplePerPass * renderThread->renderer->threadCount);
 
 		while (!boost::this_thread::interruption_requested()) {
 			renderThread->renderer->barrier->wait();
@@ -212,7 +211,6 @@ void MultiCPURendererThread::MultiCPURenderThreadImpl(MultiCPURendererThread *re
 			// Render
 			//--------------------------------------------------------------------------
 
-			const float sampleScale = 1.f / samplePerPass;
 			for (unsigned int i = 0; i < samplePerPass; ++i) {
 				for (unsigned int y = 0; y < height; ++y) {
 					for (unsigned int x = 0; x < width; ++x) {
