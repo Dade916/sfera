@@ -95,6 +95,10 @@ if (NOT SDL_FOUND)
 	MESSAGE(FATAL_ERROR "--> Could not locate required SDL files - Please check ${SDL_SEARCH_PATH}")
 endif()
 
+if (NOT SDLTTF_FOUND)
+	MESSAGE(FATAL_ERROR "--> Could not locate required SDL TTF files - Please check ${SDLTTF_SEARCH_PATH}")
+endif()
+
 if (NOT BULLET_FOUND)
 	MESSAGE(FATAL_ERROR "--> Could not locate required Bullet Physics files - Please check ${BULLET_SEARCH_PATH}")
 endif()

@@ -41,6 +41,12 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 		throw runtime_error("Unable to initialize SDL");
+	if (TTF_Init() < 0)
+		throw runtime_error("Unable to initialize SDL TrueType library");
+
+	font = TTF_OpenFont("gamedata/fonts/Vera.ttf", 12);
+	if (!font)
+		throw runtime_error("Unable to open gamedata/fonts/Vera.ttf font file");
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
@@ -53,9 +59,9 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 	SDL_putenv((char *)"SDL_VIDEO_CENTERED=center");
 	SDL_WM_SetCaption(SFERA_LABEL.c_str(), NULL);
 
-	SDL_Surface *surface = SDL_SetVideoMode(width, height, 32,
+	screenSurface = SDL_SetVideoMode(width, height, 32,
 			SDL_HWSURFACE | SDL_OPENGL);
-	if (!surface)
+	if (!screenSurface)
 		throw runtime_error("Unable to create SDL window");
 
 	glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -69,6 +75,48 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 }
 
 DisplaySession::~DisplaySession() {
+}
+
+void DisplaySession::RenderText(const string &text, const unsigned int x, const unsigned int y) const {
+	static SDL_Color white = { 255, 255, 255 };
+	SDL_Surface *initial = TTF_RenderText_Blended(font, text.c_str(), white);
+
+
+	int w = RoundUpPow2(initial->w);
+	int h = RoundUpPow2(initial->h);
+	SDL_Surface *intermediary = SDL_CreateRGBSurface(0, w, h, 32,
+			0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+
+	SDL_BlitSurface(initial, 0, intermediary, 0);
+
+	GLuint texture;
+	glGenTextures(1, (GLuint *)&texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, 4, w, h, 0, GL_BGRA,
+			GL_UNSIGNED_BYTE, intermediary->pixels);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex2f(x, y);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex2f(x + w, y);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex2f(x + w, y + h);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex2f(x, y + h);
+	glEnd();
+
+	glFinish();
+
+	SDL_FreeSurface(initial);
+	SDL_FreeSurface(intermediary);
+	glDeleteTextures(1, (GLuint *)&texture);
 }
 
 void DisplaySession::RunLoop() {
@@ -217,6 +265,10 @@ void DisplaySession::RunLoop() {
 
 		renderer.DrawFrame(editActionList);
 
+		// Draw text
+		glColor3f(1.0f, 0.0f, 0.0f);
+		RenderText("Test 123 !!", 50, 100);
+
 		SDL_GL_SwapBuffers();
 
 		const double t2 = WallClockTime();
@@ -240,5 +292,8 @@ void DisplaySession::RunLoop() {
 	SFERA_LOG("Done.");
 
 	physicThread.Stop();
+
+	TTF_CloseFont(font);
+	TTF_Quit();
 	SDL_Quit();
 }

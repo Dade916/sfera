@@ -34,6 +34,11 @@ public:
 	const GameConfig *gameConfig;
 
 private:
+	void RenderText(const string &text, const unsigned int x, const unsigned int y) const;
+
+	SDL_Surface *screenSurface;
+	TTF_Font *font;
+
 	float startViewTheta, startViewPhi, startViewDistance;
 	int mouseStartX, mouseStartY;
 	bool leftMouseDown, rightMouseDown;

@@ -91,6 +91,15 @@ if (SDL_FOUND)
   include_directories(${SDL_INCLUDE_PATH})
 endif ()
 
+set(SDLTTF_ROOT                  "${SDLTTF_SEARCH_PATH}")
+
+find_package(SDL_ttf)
+
+# SDL TTF
+if (SDLTTF_FOUND)
+  include_directories(${SDLTTF_INCLUDE_PATH})
+endif ()
+
 ################################################################################
 
 if (NOT SFERA_DISABLE_OPENCL)
