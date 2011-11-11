@@ -47,6 +47,9 @@ public:
 
 	void SetGravity(const Vector g) { gravity = g; up = Normalize(-gravity);}
 
+	float forwardSpeed;
+	float jumpSpeed;
+
 	GameSphere body;
 
 	Vector gravity; // Physic engine writes, other read

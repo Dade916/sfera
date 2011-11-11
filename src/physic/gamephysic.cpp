@@ -140,12 +140,14 @@ void GamePhysic::DoStep() {
 	player.UpdateLocalCoordSystem();
 
 	// Apply user inputs
-	if (player.inputGoForward)
+	if (player.inputGoForward) {
+		const Vector forward =  player.forwardSpeed * player.front;
+
 		playerRigidBody->applyCentralForce(btVector3(
-			.9f * player.front.x,
-			.9f * player.front.y,
-			.9f * player.front.z));
-	else
+			forward.x,
+			forward.y,
+			forward.z));
+	} else
 		playerRigidBody->clearForces();
 
 	if (player.inputSlowDown)
@@ -159,11 +161,12 @@ void GamePhysic::DoStep() {
 
 	if (player.inputJump) {
 		player.inputJump = false;
+		const Vector jump =  player.jumpSpeed * player.up;
 
 		playerRigidBody->applyCentralImpulse(btVector3(
-			3.0f * player.up.x,
-			3.0f * player.up.y,
-			3.0f * player.up.z));
+			jump.x,
+			jump.y,
+			jump.z));
 	}
 }
 

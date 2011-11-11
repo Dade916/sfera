@@ -24,6 +24,9 @@
 #include "physic/gamephysic.h"
 
 GamePlayer::GamePlayer(const Properties &prop)  {
+	forwardSpeed = prop.GetFloat("player.forwardspeed", 1.5f);
+	jumpSpeed = prop.GetFloat("player.jumpspeed", 5.f);
+
 	const std::vector<float> vf = Properties::GetParameters(prop, "player.body.position", 3, "0.0 0.0 0.0");
 	body.sphere.center = Point(vf[0], vf[1], vf[2]);
 
@@ -32,7 +35,6 @@ GamePlayer::GamePlayer(const Properties &prop)  {
 	body.linearDamping = prop.GetFloat("player.body.mass", 1.f);
 	body.angularDamping = prop.GetFloat("player.body.mass", 1.f);
 	body.linearDamping = prop.GetFloat("player.body.lineardamping", PHYSIC_DEFAULT_ANGULAR_DAMPING);
-	body.angularDamping = prop.GetFloat("player.body.angulardamping", PHYSIC_DEFAULT_LINEAR_DAMPING);
 	body.staticObject = false;
 	body.attractorObject = false;
 
