@@ -38,16 +38,17 @@ MultiCPURenderer::MultiCPURenderer(const GameLevel *level) :
 
 	// Initialize all frame buffers
 	for (size_t i = 0; i < threadCount; ++i) {
-		passFrameBuffer.push_back(new FrameBuffer(width, height));
-		filterFrameBuffer.push_back(new FrameBuffer(width, height));
-
-		passFrameBuffer[i]->Clear();
-		filterFrameBuffer[i]->Clear();
+		threadPassFrameBuffer.push_back(new FrameBuffer(width, height / threadCount));
+		threadPassFrameBuffer[i]->Clear();
 	}
 
+	passFrameBuffer = new FrameBuffer(width, height);
+	filterFrameBuffer = new FrameBuffer(width, height);
 	frameBuffer = new FrameBuffer(width, height);
 	toneMapFrameBuffer = new FrameBuffer(width, height);
 
+	passFrameBuffer->Clear();
+	frameBuffer->Clear();
 	frameBuffer->Clear();
 	toneMapFrameBuffer->Clear();
 
@@ -69,18 +70,19 @@ MultiCPURenderer::~MultiCPURenderer() {
 		delete renderThread[i];
 	}
 
-	for (size_t i = 0; i < threadCount; ++i) {
-		delete passFrameBuffer[i];
-		delete filterFrameBuffer[i];
-	}
+	for (size_t i = 0; i < threadCount; ++i)
+		delete threadPassFrameBuffer[i];
 
+	delete passFrameBuffer;
+	delete filterFrameBuffer;
 	delete frameBuffer;
 	delete toneMapFrameBuffer;
 }
 
 void MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
-	const unsigned int width = gameLevel->gameConfig->GetScreenWidth();
-	const unsigned int height = gameLevel->gameConfig->GetScreenHeight();
+	const GameConfig &gameConfig(*(gameLevel->gameConfig));
+	const unsigned int width = gameConfig.GetScreenWidth();
+	const unsigned int height = gameConfig.GetScreenHeight();
 
 	//--------------------------------------------------------------------------
 	// Build the Accelerator
@@ -115,15 +117,42 @@ void MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	// Merge all thread frames
 	//--------------------------------------------------------------------------
 
-	for (size_t i = 1; i < threadCount; ++i) {
-		for (unsigned int y = 0; y < height; ++y) {
-			for (unsigned int x = 0; x < width; ++x) {
-				const Pixel *p = passFrameBuffer[i]->GetPixel(x, y);
-				passFrameBuffer[0]->AddPixel(x, y, *p);
-			}
-		}
+	for (unsigned int y = 0; y < height; ++y) {
+		const Pixel *p = threadPassFrameBuffer[y % threadCount]->GetPixel(0, y / threadCount);
+
+		for (unsigned int x = 0; x < width; ++x)
+			passFrameBuffer->SetPixel(x, y, *p++);
 	}
 
+	//--------------------------------------------------------------------------
+	// Apply a gaussian filter: approximated by applying a box filter multiple times
+	//--------------------------------------------------------------------------
+
+	switch (gameConfig.GetRendererFilterType()) {
+		case NO_FILTER:
+			break;
+		case BLUR_LIGHT: {
+			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+			for (unsigned int i = 0; i < filterPassCount; ++i)
+				FrameBuffer::ApplyBlurLightFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
+						width, height);
+			break;
+		}
+		case BLUR_HEAVY: {
+			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+			for (unsigned int i = 0; i < filterPassCount; ++i)
+				FrameBuffer::ApplyBlurHeavyFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
+						width, height);
+			break;
+		}
+		case BOX: {
+			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+			for (unsigned int i = 0; i < filterPassCount; ++i)
+				FrameBuffer::ApplyBoxFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
+						width, height, gameConfig.GetRendererFilterRaidus());
+			break;
+		}
+	}
 	//--------------------------------------------------------------------------
 	// Blend the new frame with the old one
 	//--------------------------------------------------------------------------
@@ -141,13 +170,12 @@ void MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
 		k = dt / 5.f;
 	}
 
-	const GameConfig &gameConfig(*(gameLevel->gameConfig));
 	const float blendFactor = (1.f - k) * gameConfig.GetRendererGhostFactorCameraEdit() +
 		k * gameConfig.GetRendererGhostFactorNoCameraEdit();
 
 	for (unsigned int y = 0; y < height; ++y) {
 		for (unsigned int x = 0; x < width; ++x) {
-			const Pixel *p = passFrameBuffer[0]->GetPixel(x, y);
+			const Pixel *p = passFrameBuffer->GetPixel(x, y);
 			frameBuffer->BlendPixel(x, y, *p, blendFactor);
 		}
 	}
@@ -195,24 +223,24 @@ void MultiCPURendererThread::MultiCPURenderThreadImpl(MultiCPURendererThread *re
 		const size_t index = renderThread->index;
 		RandomGenerator &rnd(renderThread->rnd);
 		const GameLevel *gameLevel = renderThread->renderer->gameLevel;
-		FrameBuffer *passFrameBuffer = renderThread->renderer->passFrameBuffer[index];
-		FrameBuffer *filterFrameBuffer = renderThread->renderer->filterFrameBuffer[index];
+		FrameBuffer *threadPassFrameBuffer = renderThread->renderer->threadPassFrameBuffer[index];
 
 		const GameConfig &gameConfig(*(gameLevel->gameConfig));
 		const unsigned int width = gameConfig.GetScreenWidth();
 		const unsigned int height = gameConfig.GetScreenHeight();
 		const unsigned int samplePerPass = gameConfig.GetRendererSamplePerPass();
-		const float sampleScale = 1.f / (samplePerPass * renderThread->renderer->threadCount);
+		const size_t threadCount = renderThread->renderer->threadCount;
+		const float sampleScale = 1.f / samplePerPass;
 
 		while (!boost::this_thread::interruption_requested()) {
 			renderThread->renderer->barrier->wait();
 
-			//--------------------------------------------------------------------------
+			//------------------------------------------------------------------
 			// Render
-			//--------------------------------------------------------------------------
+			//------------------------------------------------------------------
 
 			for (unsigned int i = 0; i < samplePerPass; ++i) {
-				for (unsigned int y = 0; y < height; ++y) {
+				for (unsigned int y = index; y < height; y += threadCount) {
 					for (unsigned int x = 0; x < width; ++x) {
 						Spectrum s = SingleCPURenderer::SampleImage(gameLevel, rnd, *(renderThread->renderer->accel),
 								width, height,
@@ -220,40 +248,10 @@ void MultiCPURendererThread::MultiCPURenderThreadImpl(MultiCPURendererThread *re
 								sampleScale;
 
 						if (i == 0)
-							passFrameBuffer->SetPixel(x, y, s);
+							threadPassFrameBuffer->SetPixel(x, y / threadCount, s);
 						else
-							passFrameBuffer->AddPixel(x, y, s);
+							threadPassFrameBuffer->AddPixel(x, y / threadCount, s);
 					}
-				}
-			}
-
-			//--------------------------------------------------------------------------
-			// Apply a gaussian filter: approximated by applying a box filter multiple times
-			//--------------------------------------------------------------------------
-
-			switch (gameConfig.GetRendererFilterType()) {
-				case NO_FILTER:
-					break;
-				case BLUR_LIGHT: {
-					const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
-					for (unsigned int i = 0; i < filterPassCount; ++i)
-						FrameBuffer::ApplyBlurLightFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
-								width, height);
-					break;
-				}
-				case BLUR_HEAVY: {
-					const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
-					for (unsigned int i = 0; i < filterPassCount; ++i)
-						FrameBuffer::ApplyBlurHeavyFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
-								width, height);
-					break;
-				}
-				case BOX: {
-					const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
-					for (unsigned int i = 0; i < filterPassCount; ++i)
-						FrameBuffer::ApplyBoxFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
-								width, height, gameConfig.GetRendererFilterRaidus());
-					break;
 				}
 			}
 

@@ -42,8 +42,9 @@ private:
 	vector<MultiCPURendererThread *> renderThread;
 	boost::barrier *barrier;
 
-	vector<FrameBuffer *> passFrameBuffer;
-	vector<FrameBuffer *> filterFrameBuffer;
+	vector<FrameBuffer *> threadPassFrameBuffer;
+	FrameBuffer *passFrameBuffer;
+	FrameBuffer *filterFrameBuffer;
 	FrameBuffer *frameBuffer;
 	FrameBuffer *toneMapFrameBuffer;
 
