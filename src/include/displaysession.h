@@ -38,6 +38,7 @@ private:
 
 	SDL_Surface *screenSurface;
 	TTF_Font *font;
+	int fontSize;
 
 	float startViewTheta, startViewPhi, startViewDistance;
 	int mouseStartX, mouseStartY;

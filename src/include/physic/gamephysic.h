@@ -36,9 +36,13 @@ public:
 	GamePhysic(GameLevel *level);
 	~GamePhysic();
 
+	double GetRunningHz() const { return runningHz; }
+
 	void DoStep();
 
 	GameLevel *gameLevel;
+
+	friend class PhysicThread;
 
 private:
 	void UpdateGameSphere(GameSphere &gameSphere, btRigidBody *dynamicRigidBody);
@@ -59,6 +63,8 @@ private:
 	vector<size_t> dynamicRigidBodyIndices;
 
 	vector<size_t> gravitySphereIndices;
+
+	double runningHz;
 };
 
 class PhysicThread {

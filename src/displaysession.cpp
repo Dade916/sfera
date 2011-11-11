@@ -48,6 +48,11 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 	if (!font)
 		throw runtime_error("Unable to open " + gameConfig->GetScreenFontName() + " font file");
 
+	SDL_Color white = { 255, 255, 255 };
+	SDL_Surface *fontSizeTest = TTF_RenderText_Blended(font, "Test 123", white);
+	fontSize = fontSizeTest->h;
+	SDL_FreeSurface(fontSizeTest);
+
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
@@ -71,13 +76,16 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 	glViewport(0, 0, width, height);
 	glLoadIdentity();
 	glOrtho(0.f, width - 1.f,
-			0.f, height, -1.f, 1.f);
+			0.f, height - 1.f, -1.f, 1.f);
 }
 
 DisplaySession::~DisplaySession() {
 }
 
 void DisplaySession::RenderText(const string &text, const unsigned int x, const unsigned int y) const {
+	if (text.length() == 0)
+		return;
+
 	static SDL_Color white = { 255, 255, 255 };
 	SDL_Surface *initial = TTF_RenderText_Blended(font, text.c_str(), white);
 
@@ -108,7 +116,7 @@ void DisplaySession::RenderText(const string &text, const unsigned int x, const 
 	const int x0 = x;
 	const int y0 = y;
 	const int x1 = x + w;
-	const int y1 = x + h;
+	const int y1 = y + h;
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 1.0f);
 	glVertex2f(x0, y0);
@@ -143,8 +151,12 @@ void DisplaySession::RunLoop() {
 
 	unsigned int frame = 0;
 	double frameStartTime = WallClockTime();
+	unsigned long long totalSampleCount = 0;
 	const double refreshTime = 1.0 / gameConfig->GetScreenRefreshCap();
 	double currentRefreshTime = 0.0;
+	string topLabel = "";
+	string bottomLabel = "[Spheres 0/0][Time 00:00.00]";
+
 	bool quit = false;
 	double lastJumpTime = 0.0;
 	EditActionList editActionList;
@@ -270,13 +282,21 @@ void DisplaySession::RunLoop() {
 		if (currentLevel->camera->IsChangedSinceLastUpdate())
 			editActionList.AddAction(CAMERA_EDIT);
 
-		renderer.DrawFrame(editActionList);
+		totalSampleCount += renderer.DrawFrame(editActionList);
 
 		// Draw text
-		glBlendFunc(GL_ONE, GL_ONE);
 		glEnable(GL_BLEND);
-		glColor3f(1.0f, 0.0f, 0.0f);
-		RenderText("Test 123 !!", 0, 0);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glColor4f(0.f, 0.f, 0.f, 0.5f);
+		glRecti(0, 0,
+				gameConfig->GetScreenWidth() - 1, fontSize);
+		glRecti(0, gameConfig->GetScreenHeight() - fontSize - 1,
+				gameConfig->GetScreenWidth() - 1, gameConfig->GetScreenHeight() - 1);
+
+		glBlendFunc(GL_ONE, GL_ONE);		
+		glColor3f(1.0f, 1.0f, 1.0f);
+		RenderText(bottomLabel, 0, 0);
+		RenderText(topLabel, 0, gameConfig->GetScreenHeight() - fontSize - 1);
 		glDisable(GL_BLEND);
 
 		SDL_GL_SwapBuffers();
@@ -290,12 +310,20 @@ void DisplaySession::RunLoop() {
 		}
 
 		++frame;
-		if (frame == 30) {
+		if (frame == 60) {
 			const double now = WallClockTime();
-			SFERA_LOG("Frame/sec: " << fixed << setprecision(1) << (30.0 / (now - frameStartTime)));
+			const double dt = now - frameStartTime;
+			const double frameSec = 60.0 / dt;
+			const double sampleSec = totalSampleCount / dt;
+
+			stringstream ss;
+			ss << "[Sample/sec: " << fixed << setprecision(2) << (sampleSec / 100000) << "M sample/ses][Frame/sec: " << frameSec <<
+					"][Physic engine Hz: " << gamePhysic.GetRunningHz() << "]";
+			topLabel = ss.str();
 
 			frameStartTime = now;
 			frame = 0;
+			totalSampleCount = 0;
 		}
 	} while(!quit);
 

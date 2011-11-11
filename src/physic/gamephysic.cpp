@@ -25,6 +25,8 @@
 //------------------------------------------------------------------------------
 
 GamePhysic::GamePhysic(GameLevel *level) : gameLevel(level) {
+	runningHz = gameLevel->gameConfig->GetPhysicRefreshRate();
+
 	// Initialize Bullet Physics Engine
 	broadphase = new btDbvtBroadphase();
 	collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -210,9 +212,9 @@ void PhysicThread::PhysicThreadImpl(PhysicThread *physicThread) {
 			}
 
 			++frame;
-			if (frame == 300) {
+			if (frame == 240) {
 				const double now = WallClockTime();
-				SFERA_LOG("Physic engine Hz: " << fixed << setprecision(1) << (300.0 / (now - frameStartTime)));
+				physicThread->gamePhysic->runningHz = 240.0 / (now - frameStartTime);
 
 				frameStartTime = now;
 				frame = 0;
