@@ -32,7 +32,7 @@ public:
 	SingleCPURenderer(const GameLevel *level);
 	~SingleCPURenderer();
 
-	void DrawFrame(const EditActionList &editActionList);
+	size_t DrawFrame(const EditActionList &editActionList);
 
 	static Spectrum SampleImage(
 		const GameLevel *gameLevel,

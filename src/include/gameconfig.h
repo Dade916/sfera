@@ -41,6 +41,9 @@ public:
 	unsigned int GetScreenWidth() const { return screenWidth; }
 	unsigned int GetScreenHeight() const { return screenHeight; }
 	unsigned int GetScreenRefreshCap() const { return screenRefreshCap; }
+	string GetScreenFontName() const { return screenFontName; }
+	unsigned int GetScreenFontSize() const { return screenFontSize; }
+
 	unsigned int GetPhysicRefreshRate() const { return physicRefreshRate; }
 
 	// Renderer parameters
@@ -59,6 +62,10 @@ private:
 	const static string SCREEN_HEIGHT_DEFAULT;
 	const static string SCREEN_REFRESH_CAP;
 	const static string SCREEN_REFRESH_CAP_DEFAULT;
+	const static string SCREEN_FONT_NAME;
+	const static string SCREEN_FONT_NAME_DEFAULT;
+	const static string SCREEN_FONT_SIZE;
+	const static string SCREEN_FONT_SIZE_DEFAULT;
 	const static string PHYSIC_REFRESH_RATE;
 	const static string PHYSIC_REFRESH_RATE_DEFAULT;
 	const static string RENDERER_SAMPLEPERPASS;
@@ -83,6 +90,8 @@ private:
 	unsigned int screenWidth;
 	unsigned int screenHeight;
 	unsigned int screenRefreshCap;
+	string screenFontName;
+	unsigned int screenFontSize;
 	unsigned int physicRefreshRate;
 
 	unsigned int rendererSamplePerPass;

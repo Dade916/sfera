@@ -29,7 +29,7 @@ public:
 	LevelRenderer(const GameLevel *level) : gameLevel(level) { }
 	~LevelRenderer() { }
 
-	virtual void DrawFrame(const EditActionList &editActionList) = 0;
+	virtual size_t DrawFrame(const EditActionList &editActionList) = 0;
 
 	const GameLevel *gameLevel;
 };

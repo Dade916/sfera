@@ -142,7 +142,7 @@ Spectrum SingleCPURenderer::SampleImage(
 	}
 }
 
-void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
+size_t SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	//--------------------------------------------------------------------------
 	// Build the Accelerator
 	//--------------------------------------------------------------------------
@@ -255,4 +255,6 @@ void SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	gameLevel->toneMap->Map(frameBuffer, toneMapFrameBuffer);
 
 	glDrawPixels(width, height, GL_RGB, GL_FLOAT, toneMapFrameBuffer->GetPixels());
+
+	return samplePerPass * width * height;
 }

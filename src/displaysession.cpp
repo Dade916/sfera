@@ -44,9 +44,9 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 	if (TTF_Init() < 0)
 		throw runtime_error("Unable to initialize SDL TrueType library");
 
-	font = TTF_OpenFont("gamedata/fonts/Vera.ttf", 24);
+	font = TTF_OpenFont(gameConfig->GetScreenFontName().c_str(), gameConfig->GetScreenFontSize());
 	if (!font)
-		throw runtime_error("Unable to open gamedata/fonts/Vera.ttf font file");
+		throw runtime_error("Unable to open " + gameConfig->GetScreenFontName() + " font file");
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
@@ -81,12 +81,17 @@ void DisplaySession::RenderText(const string &text, const unsigned int x, const 
 	static SDL_Color white = { 255, 255, 255 };
 	SDL_Surface *initial = TTF_RenderText_Blended(font, text.c_str(), white);
 
-	int w = RoundUpPow2(initial->w);
-	int h = RoundUpPow2(initial->h);
+	const int w = RoundUpPow2(initial->w);
+	const int h = RoundUpPow2(initial->h);
 	SDL_Surface *intermediary = SDL_CreateRGBSurface(0, w, h, 32,
 			0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
 
-	SDL_BlitSurface(initial, 0, intermediary, 0);
+	SDL_Rect dest;
+	dest.x = 0;
+	dest.y = h - initial->h;
+	dest.w = initial->w;
+	dest.h = initial->h;
+	SDL_BlitSurface(initial, 0, intermediary, &dest);
 
 	GLuint texture;
 	glGenTextures(1, (GLuint *)&texture);
@@ -100,17 +105,20 @@ void DisplaySession::RenderText(const string &text, const unsigned int x, const 
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, texture);
 
+	const int x0 = x;
+	const int y0 = y;
+	const int x1 = x + w;
+	const int y1 = x + h;
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 1.0f);
-	glVertex2f(x, y);
+	glVertex2f(x0, y0);
 	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(x + w, y);
+	glVertex2f(x1, y0);
 	glTexCoord2f(1.0f, 0.0f);
-	glVertex2f(x + w, y + h);
+	glVertex2f(x1, y1);
 	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(x, y + h);
+	glVertex2f(x0, y1);
 	glEnd();
-
 	glFinish();
 
 	SDL_FreeSurface(initial);

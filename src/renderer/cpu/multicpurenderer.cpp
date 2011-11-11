@@ -79,7 +79,7 @@ MultiCPURenderer::~MultiCPURenderer() {
 	delete toneMapFrameBuffer;
 }
 
-void MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
+size_t MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	const GameConfig &gameConfig(*(gameLevel->gameConfig));
 	const unsigned int width = gameConfig.GetScreenWidth();
 	const unsigned int height = gameConfig.GetScreenHeight();
@@ -189,6 +189,8 @@ void MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	glDrawPixels(width, height, GL_RGB, GL_FLOAT, toneMapFrameBuffer->GetPixels());
 
 	delete accel;
+
+	return gameConfig.GetRendererSamplePerPass() * width * height;
 }
 
 //------------------------------------------------------------------------------

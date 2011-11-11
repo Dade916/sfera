@@ -26,6 +26,10 @@ const string GameConfig::SCREEN_HEIGHT = "screen.height";
 const string GameConfig::SCREEN_HEIGHT_DEFAULT = "360";
 const string GameConfig::SCREEN_REFRESH_CAP = "screen.refresh.cap";
 const string GameConfig::SCREEN_REFRESH_CAP_DEFAULT = "30";
+const string GameConfig::SCREEN_FONT_NAME = "screen.font.name";
+const string GameConfig::SCREEN_FONT_NAME_DEFAULT = "gamedata/fonts/Vera.ttf";
+const string GameConfig::SCREEN_FONT_SIZE = "screen.font.size";
+const string GameConfig::SCREEN_FONT_SIZE_DEFAULT = "14";
 const string GameConfig::PHYSIC_REFRESH_RATE = "physic.refresh.rate";
 const string GameConfig::PHYSIC_REFRESH_RATE_DEFAULT = "60";
 const string GameConfig::RENDERER_SAMPLEPERPASS = "renderer.sampleperpass";
@@ -79,6 +83,8 @@ void GameConfig::InitValues() {
 	cfg.SetString(SCREEN_WIDTH, SCREEN_WIDTH_DEFAULT);
 	cfg.SetString(SCREEN_HEIGHT, SCREEN_HEIGHT_DEFAULT);
 	cfg.SetString(SCREEN_REFRESH_CAP, SCREEN_REFRESH_CAP_DEFAULT);
+	cfg.SetString(SCREEN_FONT_NAME, SCREEN_FONT_NAME_DEFAULT);
+	cfg.SetString(SCREEN_FONT_SIZE, SCREEN_FONT_SIZE_DEFAULT);
 	cfg.SetString(PHYSIC_REFRESH_RATE, PHYSIC_REFRESH_RATE_DEFAULT);
 	cfg.SetString(RENDERER_SAMPLEPERPASS, RENDERER_SAMPLEPERPASS_DEFAULT);
 	cfg.SetString(RENDERER_GHOSTFACTOR_CAMERAEDIT, RENDERER_GHOSTFACTOR_CAMERAEDIT_DEFAULT);
@@ -92,6 +98,9 @@ void GameConfig::InitCachedValues() {
 	screenWidth = (unsigned int)cfg.GetInt(SCREEN_WIDTH, atoi(SCREEN_WIDTH_DEFAULT.c_str()));
 	screenHeight = (unsigned int)cfg.GetInt(SCREEN_HEIGHT, atoi(SCREEN_HEIGHT_DEFAULT.c_str()));
 	screenRefreshCap = (unsigned int)cfg.GetInt(SCREEN_REFRESH_CAP, atoi(SCREEN_REFRESH_CAP_DEFAULT.c_str()));
+	screenFontName = cfg.GetString(SCREEN_FONT_NAME, SCREEN_FONT_NAME_DEFAULT);
+	screenFontSize = (unsigned int)cfg.GetInt(SCREEN_FONT_SIZE, atoi(SCREEN_FONT_SIZE_DEFAULT.c_str()));
+
 	physicRefreshRate = (unsigned int)cfg.GetInt(PHYSIC_REFRESH_RATE, atoi(PHYSIC_REFRESH_RATE_DEFAULT.c_str()));
 
 	rendererSamplePerPass = (unsigned int)cfg.GetInt(RENDERER_SAMPLEPERPASS, atoi(RENDERER_SAMPLEPERPASS_DEFAULT.c_str()));
