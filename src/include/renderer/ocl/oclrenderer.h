@@ -18,52 +18,46 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_MULTICPURENDERER_H
-#define	_SFERA_MULTICPURENDERER_H
+#ifndef _SFERA_OCLRENDERER_H
+#define	_SFERA_OCLRENDERER_H
 
-#include "utils/randomgen.h"
+#if !defined(SFERA_DISABLE_OPENCL)
+
+#include "gamelevel.h"
 #include "renderer/levelrenderer.h"
 #include "pixel/framebuffer.h"
-#include "acceleretor/acceleretor.h"
-#include "renderer/cpu/cpurenderer.h"
 
-class MultiCPURendererThread;
-
-class MultiCPURenderer : public CPURenderer {
+class OCLRenderer : public LevelRenderer {
 public:
-	MultiCPURenderer(const GameLevel *level);
-	~MultiCPURenderer();
+	OCLRenderer(const GameLevel *level);
+	~OCLRenderer();
 
 	size_t DrawFrame(const EditActionList &editActionList);
 
-	friend class MultiCPURendererThread;
+protected:
+	void AllocOCLBufferRO(cl::Buffer **buff, void *src, const size_t size, const string &desc);
+	void AllocOCLBufferRW(cl::Buffer **buff, const size_t size, const string &desc);
+	void FreeOCLBuffer(cl::Buffer **buff);
 
-private:
-	size_t threadCount;
-	vector<MultiCPURendererThread *> renderThread;
-	boost::barrier *barrier;
+	cl::Device dev;
+	cl::Context *ctx;
+	cl::CommandQueue *cmdQueue;
 
-	vector<FrameBuffer *> threadPassFrameBuffer;
+	cl::Kernel *kernelInitToneMapFB;
+	cl::Kernel *kernelUpdatePixelBuffer;
 
-	Accelerator *accel;
+	cl::Buffer *toneMapFrameBuffer;
+
+	GLuint pbo;
+	cl::BufferGL *pboBuff;
+
+	size_t usedDeviceMemory;
+
+	FrameBuffer *frameBuffer;
+
+	double timeSinceLastCameraEdit, timeSinceLastNoCameraEdit;
 };
 
-class MultiCPURendererThread {
-public:
-	MultiCPURendererThread(const size_t threadIndex, MultiCPURenderer *multiCPURenderer);
-	~MultiCPURendererThread();
+#endif
 
-	void Start();
-	void Stop();
-
-private:
-	static void MultiCPURenderThreadImpl(MultiCPURendererThread *renderThread);
-
-	size_t index;
-	boost::thread *renderThread;
-
-	MultiCPURenderer *renderer;
-	RandomGenerator rnd;
-};
-
-#endif	/* _SFERA_MULTICPURENDERER_H */
+#endif	/* _SFERA_OCLRENDERER_H */

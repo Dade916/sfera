@@ -21,13 +21,17 @@
 #ifndef _SFERA_OCL_UTILS_H
 #define	_SFERA_OCL_UTILS_H
 
+#if !defined(SFERA_DISABLE_OPENCL)
+
 #include <string>
 #include <map>
 
 #include "sfera.h"
 
-#if !defined(SFERA_DISABLE_OPENCL)
-extern std::string OCLErrorString(cl_int error);
+extern string OCLLocalMemoryTypeString(cl_device_local_mem_type type);
+extern string OCLDeviceTypeString(cl_device_type type);
+extern string OCLErrorString(cl_int error);
+
 #endif
 
 #endif	/* _SFERA_OCL_UTILS_H */

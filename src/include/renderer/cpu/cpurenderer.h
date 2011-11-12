@@ -18,52 +18,39 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_MULTICPURENDERER_H
-#define	_SFERA_MULTICPURENDERER_H
+#ifndef _SFERA_CPURENDERER_H
+#define	_SFERA_CPURENDERER_H
 
+#include "gamelevel.h"
 #include "utils/randomgen.h"
 #include "renderer/levelrenderer.h"
 #include "pixel/framebuffer.h"
 #include "acceleretor/acceleretor.h"
-#include "renderer/cpu/cpurenderer.h"
+#include "acceleretor/bvhaccel.h"
 
-class MultiCPURendererThread;
-
-class MultiCPURenderer : public CPURenderer {
+class CPURenderer : public LevelRenderer {
 public:
-	MultiCPURenderer(const GameLevel *level);
-	~MultiCPURenderer();
+	CPURenderer(const GameLevel *level);
+	~CPURenderer();
 
-	size_t DrawFrame(const EditActionList &editActionList);
+	virtual size_t DrawFrame(const EditActionList &editActionList) = 0;
 
-	friend class MultiCPURendererThread;
+protected:
+	BVHAccel *BuildAcceleretor();
+	Spectrum SampleImage(
+		RandomGenerator &rnd, const Accelerator &accel,
+		const float screenX, const float screenY);
+	void ApplyFilter();
+	void BlendFrame(const EditActionList &editActionList);
+	void ApplyToneMapping();
+	void CopyFrame();
 
-private:
-	size_t threadCount;
-	vector<MultiCPURendererThread *> renderThread;
-	boost::barrier *barrier;
+	FrameBuffer *passFrameBuffer;
+	FrameBuffer *filterFrameBuffer;
+	FrameBuffer *frameBuffer;
+	FrameBuffer *toneMapFrameBuffer;
 
-	vector<FrameBuffer *> threadPassFrameBuffer;
-
-	Accelerator *accel;
+	double timeSinceLastCameraEdit, timeSinceLastNoCameraEdit;
 };
 
-class MultiCPURendererThread {
-public:
-	MultiCPURendererThread(const size_t threadIndex, MultiCPURenderer *multiCPURenderer);
-	~MultiCPURendererThread();
-
-	void Start();
-	void Stop();
-
-private:
-	static void MultiCPURenderThreadImpl(MultiCPURendererThread *renderThread);
-
-	size_t index;
-	boost::thread *renderThread;
-
-	MultiCPURenderer *renderer;
-	RandomGenerator rnd;
-};
-
-#endif	/* _SFERA_MULTICPURENDERER_H */
+#endif	/* _SFERA_CPURENDERER_H */

@@ -18,52 +18,17 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_MULTICPURENDERER_H
-#define	_SFERA_MULTICPURENDERER_H
+#ifndef _SFERA_KERNELS_H
+#define	_SFERA_KERNELS_H
 
-#include "utils/randomgen.h"
-#include "renderer/levelrenderer.h"
-#include "pixel/framebuffer.h"
-#include "acceleretor/acceleretor.h"
-#include "renderer/cpu/cpurenderer.h"
+#if !defined(SFERA_DISABLE_OPENCL)
 
-class MultiCPURendererThread;
+#include <string>
 
-class MultiCPURenderer : public CPURenderer {
-public:
-	MultiCPURenderer(const GameLevel *level);
-	~MultiCPURenderer();
+#include "sfera.h"
 
-	size_t DrawFrame(const EditActionList &editActionList);
+extern string KernelSource_kernel_core;
 
-	friend class MultiCPURendererThread;
+#endif
 
-private:
-	size_t threadCount;
-	vector<MultiCPURendererThread *> renderThread;
-	boost::barrier *barrier;
-
-	vector<FrameBuffer *> threadPassFrameBuffer;
-
-	Accelerator *accel;
-};
-
-class MultiCPURendererThread {
-public:
-	MultiCPURendererThread(const size_t threadIndex, MultiCPURenderer *multiCPURenderer);
-	~MultiCPURendererThread();
-
-	void Start();
-	void Stop();
-
-private:
-	static void MultiCPURenderThreadImpl(MultiCPURendererThread *renderThread);
-
-	size_t index;
-	boost::thread *renderThread;
-
-	MultiCPURenderer *renderer;
-	RandomGenerator rnd;
-};
-
-#endif	/* _SFERA_MULTICPURENDERER_H */
+#endif	/* _SFERA_KERNELS_H */

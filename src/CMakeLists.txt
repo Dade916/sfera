@@ -35,6 +35,31 @@ configure_file(
 #
 ###########################################################################
 
+SET(KERNELS kernel_core)
+FOREACH(kernel ${KERNELS})
+	STRING(TOLOWER ${kernel} kernel_lowercase)
+
+	IF(WIN32)
+		add_custom_command(
+			OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
+			COMMAND echo "#include \"renderer/ocl/kernels/kernels.h\"" > ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
+			COMMAND echo string KernelSource_${kernel} = >> ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
+			COMMAND for /F \"tokens=*\" %%a in (${CMAKE_CURRENT_SOURCE_DIR}\\pathocl\\kernels\\${kernel_lowercase}.cl) do echo \"%%a\\n\" >> ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
+			COMMAND echo ";" >> ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
+			MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cl
+		)
+	ELSE(WIN32)
+		add_custom_command(
+			OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
+			COMMAND echo \"\#include \\"renderer/ocl/kernels/kernels.h\\"\" > ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
+			COMMAND echo "string KernelSource_${kernel} = " >> ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
+			COMMAND cat renderer/ocl/kernels/${kernel_lowercase}.cl | awk '{ printf \(\"\\"%s\\\\n\\"\\n\", $$0\) }' >> ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
+			COMMAND echo "\;" >> ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
+			MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cl
+		)
+	ENDIF(WIN32)
+ENDFOREACH(kernel)
+
 
 #############################################################################
 #
@@ -55,8 +80,11 @@ set(Sfera_SRCS
 	geometry/sphere.cpp
 	pixel/framebuffer.cpp
 	pixel/tonemap.cpp
+	renderer/cpu/cpurenderer.cpp
 	renderer/cpu/singlecpurenderer.cpp
 	renderer/cpu/multicpurenderer.cpp
+	renderer/ocl/kernels/kernel_core.cpp
+	renderer/ocl/oclrenderer.cpp
 	physic/gamephysic.cpp
 	sdl/camera.cpp
 	sdl/light.cpp
@@ -73,5 +101,5 @@ add_executable(Sfera ${Sfera_SRCS})
 TARGET_LINK_LIBRARIES(Sfera ${GLEW_LIBRARY} ${OPENGL_LIBRARY} ${SDL_LIBRARY} ${SDLTTF_LIBRARY} ${Boost_LIBRARIES} ${BULLET_LIBRARIES})
 TARGET_LINK_LIBRARIES(Sfera debug ${FreeImage_LIBRARY_DBG} optimized ${FreeImage_LIBRARY_REL} general ${FreeImage_LIBRARY_REL})
 if (NOT SFERA_DISABLE_OPENCL)
-	TARGET_LINK_LIBRARIES(Sfera ${OpenCL_LIBRARY})
-endif ()
+	TARGET_LINK_LIBRARIES(Sfera ${OPENCL_LIBRARY})
+endif()

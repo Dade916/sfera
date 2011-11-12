@@ -26,30 +26,17 @@
 #include "renderer/levelrenderer.h"
 #include "pixel/framebuffer.h"
 #include "acceleretor/acceleretor.h"
+#include "renderer/cpu/cpurenderer.h"
 
-class SingleCPURenderer : public LevelRenderer {
+class SingleCPURenderer : public CPURenderer {
 public:
 	SingleCPURenderer(const GameLevel *level);
 	~SingleCPURenderer();
 
 	size_t DrawFrame(const EditActionList &editActionList);
 
-	static Spectrum SampleImage(
-		const GameLevel *gameLevel,
-		RandomGenerator &rnd, const Accelerator &accel,
-		const unsigned int screenWidth, const unsigned int screenHeight,
-		const float screenX, const float screenY);
-
 private:
-
 	RandomGenerator rnd;
-
-	FrameBuffer *passFrameBuffer;
-	FrameBuffer *filterFrameBuffer;
-	FrameBuffer *frameBuffer;
-	FrameBuffer *toneMapFrameBuffer;
-
-	double timeSinceLastCameraEdit, timeSinceLastNoCameraEdit;
 };
 
 #endif	/* _SFERA_SINGLECPURENDERER_H */

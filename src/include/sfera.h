@@ -28,9 +28,11 @@
 #include <cstddef>
 
 #include <FreeImage.h>
+
+#include <GL/glew.h>
+
 #include <SDL/SDL.h>
 #include <SDL/SDL_video.h>
-#include <SDL/SDL_opengl.h>
 #include <SDL/SDL_ttf.h>
 
 #if defined(__linux__) || defined(__APPLE__) || defined(__CYGWIN__)
@@ -54,6 +56,8 @@
 #endif
 #endif
 
+using namespace std;
+
 #include "geometry/vector.h"
 #include "geometry/point.h"
 #include "geometry/normal.h"
@@ -64,10 +68,8 @@
 #include "utils/oclutils.h"
 #include "utils/properties.h"
 
-using namespace std;
-
 extern void SferaDebugHandler(const char *msg);
 
-#define SFERA_LOG(a) { std::stringstream _SFERA_LOG_LOCAL_SS; _SFERA_LOG_LOCAL_SS << a; SferaDebugHandler(_SFERA_LOG_LOCAL_SS.str().c_str()); }
+#define SFERA_LOG(a) { stringstream _SFERA_LOG_LOCAL_SS; _SFERA_LOG_LOCAL_SS << a; SferaDebugHandler(_SFERA_LOG_LOCAL_SS.str().c_str()); }
 
 #endif	/* _SFERA_H */

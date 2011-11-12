@@ -23,6 +23,7 @@
 #include "gamesession.h"
 #include "renderer/cpu/singlecpurenderer.h"
 #include "renderer/cpu/multicpurenderer.h"
+#include "renderer/ocl/oclrenderer.h"
 #include "physic/gamephysic.h"
 #include "sdl/editaction.h"
 
@@ -68,6 +69,10 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 			SDL_HWSURFACE | SDL_OPENGL);
 	if (!screenSurface)
 		throw runtime_error("Unable to create SDL window");
+
+	glewInit();
+	if (!glewIsSupported("GL_VERSION_2_0 " "GL_ARB_pixel_buffer_object"))
+		throw runtime_error("GL_ARB_pixel_buffer_object is not supported");
 
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -142,8 +147,9 @@ void DisplaySession::RunLoop() {
 	GamePhysic gamePhysic(currentLevel);
 	PhysicThread physicThread(&gamePhysic);
 
-	//SingleCPURenderer renderer(currentLevel);
-	MultiCPURenderer renderer(currentLevel);
+	//SingleCPURenderer *renderer = new SingleCPURenderer(currentLevel);
+	//MultiCPURenderer *renderer = new MultiCPURenderer(currentLevel);
+	OCLRenderer *renderer = new OCLRenderer(currentLevel);
 
 	// Start the game
 
@@ -282,7 +288,7 @@ void DisplaySession::RunLoop() {
 		if (currentLevel->camera->IsChangedSinceLastUpdate())
 			editActionList.AddAction(CAMERA_EDIT);
 
-		totalSampleCount += renderer.DrawFrame(editActionList);
+		totalSampleCount += renderer->DrawFrame(editActionList);
 
 		// Draw text
 		glEnable(GL_BLEND);
@@ -328,6 +334,8 @@ void DisplaySession::RunLoop() {
 	} while(!quit);
 
 	SFERA_LOG("Done.");
+
+	delete renderer;
 
 	physicThread.Stop();
 

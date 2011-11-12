@@ -28,9 +28,7 @@
 // MultiCPURenderer
 //------------------------------------------------------------------------------
 
-MultiCPURenderer::MultiCPURenderer(const GameLevel *level) :
-	LevelRenderer(level), timeSinceLastCameraEdit(WallClockTime()),
-		timeSinceLastNoCameraEdit(WallClockTime()) {
+MultiCPURenderer::MultiCPURenderer(const GameLevel *level) : CPURenderer(level) {
 	const unsigned int width = gameLevel->gameConfig->GetScreenWidth();
 	const unsigned int height = gameLevel->gameConfig->GetScreenHeight();
 
@@ -41,16 +39,6 @@ MultiCPURenderer::MultiCPURenderer(const GameLevel *level) :
 		threadPassFrameBuffer.push_back(new FrameBuffer(width, height / threadCount));
 		threadPassFrameBuffer[i]->Clear();
 	}
-
-	passFrameBuffer = new FrameBuffer(width, height);
-	filterFrameBuffer = new FrameBuffer(width, height);
-	frameBuffer = new FrameBuffer(width, height);
-	toneMapFrameBuffer = new FrameBuffer(width, height);
-
-	passFrameBuffer->Clear();
-	frameBuffer->Clear();
-	frameBuffer->Clear();
-	toneMapFrameBuffer->Clear();
 
 	// Create synchronization barrier
 	barrier = new boost::barrier(threadCount + 1);
@@ -72,11 +60,6 @@ MultiCPURenderer::~MultiCPURenderer() {
 
 	for (size_t i = 0; i < threadCount; ++i)
 		delete threadPassFrameBuffer[i];
-
-	delete passFrameBuffer;
-	delete filterFrameBuffer;
-	delete frameBuffer;
-	delete toneMapFrameBuffer;
 }
 
 size_t MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
@@ -88,25 +71,10 @@ size_t MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	// Build the Accelerator
 	//--------------------------------------------------------------------------
 
-	const int treeType = 4; // Tree type to generate (2 = binary, 4 = quad, 8 = octree)
-	const int isectCost = 80;
-	const int travCost = 10;
-	const float emptyBonus = 0.5f;
-
-	const vector<GameSphere> &spheres(gameLevel->scene->spheres);
-	vector<const Sphere *> sphereList(gameLevel->scene->spheres.size() + GAMEPLAYER_PUPPET_SIZE);
-	for (size_t s = 0; s < spheres.size(); ++s)
-		sphereList[s] = &(spheres[s].sphere);
-	for (size_t s = 0; s < GAMEPLAYER_PUPPET_SIZE; ++s) {
-		const Sphere *puppet = &(gameLevel->player->puppet[s]);
-
-		sphereList[s + spheres.size()] = puppet;
-	}
-
-	accel = new BVHAccel(sphereList, treeType, isectCost, travCost, emptyBonus);
+	accel = BuildAcceleretor();
 
 	//--------------------------------------------------------------------------
-	// Render & filter
+	// Rendering
 	//--------------------------------------------------------------------------
 
 	barrier->wait();
@@ -125,68 +93,23 @@ size_t MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	}
 
 	//--------------------------------------------------------------------------
-	// Apply a gaussian filter: approximated by applying a box filter multiple times
+	// Apply a filter: approximated by applying a box filter multiple times
 	//--------------------------------------------------------------------------
 
-	switch (gameConfig.GetRendererFilterType()) {
-		case NO_FILTER:
-			break;
-		case BLUR_LIGHT: {
-			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
-			for (unsigned int i = 0; i < filterPassCount; ++i)
-				FrameBuffer::ApplyBlurLightFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
-						width, height);
-			break;
-		}
-		case BLUR_HEAVY: {
-			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
-			for (unsigned int i = 0; i < filterPassCount; ++i)
-				FrameBuffer::ApplyBlurHeavyFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
-						width, height);
-			break;
-		}
-		case BOX: {
-			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
-			for (unsigned int i = 0; i < filterPassCount; ++i)
-				FrameBuffer::ApplyBoxFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
-						width, height, gameConfig.GetRendererFilterRaidus());
-			break;
-		}
-	}
+	ApplyFilter();
+
 	//--------------------------------------------------------------------------
 	// Blend the new frame with the old one
 	//--------------------------------------------------------------------------
 
-	float k;
-	if (editActionList.Has(CAMERA_EDIT)) {
-		timeSinceLastCameraEdit = WallClockTime();
-
-		const double dt = Min(WallClockTime() - timeSinceLastNoCameraEdit, 2.0);
-		k = 1.f - dt / 2.f;
-	} else {
-		timeSinceLastNoCameraEdit = WallClockTime();
-
-		const double dt = Min(WallClockTime() - timeSinceLastCameraEdit, 5.0);
-		k = dt / 5.f;
-	}
-
-	const float blendFactor = (1.f - k) * gameConfig.GetRendererGhostFactorCameraEdit() +
-		k * gameConfig.GetRendererGhostFactorNoCameraEdit();
-
-	for (unsigned int y = 0; y < height; ++y) {
-		for (unsigned int x = 0; x < width; ++x) {
-			const Pixel *p = passFrameBuffer->GetPixel(x, y);
-			frameBuffer->BlendPixel(x, y, *p, blendFactor);
-		}
-	}
+	BlendFrame(editActionList);
 
 	//--------------------------------------------------------------------------
 	// Tone mapping
 	//--------------------------------------------------------------------------
 
-	gameLevel->toneMap->Map(frameBuffer, toneMapFrameBuffer);
-
-	glDrawPixels(width, height, GL_RGB, GL_FLOAT, toneMapFrameBuffer->GetPixels());
+	ApplyToneMapping();
+	CopyFrame();
 
 	delete accel;
 
@@ -244,8 +167,8 @@ void MultiCPURendererThread::MultiCPURenderThreadImpl(MultiCPURendererThread *re
 			for (unsigned int i = 0; i < samplePerPass; ++i) {
 				for (unsigned int y = index; y < height; y += threadCount) {
 					for (unsigned int x = 0; x < width; ++x) {
-						Spectrum s = SingleCPURenderer::SampleImage(gameLevel, rnd, *(renderThread->renderer->accel),
-								width, height,
+						Spectrum s = renderThread->renderer->SampleImage(
+								rnd, *(renderThread->renderer->accel),
 								x + rnd.floatValue() - .5f, y + rnd.floatValue() - .5f) *
 								sampleScale;
 

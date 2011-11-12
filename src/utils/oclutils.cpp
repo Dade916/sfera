@@ -18,6 +18,8 @@
  *                                                                         *
  ***************************************************************************/
 
+#if !defined(SFERA_DISABLE_OPENCL)
+
 #include <iostream>
 #include <fstream>
 #include <string.h>
@@ -27,10 +29,32 @@
 
 #include "utils/oclutils.h"
 
-#if !defined(SFERA_DISABLE_OPENCL)
+string OCLLocalMemoryTypeString(cl_device_local_mem_type type) {
+	switch (type) {
+		case CL_LOCAL:
+			return "LOCAL";
+		case CL_GLOBAL:
+			return "GLOBAL";
+		default:
+			return "UNKNOWN";
+	}
+}
+
+string OCLDeviceTypeString(cl_device_type type) {
+	switch (type) {
+		case CL_DEVICE_TYPE_CPU:
+			return "CPU";
+		case CL_DEVICE_TYPE_GPU:
+			return "GPU";
+		case CL_DEVICE_TYPE_ACCELERATOR:
+			return "ACCELERATOR";
+		default:
+			return "UNKNOWN";
+	}
+}
 
 // Helper function to get error string
-std::string OCLErrorString(cl_int error) {
+string OCLErrorString(cl_int error) {
 	switch (error) {
 		case CL_SUCCESS:
 			return "CL_SUCCESS";
@@ -133,7 +157,7 @@ std::string OCLErrorString(cl_int error) {
 		case CL_INVALID_GLOBAL_WORK_SIZE:
 			return "CL_INVALID_GLOBAL_WORK_SIZE";
 		default:
-			return boost::lexical_cast<std::string > (error);
+			return boost::lexical_cast<string > (error);
 	}
 }
 
