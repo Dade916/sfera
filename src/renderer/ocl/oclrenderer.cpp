@@ -121,10 +121,14 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	bvhBuffer = NULL;
 	gpuTaskBuffer = NULL;
 	cameraBuffer = NULL;
+	infiniteLightBuffer = NULL;
 
 	AllocOCLBufferRW(&toneMapFrameBuffer, sizeof(Pixel) * width * height, "ToneMap FrameBuffer");
 	AllocOCLBufferRW(&gpuTaskBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "GPUTask");
 	AllocOCLBufferRW(&cameraBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "Camera");
+	AllocOCLBufferRO(&infiniteLightBuffer, (void *)(gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetPixels()),
+			sizeof(Spectrum) * gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() *
+			gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight(), "Inifinite Light");
 
 	//--------------------------------------------------------------------------
 	// Create pixel buffer object for display
@@ -148,7 +152,16 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 			" -D PARAM_SCREEN_WIDTH=" << width <<
 			" -D PARAM_SCREEN_HEIGHT=" << height <<
 			" -D PARAM_SCREEN_SAMPLEPERPASS=" << gameLevel->gameConfig->GetRendererSamplePerPass() <<
-			" -D PARAM_RAY_EPSILON=" << EPSILON << "f";
+			" -D PARAM_RAY_EPSILON=" << EPSILON << "f" <<
+			" -D PARAM_MAX_DIFFUSE_BOUNCE=" << gameLevel->maxPathDiffuseBounces <<
+			" -D PARAM_MAX_SPECULARGLOSSY_BOUNCE=" << gameLevel->maxPathSpecularGlossyBounces <<
+			" -D PARAM_IL_SHIFT_U=" << gameLevel->scene->infiniteLight->GetShiftU() << "f" <<
+			" -D PARAM_IL_SHIFT_V=" << gameLevel->scene->infiniteLight->GetShiftV() << "f" <<
+			" -D PARAM_IL_GAIN_R=" << gameLevel->scene->infiniteLight->GetGain().r << "f" <<
+			" -D PARAM_IL_GAIN_G=" << gameLevel->scene->infiniteLight->GetGain().g << "f" <<
+			" -D PARAM_IL_GAIN_B=" << gameLevel->scene->infiniteLight->GetGain().b << "f" <<
+			" -D PARAM_IL_MAP_WIDTH=" << gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() <<
+			" -D PARAM_IL_MAP_HEIGHT=" << gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight();
 
 #if defined(__APPLE__)
 	ss << " -D __APPLE__";
@@ -186,7 +199,8 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	kernelPathTracing = new cl::Kernel(program, "PathTracing");
 	kernelPathTracing->setArg(0, *gpuTaskBuffer);
 	kernelPathTracing->setArg(2, *cameraBuffer);
-	kernelPathTracing->setArg(3, *toneMapFrameBuffer);
+	kernelPathTracing->setArg(3, *infiniteLightBuffer);
+	kernelPathTracing->setArg(4, *toneMapFrameBuffer);
 }
 
 OCLRenderer::~OCLRenderer() {
@@ -194,6 +208,7 @@ OCLRenderer::~OCLRenderer() {
 	FreeOCLBuffer(&bvhBuffer);
 	FreeOCLBuffer(&gpuTaskBuffer);
 	FreeOCLBuffer(&cameraBuffer);
+	FreeOCLBuffer(&infiniteLightBuffer);
 
 	delete pboBuff;
 	glDeleteBuffersARB(1, &pbo);
@@ -348,7 +363,7 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 
 	delete accel;
 
-	return width * height;
+	return samplePerPass * width * height;
 }
 
 #endif

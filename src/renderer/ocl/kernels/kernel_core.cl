@@ -22,6 +22,15 @@
 //  PARAM_SCREEN_HEIGHT
 //  PARAM_SCREEN_SAMPLEPERPASS
 //  PARAM_RAY_EPSILON
+//  PARAM_MAX_DIFFUSE_BOUNCE
+//  PARAM_MAX_SPECULARGLOSSY_BOUNCE
+//  PARAM_IL_SHIFT_U
+//  PARAM_IL_SHIFT_V
+//  PARAM_IL_GAIN_R
+//  PARAM_IL_GAIN_G
+//  PARAM_IL_GAIN_B
+//  PARAM_IL_MAP_WIDTH
+//  PARAM_IL_MAP_HEIGHT
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
@@ -107,7 +116,6 @@ typedef struct {
 
 typedef struct {
     float r, g, b;
-    int specularBounce;
 } MirrorParam;
 
 typedef struct {
@@ -115,13 +123,11 @@ typedef struct {
     float refrct_r, refrct_g, refrct_b;
     float ousideIor, ior;
     float R0;
-    int reflectionSpecularBounce, transmitionSpecularBounce;
 } GlassParam;
 
 typedef struct {
     float r, g, b;
     float exponent;
-    int specularBounce;
 } MetalParam;
 
 typedef struct {
@@ -129,7 +135,6 @@ typedef struct {
     float refl_r, refl_g, refl_b;
     float exponent;
     float R0;
-    int specularBounce;
 } AlloyParam;
 
 typedef struct {
@@ -142,21 +147,6 @@ typedef struct {
         AlloyParam alloy;
 	} param;
 } Material;
-
-//------------------------------------------------------------------------------
-
-typedef struct {
-	Point v0, v1, v2;
-	Vector normal;
-	float area;
-	float gain_r, gain_g, gain_b;
-} TriangleLight;
-
-typedef struct {
-	float shiftU, shiftV;
-	Spectrum gain;
-	uint width, height;
-} InfiniteLight;
 
 //------------------------------------------------------------------------------
 
@@ -344,6 +334,67 @@ float SphericalPhi(const Vector *v) {
 }
 
 //------------------------------------------------------------------------------
+// Texture maps
+//------------------------------------------------------------------------------
+
+void TexMap_GetTexel(__global Spectrum *pixels, const uint width, const uint height,
+		const int s, const int t, Spectrum *col) {
+	const uint u = Mod(s, width);
+	const uint v = Mod(t, height);
+
+	const unsigned index = v * width + u;
+
+	col->r = pixels[index].r;
+	col->g = pixels[index].g;
+	col->b = pixels[index].b;
+}
+
+void TexMap_GetColor(__global Spectrum *pixels, const uint width, const uint height,
+		const float u, const float v, Spectrum *col) {
+	const float s = u * width - 0.5f;
+	const float t = v * height - 0.5f;
+
+	const int s0 = (int)floor(s);
+	const int t0 = (int)floor(t);
+
+	const float ds = s - s0;
+	const float dt = t - t0;
+
+	const float ids = 1.f - ds;
+	const float idt = 1.f - dt;
+
+	Spectrum c0, c1, c2, c3;
+	TexMap_GetTexel(pixels, width, height, s0, t0, &c0);
+	TexMap_GetTexel(pixels, width, height, s0, t0 + 1, &c1);
+	TexMap_GetTexel(pixels, width, height, s0 + 1, t0, &c2);
+	TexMap_GetTexel(pixels, width, height, s0 + 1, t0 + 1, &c3);
+
+	const float k0 = ids * idt;
+	const float k1 = ids * dt;
+	const float k2 = ds * idt;
+	const float k3 = ds * dt;
+
+	col->r = k0 * c0.r + k1 * c1.r + k2 * c2.r + k3 * c3.r;
+	col->g = k0 * c0.g + k1 * c1.g + k2 * c2.g + k3 * c3.g;
+	col->b = k0 * c0.b + k1 * c1.b + k2 * c2.b + k3 * c3.b;
+}
+
+//------------------------------------------------------------------------------
+// InfiniteLight_Le
+//------------------------------------------------------------------------------
+
+void InfiniteLight_Le(__global Spectrum *infiniteLightMap, Spectrum *le, const Vector *dir) {
+	const float u = 1.f - SphericalPhi(dir) * INV_TWOPI +  PARAM_IL_SHIFT_U;
+	const float v = SphericalTheta(dir) * INV_PI + PARAM_IL_SHIFT_V;
+
+	TexMap_GetColor(infiniteLightMap, PARAM_IL_MAP_WIDTH, PARAM_IL_MAP_HEIGHT, u, v, le);
+
+	le->r *= PARAM_IL_GAIN_R;
+	le->g *= PARAM_IL_GAIN_G;
+	le->b *= PARAM_IL_GAIN_B;
+}
+
+//------------------------------------------------------------------------------
 // GenerateCameraRay
 //------------------------------------------------------------------------------
 
@@ -509,6 +560,7 @@ __kernel void PathTracing(
 		__global GPUTask *tasks,
 		__global BVHAccelArrayNode *bvhRoot,
 		__global Camera *camera,
+		__global Spectrum *infiniteLightMap,
 		__global Pixel *frameBuffer
 		) {
 	const size_t gid = get_global_id(0);
@@ -527,20 +579,40 @@ __kernel void PathTracing(
 	Ray ray;
 	GenerateCameraRay(&seed, camera, pixelIndex, &ray);
 
-	uint sphereIndex;
-	Pixel c;
-	if (BVH_Intersect(&ray,&sphereIndex, bvhRoot)) {
-		c.r = 1.f;
-		c.g = 1.f;
-		c.b = 1.f;
-	} else {
-		c.r = 0.f;
-		c.g = 0.f;
-		c.b = 0.f;
+	Spectrum throughput;
+	throughput.r = 1.f;
+	throughput.g = 1.f;
+	throughput.b = 1.f;
+	Spectrum radiance;
+	radiance.r = 0.f;
+	radiance.g = 0.f;
+	radiance.b = 0.f;
+
+	uint diffuseBounces = 0;
+	uint specularGlossyBounces = 0;
+
+	Pixel pixelRadiance;
+	for(;;) {
+		uint sphereIndex;
+		if (BVH_Intersect(&ray,&sphereIndex, bvhRoot)) {
+			pixelRadiance.r = 1.f;
+			pixelRadiance.g = 1.f;
+			pixelRadiance.b = 1.f;
+		} else {
+			Spectrum iLe;
+			InfiniteLight_Le(infiniteLightMap, &iLe, &ray.d);
+
+			pixelRadiance.r = radiance.r + throughput.r * iLe.r;
+			pixelRadiance.g = radiance.g + throughput.g * iLe.g;
+			pixelRadiance.b = radiance.b + throughput.b * iLe.b;
+		}
+		break;
 	}
 
 	__global Pixel *p = &frameBuffer[pixelIndex];
-	*p = c;
+	p->r += pixelRadiance.r * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
+	p->g += pixelRadiance.g * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
+	p->b += pixelRadiance.b * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
 
 	// Save the seed
 	task->seed.s1 = seed.s1;

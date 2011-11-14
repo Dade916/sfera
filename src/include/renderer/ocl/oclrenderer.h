@@ -74,6 +74,7 @@ protected:
 	cl::Buffer *bvhBuffer;
 	cl::Buffer *gpuTaskBuffer;
 	cl::Buffer *cameraBuffer;
+	cl::Buffer *infiniteLightBuffer;
 
 	GLuint pbo;
 	cl::BufferGL *pboBuff;
