@@ -20,6 +20,8 @@
 // List of symbols defined at compile time:
 //  PARAM_SCREEN_WIDTH
 //  PARAM_SCREEN_HEIGHT
+//  PARAM_SCREEN_SAMPLEPERPASS
+//  PARAM_RAY_EPSILON
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
@@ -66,6 +68,17 @@ typedef struct {
 	Vector d;
 	float mint, maxt;
 } Ray;
+
+typedef struct {
+	Point center;
+	float rad;
+} Sphere;
+
+typedef struct {
+	Sphere bsphere;
+	unsigned int primitiveIndex;
+	unsigned int skipIndex;
+} BVHAccelArrayNode;
 
 //------------------------------------------------------------------------------
 
@@ -331,6 +344,147 @@ float SphericalPhi(const Vector *v) {
 }
 
 //------------------------------------------------------------------------------
+// GenerateCameraRay
+//------------------------------------------------------------------------------
+
+void GenerateCameraRay(
+		Seed *seed,
+		__global Camera *camera,
+		const uint pixelIndex,
+		Ray *ray) {
+	const float scrSampleX = RndFloatValue(seed);
+	const float scrSampleY = RndFloatValue(seed);
+
+	const float screenX = pixelIndex % PARAM_SCREEN_WIDTH + scrSampleX - .5f;
+	const float screenY = pixelIndex / PARAM_SCREEN_WIDTH + scrSampleY - .5f;
+
+	Point Pras;
+	Pras.x = screenX;
+	Pras.y = PARAM_SCREEN_HEIGHT - screenY - 1.f;
+	Pras.z = 0;
+
+	Point orig;
+	// RasterToCamera(Pras, &orig);
+
+	const float iw = 1.f / (camera->rasterToCameraMatrix[3][0] * Pras.x + camera->rasterToCameraMatrix[3][1] * Pras.y + camera->rasterToCameraMatrix[3][2] * Pras.z + camera->rasterToCameraMatrix[3][3]);
+	orig.x = (camera->rasterToCameraMatrix[0][0] * Pras.x + camera->rasterToCameraMatrix[0][1] * Pras.y + camera->rasterToCameraMatrix[0][2] * Pras.z + camera->rasterToCameraMatrix[0][3]) * iw;
+	orig.y = (camera->rasterToCameraMatrix[1][0] * Pras.x + camera->rasterToCameraMatrix[1][1] * Pras.y + camera->rasterToCameraMatrix[1][2] * Pras.z + camera->rasterToCameraMatrix[1][3]) * iw;
+	orig.z = (camera->rasterToCameraMatrix[2][0] * Pras.x + camera->rasterToCameraMatrix[2][1] * Pras.y + camera->rasterToCameraMatrix[2][2] * Pras.z + camera->rasterToCameraMatrix[2][3]) * iw;
+
+	Vector dir;
+	dir.x = orig.x;
+	dir.y = orig.y;
+	dir.z = orig.z;
+
+	const float hither = camera->hither;
+
+	Normalize(&dir);
+
+	// CameraToWorld(*ray, ray);
+	Point torig;
+	const float iw2 = 1.f / (camera->cameraToWorldMatrix[3][0] * orig.x + camera->cameraToWorldMatrix[3][1] * orig.y + camera->cameraToWorldMatrix[3][2] * orig.z + camera->cameraToWorldMatrix[3][3]);
+	torig.x = (camera->cameraToWorldMatrix[0][0] * orig.x + camera->cameraToWorldMatrix[0][1] * orig.y + camera->cameraToWorldMatrix[0][2] * orig.z + camera->cameraToWorldMatrix[0][3]) * iw2;
+	torig.y = (camera->cameraToWorldMatrix[1][0] * orig.x + camera->cameraToWorldMatrix[1][1] * orig.y + camera->cameraToWorldMatrix[1][2] * orig.z + camera->cameraToWorldMatrix[1][3]) * iw2;
+	torig.z = (camera->cameraToWorldMatrix[2][0] * orig.x + camera->cameraToWorldMatrix[2][1] * orig.y + camera->cameraToWorldMatrix[2][2] * orig.z + camera->cameraToWorldMatrix[2][3]) * iw2;
+
+	Vector tdir;
+	tdir.x = camera->cameraToWorldMatrix[0][0] * dir.x + camera->cameraToWorldMatrix[0][1] * dir.y + camera->cameraToWorldMatrix[0][2] * dir.z;
+	tdir.y = camera->cameraToWorldMatrix[1][0] * dir.x + camera->cameraToWorldMatrix[1][1] * dir.y + camera->cameraToWorldMatrix[1][2] * dir.z;
+	tdir.z = camera->cameraToWorldMatrix[2][0] * dir.x + camera->cameraToWorldMatrix[2][1] * dir.y + camera->cameraToWorldMatrix[2][2] * dir.z;
+
+	ray->o = torig;
+	ray->d = tdir;
+	ray->mint = PARAM_RAY_EPSILON;
+	ray->maxt = (camera->yon - hither) / dir.z;
+
+	/*printf(\"(%f, %f, %f) (%f, %f, %f) [%f, %f]\\n\",
+		ray->o.x, ray->o.y, ray->o.z, ray->d.x, ray->d.y, ray->d.z,
+		ray->mint, ray->maxt);*/
+}
+
+//------------------------------------------------------------------------------
+// BVH intersect
+//------------------------------------------------------------------------------
+
+bool Sphere_IntersectP(__global BVHAccelArrayNode *bvhNode, const Ray *ray, float *hitT) {
+	const Point center = bvhNode->bsphere.center;
+	const float rad = bvhNode->bsphere.rad;
+
+	Vector op;
+	op.x = center.x - ray->o.x;
+	op.y = center.y - ray->o.y;
+	op.z = center.z - ray->o.z;
+	const float b = Dot(&op, &ray->d);
+
+	float det = b * b - Dot(&op, &op) + rad * rad;
+	if (det < 0.f)
+		return false;
+	else
+		det = sqrt(det);
+
+	float t = b - det;
+	if ((t > ray->mint) && ((t < ray->maxt)))
+		*hitT = t;
+	else {
+		t = b + det;
+
+		if ((t > ray->mint) && ((t < ray->maxt)))
+			*hitT = t;
+		else
+			*hitT = INFINITY;
+	}
+
+	return true;
+}
+
+bool BVH_Intersect(
+		Ray *ray,
+		uint *primitiveIndex,
+		__global BVHAccelArrayNode *bvhTree) {
+	unsigned int currentNode = 0; // Root Node
+	unsigned int stopNode = bvhTree[0].skipIndex; // Non-existent
+	*primitiveIndex = 0xffffffffu;
+
+	while (currentNode < stopNode) {
+		float hitT;
+		if (Sphere_IntersectP(&bvhTree[currentNode], ray, &hitT)) {
+			if ((bvhTree[currentNode].primitiveIndex != 0xffffffffu) && (hitT < ray->maxt)){
+				ray->maxt = hitT;
+				*primitiveIndex = bvhTree[currentNode].primitiveIndex;
+				// Continue testing for closer intersections
+			}
+
+			currentNode++;
+		} else
+			currentNode = bvhTree[currentNode].skipIndex;
+	}
+
+	return (*primitiveIndex) != 0xffffffffu;
+}
+
+//------------------------------------------------------------------------------
+// Init Kernel
+//------------------------------------------------------------------------------
+
+__kernel void Init(
+		__global GPUTask *tasks
+		) {
+	const size_t gid = get_global_id(0);
+
+	// Initialize the task
+	__global GPUTask *task = &tasks[gid];
+
+	// Initialize random number generator
+	Seed seed;
+	InitRandomGenerator(gid + 1, &seed);
+
+	// Save the seed
+	task->seed.s1 = seed.s1;
+	task->seed.s2 = seed.s2;
+	task->seed.s3 = seed.s3;
+}
+
+//------------------------------------------------------------------------------
 // InitFB Kernel
 //------------------------------------------------------------------------------
 
@@ -342,9 +496,56 @@ __kernel void InitFB(
 		return;
 
 	__global Pixel *p = &frameBuffer[gid];
-	p->r = (gid / PARAM_SCREEN_WIDTH) / (float)PARAM_SCREEN_HEIGHT;
+	p->r = 0.f;
 	p->g = 0.f;
 	p->b = 0.f;
+}
+
+//------------------------------------------------------------------------------
+// PathTracing Kernel
+//------------------------------------------------------------------------------
+
+__kernel void PathTracing(
+		__global GPUTask *tasks,
+		__global BVHAccelArrayNode *bvhRoot,
+		__global Camera *camera,
+		__global Pixel *frameBuffer
+		) {
+	const size_t gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_WIDTH * PARAM_SCREEN_HEIGHT)
+		return;
+
+	__global GPUTask *task = &tasks[gid];
+	const uint pixelIndex = gid;
+
+	// Read the seed
+	Seed seed;
+	seed.s1 = task->seed.s1;
+	seed.s2 = task->seed.s2;
+	seed.s3 = task->seed.s3;
+
+	Ray ray;
+	GenerateCameraRay(&seed, camera, pixelIndex, &ray);
+
+	uint sphereIndex;
+	Pixel c;
+	if (BVH_Intersect(&ray,&sphereIndex, bvhRoot)) {
+		c.r = 1.f;
+		c.g = 1.f;
+		c.b = 1.f;
+	} else {
+		c.r = 0.f;
+		c.g = 0.f;
+		c.b = 0.f;
+	}
+
+	__global Pixel *p = &frameBuffer[pixelIndex];
+	*p = c;
+
+	// Save the seed
+	task->seed.s1 = seed.s1;
+	task->seed.s2 = seed.s2;
+	task->seed.s3 = seed.s3;
 }
 
 //------------------------------------------------------------------------------

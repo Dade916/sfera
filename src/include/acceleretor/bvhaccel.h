@@ -51,6 +51,10 @@ public:
 
 	bool Intersect(Ray *ray, unsigned int *primitiveIndex) const;
 
+
+	unsigned int nNodes;
+	BVHAccelArrayNode *bvhTree;
+
 private:
 	// For some debuging
 	static bool CheckBoundingSpheres(const Sphere &parentSphere, const BVHAccelTreeNode *bvhTree);
@@ -67,9 +71,6 @@ private:
 	unsigned int treeType;
 	int isectCost, traversalCost;
 	float emptyBonus;
-
-	unsigned int nNodes;
-	BVHAccelArrayNode *bvhTree;
 };
 
 #endif	/* _SFERA_BVHACCEL_H */

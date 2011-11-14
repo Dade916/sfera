@@ -103,6 +103,8 @@ public:
 
 	float GetClipYon() const { return clipYon; }
 	float GetClipHither() const { return clipHither; }
+	float GetLensRadius() const { return lensRadius; }
+	float GetFocalDistance() const { return focalDistance; }
 
 	// User defined values
 	Point orig, target;

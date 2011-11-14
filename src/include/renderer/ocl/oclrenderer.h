@@ -27,6 +27,28 @@
 #include "renderer/levelrenderer.h"
 #include "pixel/framebuffer.h"
 
+namespace ocl_kernels {
+
+typedef struct {
+	unsigned int s1, s2, s3;
+} Seed;
+
+typedef struct {
+	// The task seed
+	Seed seed;
+} GPUTask;
+
+typedef struct {
+	float lensRadius;
+	float focalDistance;
+	float yon, hither;
+
+	float rasterToCameraMatrix[4][4];
+	float cameraToWorldMatrix[4][4];
+} Camera;
+
+}
+
 class OCLRenderer : public LevelRenderer {
 public:
 	OCLRenderer(const GameLevel *level);
@@ -43,10 +65,15 @@ protected:
 	cl::Context *ctx;
 	cl::CommandQueue *cmdQueue;
 
+	cl::Kernel *kernelInit;
 	cl::Kernel *kernelInitToneMapFB;
 	cl::Kernel *kernelUpdatePixelBuffer;
+	cl::Kernel *kernelPathTracing;
 
 	cl::Buffer *toneMapFrameBuffer;
+	cl::Buffer *bvhBuffer;
+	cl::Buffer *gpuTaskBuffer;
+	cl::Buffer *cameraBuffer;
 
 	GLuint pbo;
 	cl::BufferGL *pboBuff;
@@ -54,6 +81,8 @@ protected:
 	size_t usedDeviceMemory;
 
 	FrameBuffer *frameBuffer;
+
+	ocl_kernels::Camera camera;
 
 	double timeSinceLastCameraEdit, timeSinceLastNoCameraEdit;
 };

@@ -118,7 +118,13 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	//--------------------------------------------------------------------------
 
 	toneMapFrameBuffer = NULL;
+	bvhBuffer = NULL;
+	gpuTaskBuffer = NULL;
+	cameraBuffer = NULL;
+
 	AllocOCLBufferRW(&toneMapFrameBuffer, sizeof(Pixel) * width * height, "ToneMap FrameBuffer");
+	AllocOCLBufferRW(&gpuTaskBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "GPUTask");
+	AllocOCLBufferRW(&cameraBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "Camera");
 
 	//--------------------------------------------------------------------------
 	// Create pixel buffer object for display
@@ -140,7 +146,9 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	ss.precision(6);
 	ss << scientific <<
 			" -D PARAM_SCREEN_WIDTH=" << width <<
-			" -D PARAM_SCREEN_HEIGHT=" << height;
+			" -D PARAM_SCREEN_HEIGHT=" << height <<
+			" -D PARAM_SCREEN_SAMPLEPERPASS=" << gameLevel->gameConfig->GetRendererSamplePerPass() <<
+			" -D PARAM_RAY_EPSILON=" << EPSILON << "f";
 
 #if defined(__APPLE__)
 	ss << " -D __APPLE__";
@@ -162,21 +170,38 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 		throw err;
 	}
 
+	kernelInit = new cl::Kernel(program, "Init");
+	kernelInit->setArg(0, *gpuTaskBuffer);
+	cmdQueue->enqueueNDRangeKernel(*kernelInit, cl::NullRange,
+			cl::NDRange(RoundUp<unsigned int>(width * height, 64)),
+			cl::NDRange(64));
+
 	kernelInitToneMapFB = new cl::Kernel(program, "InitFB");
 	kernelInitToneMapFB->setArg(0, *toneMapFrameBuffer);
 
 	kernelUpdatePixelBuffer = new cl::Kernel(program, "UpdatePixelBuffer");
 	kernelUpdatePixelBuffer->setArg(0, *toneMapFrameBuffer);
 	kernelUpdatePixelBuffer->setArg(1, *pboBuff);
+
+	kernelPathTracing = new cl::Kernel(program, "PathTracing");
+	kernelPathTracing->setArg(0, *gpuTaskBuffer);
+	kernelPathTracing->setArg(2, *cameraBuffer);
+	kernelPathTracing->setArg(3, *toneMapFrameBuffer);
 }
 
 OCLRenderer::~OCLRenderer() {
 	FreeOCLBuffer(&toneMapFrameBuffer);
+	FreeOCLBuffer(&bvhBuffer);
+	FreeOCLBuffer(&gpuTaskBuffer);
+	FreeOCLBuffer(&cameraBuffer);
 
 	delete pboBuff;
 	glDeleteBuffersARB(1, &pbo);
 
+	delete kernelPathTracing;
+	delete kernelUpdatePixelBuffer;
 	delete kernelInitToneMapFB;
+	delete kernelInit;
 	delete cmdQueue;
 	delete ctx;
 }
@@ -244,6 +269,35 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 
 	BVHAccel *accel = new BVHAccel(sphereList, treeType, isectCost, travCost, emptyBonus);
 
+	size_t bvhBufferSize = accel->nNodes * sizeof(BVHAccelArrayNode);
+	if (!bvhBuffer) {
+		AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
+
+		kernelPathTracing->setArg(1, *bvhBuffer);
+	} else {
+		// Check if the buffer is of the right size
+		if (bvhBuffer->getInfo<CL_MEM_SIZE>() < bvhBufferSize) {
+			FreeOCLBuffer(&bvhBuffer);
+			AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
+
+			kernelPathTracing->setArg(1, *bvhBuffer);
+		}
+	}
+
+	// Upload the new BVH to the GPU
+	cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, accel->bvhTree);
+
+	// Upload the new Camera to the GPU
+	PerspectiveCamera &perpCamera(*(gameLevel->camera));
+	camera.lensRadius = perpCamera.GetLensRadius();
+	camera.focalDistance = perpCamera.GetFocalDistance();
+	camera.yon = perpCamera.GetClipYon();
+	camera.hither = perpCamera.GetClipHither();
+	memcpy(camera.rasterToCameraMatrix, perpCamera.GetRasterToCameraMatrix().m, sizeof(float[4][4]));
+	memcpy(camera.cameraToWorldMatrix, perpCamera.GetCameraToWorldMatrix().m, sizeof(float[4][4]));
+
+	cmdQueue->enqueueWriteBuffer(*cameraBuffer, CL_FALSE, 0, sizeof(ocl_kernels::Camera), &camera);
+
 	//--------------------------------------------------------------------------
 	// Render
 	//--------------------------------------------------------------------------
@@ -251,12 +305,19 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	const GameConfig &gameConfig(*(gameLevel->gameConfig));
 	const unsigned int width = gameConfig.GetScreenWidth();
 	const unsigned int height = gameConfig.GetScreenHeight();
+	const unsigned int samplePerPass = gameConfig.GetRendererSamplePerPass();
 
 	cmdQueue->enqueueNDRangeKernel(*kernelInitToneMapFB, cl::NullRange,
 			cl::NDRange(RoundUp<unsigned int>(width * height, 64)),
 			cl::NDRange(64));
 
-	// Copy the OpenCL frame buffer ot OpenGL one
+	for (unsigned int i = 0; i < samplePerPass; ++i) {
+		cmdQueue->enqueueNDRangeKernel(*kernelPathTracing, cl::NullRange,
+			cl::NDRange(RoundUp<unsigned int>(width * height, 64)),
+			cl::NDRange(64));
+	}
+
+	// Copy the OpenCL frame buffer to OpenGL one
 	VECTOR_CLASS<cl::Memory> buffs;
 	buffs.push_back(*pboBuff);
 	cmdQueue->enqueueAcquireGLObjects(&buffs);
