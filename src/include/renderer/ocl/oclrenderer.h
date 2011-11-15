@@ -117,7 +117,7 @@ protected:
 	cl::Kernel *kernelInit;
 	cl::Kernel *kernelInitToneMapFB;
 	cl::Kernel *kernelUpdatePixelBuffer;
-	cl::Kernel *kernelPathTracing1xPass;
+	cl::Kernel *kernelPathTracing;
 
 	cl::Buffer *toneMapFrameBuffer;
 	cl::Buffer *bvhBuffer;

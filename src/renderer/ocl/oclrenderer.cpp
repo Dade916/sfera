@@ -215,13 +215,13 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	kernelUpdatePixelBuffer->setArg(0, *toneMapFrameBuffer);
 	kernelUpdatePixelBuffer->setArg(1, *pboBuff);
 
-	kernelPathTracing1xPass = new cl::Kernel(program, "PathTracing1xPass");
-	kernelPathTracing1xPass->setArg(0, *gpuTaskBuffer);
-	kernelPathTracing1xPass->setArg(2, *cameraBuffer);
-	kernelPathTracing1xPass->setArg(3, *infiniteLightBuffer);
-	kernelPathTracing1xPass->setArg(4, *toneMapFrameBuffer);
-	kernelPathTracing1xPass->setArg(5, *matBuffer);
-	kernelPathTracing1xPass->setArg(6, *matIndexBuffer);
+	kernelPathTracing = new cl::Kernel(program, "PathTracing");
+	kernelPathTracing->setArg(0, *gpuTaskBuffer);
+	kernelPathTracing->setArg(2, *cameraBuffer);
+	kernelPathTracing->setArg(3, *infiniteLightBuffer);
+	kernelPathTracing->setArg(4, *toneMapFrameBuffer);
+	kernelPathTracing->setArg(5, *matBuffer);
+	kernelPathTracing->setArg(6, *matIndexBuffer);
 }
 
 OCLRenderer::~OCLRenderer() {
@@ -236,7 +236,7 @@ OCLRenderer::~OCLRenderer() {
 	delete pboBuff;
 	glDeleteBuffersARB(1, &pbo);
 
-	delete kernelPathTracing1xPass;
+	delete kernelPathTracing;
 	delete kernelUpdatePixelBuffer;
 	delete kernelInitToneMapFB;
 	delete kernelInit;
@@ -461,14 +461,14 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	if (!bvhBuffer) {
 		AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
 
-		kernelPathTracing1xPass->setArg(1, *bvhBuffer);
+		kernelPathTracing->setArg(1, *bvhBuffer);
 	} else {
 		// Check if the buffer is of the right size
 		if (bvhBuffer->getInfo<CL_MEM_SIZE>() < bvhBufferSize) {
 			FreeOCLBuffer(&bvhBuffer);
 			AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
 
-			kernelPathTracing1xPass->setArg(1, *bvhBuffer);
+			kernelPathTracing->setArg(1, *bvhBuffer);
 		}
 	}
 
@@ -500,7 +500,7 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 			cl::NDRange(64));
 
 	for (unsigned int i = 0; i < samplePerPass; ++i) {
-		cmdQueue->enqueueNDRangeKernel(*kernelPathTracing1xPass, cl::NullRange,
+		cmdQueue->enqueueNDRangeKernel(*kernelPathTracing, cl::NullRange,
 			cl::NDRange(RoundUp<unsigned int>(width * height, 64)),
 			cl::NDRange(64));
 	}

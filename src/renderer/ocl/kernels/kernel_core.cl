@@ -795,19 +795,35 @@ __kernel void InitFB(
 // PathTracing Kernel
 //------------------------------------------------------------------------------
 
-void PathTracingPass(
+__kernel void PathTracing(
+		__global GPUTask *tasks,
 		__global BVHAccelArrayNode *bvhRoot,
 		__global Camera *camera,
 		__global Spectrum *infiniteLightMap,
 		__global Pixel *frameBuffer,
 		__global Material *mats,
-		__global uint *sphereMats,
-		Seed *seed,
-		const uint pixelIndex,
-		Spectrum *radiance
+		__global uint *sphereMats
 		) {
+	const size_t gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_WIDTH * PARAM_SCREEN_HEIGHT)
+		return;
+
+	__global GPUTask *task = &tasks[gid];
+	const uint pixelIndex = gid;
+
+	// Read the seed
+	Seed seed;
+	seed.s1 = task->seed.s1;
+	seed.s2 = task->seed.s2;
+	seed.s3 = task->seed.s3;
+
+	Spectrum radiance;
+	radiance.r = 0.f;
+	radiance.g = 0.f;
+	radiance.b = 0.f;
+
 	Ray ray;
-	GenerateCameraRay(seed, camera, pixelIndex, &ray);
+	GenerateCameraRay(&seed, camera, pixelIndex, &ray);
 
 	Spectrum throughput;
 	throughput.r = 1.f;
@@ -842,9 +858,9 @@ void PathTracingPass(
 			shadeN.z = flipNormal ? (-N.z) : N.z;
 
 			uint matType = hitPointMat->type;
-			radiance->r += throughput.r * hitPointMat->emi_r;
-			radiance->g += throughput.g * hitPointMat->emi_g;
-			radiance->b += throughput.b * hitPointMat->emi_b;
+			radiance.r += throughput.r * hitPointMat->emi_r;
+			radiance.g += throughput.g * hitPointMat->emi_g;
+			radiance.b += throughput.b * hitPointMat->emi_b;
 
 			Vector wo;
 			wo.x = -ray.d.x;
@@ -858,7 +874,7 @@ void PathTracingPass(
 
 #if defined(PARAM_ENABLE_MAT_MATTE)
 				case MAT_MATTE:
-					Matte_Sample_f(&hitPointMat->param.matte, &wo, &wi, &materialPdf, &f, &shadeN, seed, &diffuseBounce);
+					Matte_Sample_f(&hitPointMat->param.matte, &wo, &wi, &materialPdf, &f, &shadeN, &seed, &diffuseBounce);
 					break;
 #endif
 
@@ -870,19 +886,19 @@ void PathTracingPass(
 
 #if defined(PARAM_ENABLE_MAT_GLASS)
 				case MAT_GLASS:
-					Glass_Sample_f(&hitPointMat->param.glass, &wo, &wi, &materialPdf, &f, &N, &shadeN, seed, &diffuseBounce);
+					Glass_Sample_f(&hitPointMat->param.glass, &wo, &wi, &materialPdf, &f, &N, &shadeN, &seed, &diffuseBounce);
 					break;
 #endif
 
 #if defined(PARAM_ENABLE_MAT_METAL)
 				case MAT_METAL:
-					Metal_Sample_f(&hitPointMat->param.metal, &wo, &wi, &materialPdf, &f, &shadeN, seed, &diffuseBounce);
+					Metal_Sample_f(&hitPointMat->param.metal, &wo, &wi, &materialPdf, &f, &shadeN, &seed, &diffuseBounce);
 					break;
 #endif
 
 #if defined(PARAM_ENABLE_MAT_ALLOY)
 				case MAT_ALLOY:
-					Alloy_Sample_f(&hitPointMat->param.alloy, &wo, &wi, &materialPdf, &f, &shadeN, seed, &diffuseBounce);
+					Alloy_Sample_f(&hitPointMat->param.alloy, &wo, &wi, &materialPdf, &f, &shadeN, &seed, &diffuseBounce);
 					break;
 #endif
 
@@ -921,42 +937,12 @@ void PathTracingPass(
 			Spectrum iLe;
 			InfiniteLight_Le(infiniteLightMap, &iLe, &ray.d);
 
-			radiance->r += throughput.r * iLe.r;
-			radiance->g += throughput.g * iLe.g;
-			radiance->b += throughput.b * iLe.b;
+			radiance.r += throughput.r * iLe.r;
+			radiance.g += throughput.g * iLe.g;
+			radiance.b += throughput.b * iLe.b;
 			break;
 		}
 	}
-}
-__kernel void PathTracing1xPass(
-		__global GPUTask *tasks,
-		__global BVHAccelArrayNode *bvhRoot,
-		__global Camera *camera,
-		__global Spectrum *infiniteLightMap,
-		__global Pixel *frameBuffer,
-		__global Material *mats,
-		__global uint *sphereMats
-		) {
-	const size_t gid = get_global_id(0);
-	if (gid >= PARAM_SCREEN_WIDTH * PARAM_SCREEN_HEIGHT)
-		return;
-
-	__global GPUTask *task = &tasks[gid];
-	const uint pixelIndex = gid;
-
-	// Read the seed
-	Seed seed;
-	seed.s1 = task->seed.s1;
-	seed.s2 = task->seed.s2;
-	seed.s3 = task->seed.s3;
-
-	Spectrum radiance;
-	radiance.r = 0.f;
-	radiance.g = 0.f;
-	radiance.b = 0.f;
-
-	PathTracingPass(bvhRoot, camera, infiniteLightMap, frameBuffer, mats, sphereMats,
-		&seed, pixelIndex, &radiance);
 
 	__global Pixel *p = &frameBuffer[pixelIndex];
 	p->r += radiance.r * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
