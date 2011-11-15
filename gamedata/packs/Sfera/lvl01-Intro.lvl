@@ -23,20 +23,23 @@ scene.gravity.constant=50.0
 # Materials
 ################################################################################
 scene.materials.whitematte.type=MATTE
-scene.materials.whitematte.params=0.75 0.75 0.75
+scene.materials.whitematte.kd=0.75 0.75 0.75
 scene.materials.redmatte.type=MATTE
-scene.materials.redmatte.params=0.75 0.0 0.0
+scene.materials.redmatte.kd=0.75 0.0 0.0
 scene.materials.mirror.type=MIRROR
-scene.materials.mirror.params=0.75 0.75 0.75 1.0
+scene.materials.mirror.kr=0.75 0.75 0.75
 scene.materials.light.type=MATTE
-scene.materials.light.params=0.75 0.75 0.75
+scene.materials.light.kd=0.75 0.75 0.75
 scene.materials.light.emission=8.0 8.0 8.0
-scene.materials.greenmatte.type=MATTE
-scene.materials.greenmatte.params=0.0 0.75 0.0
+scene.materials.greenmetal.type=METAL
+scene.materials.greenmetal.kr=0.0 0.75 0.0
+scene.materials.greenmetal.exp=500.0
 scene.materials.whitematte.type=MATTE
-scene.materials.whitematte.params=0.75 0.75 0.75
+scene.materials.whitematte.kd=0.75 0.75 0.75
 scene.materials.glass.type=GLASS
-scene.materials.glass.params=0.75 0.75 0.75 0.75 0.75 0.75 1.4 1.0 1.0
+scene.materials.glass.kr=0.75 0.75 0.75
+scene.materials.glass.kt=0.75 0.75 0.75
+scene.materials.glass.ior=1.0 1.4
 # Infinite light source
 scene.infinitelight.file=textures/hdr/Ridgecrest_Road_Ref.exr
 scene.infinitelight.gain=1.0 1.0 1.0
@@ -63,7 +66,7 @@ scene.spheres.world1.bumpmap.scale=5.0
 ################################################################################
 scene.spheres.w1s01.geometry=0.0 0.0 0.8 0.8
 scene.spheres.w1s01.mass=0.8
-scene.spheres.w1s01.material=greenmatte
+scene.spheres.w1s01.material=greenmetal
 scene.spheres.w1s02.geometry=-1.5 0.0 0.4 0.4
 scene.spheres.w1s02.mass=0.4
 scene.spheres.w1s02.material=mirror

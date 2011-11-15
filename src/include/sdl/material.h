@@ -73,9 +73,8 @@ private:
 
 class MirrorMaterial : public Material {
 public:
-	MirrorMaterial(const Spectrum &refl, bool reflSpecularBounce) {
+	MirrorMaterial(const Spectrum &refl) {
 		Kr = refl;
-		reflectionSpecularBounce = reflSpecularBounce;
 	}
 
 	MaterialType GetType() const { return MIRROR; }
@@ -86,24 +85,18 @@ public:
 
 	const Spectrum &GetKr() const { return Kr; }
 
-	bool HasSpecularBounceEnabled() const { return reflectionSpecularBounce; }
-
 private:
 	Spectrum Kr;
-	bool reflectionSpecularBounce;
 };
 
 class GlassMaterial : public Material {
 public:
-	GlassMaterial(const Spectrum &refl, const Spectrum &refrct, const float outsideIorFact,
-			const float iorFact, bool reflSpecularBounce, bool transSpecularBounce) {
+	GlassMaterial(const Spectrum &refl, const Spectrum &refrct,
+			const float outsideIorFact,	const float iorFact) {
 		Krefl = refl;
 		Krefrct = refrct;
 		ousideIor = outsideIorFact;
 		ior = iorFact;
-
-		reflectionSpecularBounce = reflSpecularBounce;
-		transmitionSpecularBounce = transSpecularBounce;
 
 		const float nc = ousideIor;
 		const float nt = ior;
@@ -123,22 +116,18 @@ public:
 	const float GetOutsideIOR() const { return ousideIor; }
 	const float GetIOR() const { return ior; }
 	const float GetR0() const { return R0; }
-	bool HasReflSpecularBounceEnabled() const { return reflectionSpecularBounce; }
-	bool HasRefrctSpecularBounceEnabled() const { return transmitionSpecularBounce; }
 
 private:
 	Spectrum Krefl, Krefrct;
 	float ousideIor, ior;
 	float R0;
-	bool reflectionSpecularBounce, transmitionSpecularBounce;
 };
 
 class MetalMaterial : public Material {
 public:
-	MetalMaterial(const Spectrum &refl, const float exp, bool reflSpecularBounce) {
+	MetalMaterial(const Spectrum &refl, const float exp) {
 		Kr = refl;
 		exponent = 1.f / (exp + 1.f);
-		reflectionSpecularBounce = reflSpecularBounce;
 	}
 
 	MaterialType GetType() const { return METAL; }
@@ -149,7 +138,6 @@ public:
 
 	const Spectrum &GetKr() const { return Kr; }
 	float GetExp() const { return exponent; }
-	bool HasSpecularBounceEnabled() const { return reflectionSpecularBounce; }
 
 	static Vector GlossyReflection(const Vector &wo, const float exponent,
 		const Normal &shadeN, const float u0, const float u1);
@@ -157,20 +145,17 @@ public:
 private:
 	Spectrum Kr;
 	float exponent;
-	bool reflectionSpecularBounce;
 };
 
 class AlloyMaterial : public Material {
 public:
 	AlloyMaterial(const Spectrum &col, const Spectrum &refl,
-			const float exp, const float schlickTerm, bool reflSpecularBounce) {
+			const float exp, const float schlickTerm) {
 		Krefl = refl;
 		Kdiff = col;
 		KdiffOverPI = Kdiff * INV_PI;
 		R0 = schlickTerm;
 		exponent = 1.f / (exp + 1.f);
-		
-		reflectionSpecularBounce = reflSpecularBounce;
 	}
 
 	MaterialType GetType() const { return ALLOY; }
@@ -183,14 +168,12 @@ public:
 	const Spectrum &GetKd() const { return Kdiff; }
 	float GetExp() const { return exponent; }
 	float GetR0() const { return R0; }
-	bool HasSpecularBounceEnabled() const { return reflectionSpecularBounce; }
 
 private:
 	Spectrum Krefl;
 	Spectrum Kdiff, KdiffOverPI;
 	float exponent;
 	float R0;
-	bool reflectionSpecularBounce;
 };
 
 #endif	/* _SFERA_SDL_MATERIAL_H */

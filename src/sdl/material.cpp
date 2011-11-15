@@ -85,7 +85,7 @@ Spectrum MirrorMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N,
 	const float dp = Dot(shadeN, dir);
 	(*wi) = dir - (2.f * dp) * Vector(shadeN);
 
-	diffuseBounce = !reflectionSpecularBounce;
+	diffuseBounce = false;
 	*pdf = 1.f;
 
 	return Kr;
@@ -106,11 +106,12 @@ Spectrum GlassMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 	const float ddn = Dot(rayDir, shadeN);
 	const float cos2t = 1.f - nnt * nnt * (1.f - ddn * ddn);
 
+	diffuseBounce = false;
+
 	// Total internal reflection
 	if (cos2t < 0.f) {
 		(*wi) = reflDir;
-		*pdf = 1.f;
-		diffuseBounce = !reflectionSpecularBounce;
+		*pdf = 1.f;		
 
 		return Krefl;
 	}
@@ -132,26 +133,22 @@ Spectrum GlassMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 		} else {
 			(*wi) = reflDir;
 			*pdf = 1.f;
-			diffuseBounce = !reflectionSpecularBounce;
 
 			return Krefl;
 		}
 	} else if (Re == 0.f) {
 		(*wi) = transDir;
 		*pdf = 1.f;
-		diffuseBounce = !transmitionSpecularBounce;
 
 		return Krefrct;
 	} else if (u0 < P) {
 		(*wi) = reflDir;
 		*pdf = P / Re;
-		diffuseBounce = !reflectionSpecularBounce;
 
 		return Krefl;
 	} else {
 		(*wi) = transDir;
 		*pdf = (1.f - P) / Tr;
-		diffuseBounce = !transmitionSpecularBounce;
 
 		return Krefrct;
 	}
@@ -163,7 +160,7 @@ Spectrum MetalMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 	(*wi) = GlossyReflection(wo, exponent, shadeN, u0, u1);
 
 	if (Dot(*wi, shadeN) > 0.f) {
-		diffuseBounce = !reflectionSpecularBounce;
+		diffuseBounce = false;
 		*pdf = 1.f;
 
 		return Kr;
@@ -186,7 +183,7 @@ Spectrum AlloyMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 	if (u2 < P) {
 		(*wi) = MetalMaterial::GlossyReflection(wo, exponent, shadeN, u0, u1);
 		*pdf = P / Re;
-		diffuseBounce = !reflectionSpecularBounce;
+		diffuseBounce = false;
 
 		return Re * Krefl;
 	} else {

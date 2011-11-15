@@ -148,8 +148,8 @@ void DisplaySession::RunLoop() {
 	PhysicThread physicThread(&gamePhysic);
 
 	//SingleCPURenderer *renderer = new SingleCPURenderer(currentLevel);
-	//MultiCPURenderer *renderer = new MultiCPURenderer(currentLevel);
-	OCLRenderer *renderer = new OCLRenderer(currentLevel);
+	MultiCPURenderer *renderer = new MultiCPURenderer(currentLevel);
+	//OCLRenderer *renderer = new OCLRenderer(currentLevel);
 
 	// Start the game
 

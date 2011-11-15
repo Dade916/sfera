@@ -160,32 +160,38 @@ void Scene::CreateMaterial(const string &propName, const Properties &prop) {
 
 	Material *mat;
 	if (matType == "MATTE") {
-		const vector<float> vf = Properties::GetParameters(prop, propName + ".params", 3, "1.0 1.0 1.0");
+		const vector<float> vf = Properties::GetParameters(prop, propName + ".kd", 3, "1.0 1.0 1.0");
 		const Spectrum col(vf[0], vf[1], vf[2]);
 
-			mat = new MatteMaterial(col);
+		mat = new MatteMaterial(col);
 	} else if (matType == "MIRROR") {
-		const vector<float> vf = Properties::GetParameters(prop, propName, 4, "1.0 1.0 1.0 1.0");
+		const vector<float> vf = Properties::GetParameters(prop, propName + ".kr", 3, "1.0 1.0 1.0");
 		const Spectrum col(vf[0], vf[1], vf[2]);
 
-		mat = new MirrorMaterial(col, vf[3] != 0.f);
+		mat = new MirrorMaterial(col);
 	} else if (matType == "GLASS") {
-		const vector<float> vf = Properties::GetParameters(prop, propName, 10, "1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.5 1.0 1.0");
+		const vector<float> vf = Properties::GetParameters(prop, propName + ".kr", 3, "1.0 1.0 1.0");
 		const Spectrum Krfl(vf[0], vf[1], vf[2]);
-		const Spectrum Ktrn(vf[3], vf[4], vf[5]);
+		const vector<float> vf1 = Properties::GetParameters(prop, propName + ".kt", 3, "1.0 1.0 1.0");
+		const Spectrum Ktrn(vf1[0], vf1[1], vf1[2]);
+		const vector<float> vf2 = Properties::GetParameters(prop, propName + ".ior", 2, "1.0 1.45");
 
-		mat = new GlassMaterial(Krfl, Ktrn, vf[6], vf[7], vf[8] != 0.f, vf[9] != 0.f);
+		mat = new GlassMaterial(Krfl, Ktrn, vf2[0], vf2[1]);
 	} else if (matType == "METAL") {
-		const vector<float> vf = Properties::GetParameters(prop, propName, 5, "1.0 1.0 1.0 10.0 1.0");
+		const vector<float> vf = Properties::GetParameters(prop, propName + ".kr", 3, "1.0 1.0 1.0");
 		const Spectrum col(vf[0], vf[1], vf[2]);
+		const float exp = prop.GetFloat(propName + ".exp", 10.f);
 
-		mat = new MetalMaterial(col, vf[3], vf[4] != 0.f);
+		mat = new MetalMaterial(col, exp);
 	} else if (matType == "ALLOY") {
-		const vector<float> vf = Properties::GetParameters(prop, propName, 9, "1.0 1.0 1.0 1.0 1.0 1.0 10.0 0.8 1.0");
-		const Spectrum Kdiff(vf[0], vf[1], vf[2]);
-		const Spectrum Krfl(vf[3], vf[4], vf[5]);
+		const vector<float> vf = Properties::GetParameters(prop, propName + ".kr", 3, "1.0 1.0 1.0");
+		const Spectrum Kd(vf[0], vf[1], vf[2]);
+		const vector<float> vf1 = Properties::GetParameters(prop, propName + ".kt", 3, "1.0 1.0 1.0");
+		const Spectrum Kr(vf1[0], vf1[1], vf1[2]);
+		const float exp = prop.GetFloat(propName + ".exp", 10.f);
+		const float schlick = prop.GetFloat(propName + ".schlick", .8f);
 
-		mat = new AlloyMaterial(Kdiff, Krfl, vf[6], vf[7], vf[8] != 0.f);
+		mat = new AlloyMaterial(Kd, Kr, exp, schlick);
 	} else
 		throw runtime_error("Unknown material type " + matType);
 

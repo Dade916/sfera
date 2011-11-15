@@ -47,6 +47,50 @@ typedef struct {
 	float cameraToWorldMatrix[4][4];
 } Camera;
 
+#define MAT_MATTE 0
+#define MAT_MIRROR 1
+#define MAT_GLASS 2
+#define MAT_METAL 3
+#define MAT_ALLOY 4
+
+typedef struct {
+    float r, g, b;
+} MatteParam;
+
+typedef struct {
+    float r, g, b;
+} MirrorParam;
+
+typedef struct {
+    float refl_r, refl_g, refl_b;
+    float refrct_r, refrct_g, refrct_b;
+    float ousideIor, ior;
+    float R0;
+} GlassParam;
+
+typedef struct {
+    float r, g, b;
+    float exponent;
+} MetalParam;
+
+typedef struct {
+    float diff_r, diff_g, diff_b;
+    float refl_r, refl_g, refl_b;
+    float exponent;
+    float R0;
+} AlloyParam;
+
+typedef struct {
+	unsigned int type;
+	union {
+		MatteParam matte;
+		MirrorParam mirror;
+        GlassParam glass;
+        MetalParam metal;
+        AlloyParam alloy;
+	} param;
+} Material;
+
 }
 
 class OCLRenderer : public LevelRenderer {
