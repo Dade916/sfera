@@ -122,6 +122,8 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	gpuTaskBuffer = NULL;
 	cameraBuffer = NULL;
 	infiniteLightBuffer = NULL;
+	matBuffer = NULL;
+	matIndexBuffer = NULL;
 
 	AllocOCLBufferRW(&toneMapFrameBuffer, sizeof(Pixel) * width * height, "ToneMap FrameBuffer");
 	AllocOCLBufferRW(&gpuTaskBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "GPUTask");
@@ -129,6 +131,12 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	AllocOCLBufferRO(&infiniteLightBuffer, (void *)(gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetPixels()),
 			sizeof(Spectrum) * gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() *
 			gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight(), "Inifinite Light");
+
+	CompileMaterials();
+	AllocOCLBufferRO(&matBuffer, (void *)(&mats[0]),
+			sizeof(ocl_kernels::Material) * mats.size(), "Materials");
+	AllocOCLBufferRO(&matIndexBuffer, (void *)(&sphereMats[0]),
+			sizeof(unsigned int) * sphereMats.size(), "Material Indices");
 
 	//--------------------------------------------------------------------------
 	// Create pixel buffer object for display
@@ -163,6 +171,17 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 			" -D PARAM_IL_MAP_WIDTH=" << gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() <<
 			" -D PARAM_IL_MAP_HEIGHT=" << gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight();
 
+	if (enable_MAT_MATTE)
+		ss << " -D PARAM_ENABLE_MAT_MATTE";
+	if (enable_MAT_MIRROR)
+		ss << " -D PARAM_ENABLE_MAT_MIRROR";
+	if (enable_MAT_GLASS)
+		ss << " -D PARAM_ENABLE_MAT_GLASS";
+	if (enable_MAT_METAL)
+		ss << " -D PARAM_ENABLE_MAT_METAL";
+	if (enable_MAT_ALLOY)
+		ss << " -D PARAM_ENABLE_MAT_ALLOY";
+
 #if defined(__APPLE__)
 	ss << " -D __APPLE__";
 #endif
@@ -196,11 +215,13 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	kernelUpdatePixelBuffer->setArg(0, *toneMapFrameBuffer);
 	kernelUpdatePixelBuffer->setArg(1, *pboBuff);
 
-	kernelPathTracing = new cl::Kernel(program, "PathTracing");
-	kernelPathTracing->setArg(0, *gpuTaskBuffer);
-	kernelPathTracing->setArg(2, *cameraBuffer);
-	kernelPathTracing->setArg(3, *infiniteLightBuffer);
-	kernelPathTracing->setArg(4, *toneMapFrameBuffer);
+	kernelPathTracing1xPass = new cl::Kernel(program, "PathTracing1xPass");
+	kernelPathTracing1xPass->setArg(0, *gpuTaskBuffer);
+	kernelPathTracing1xPass->setArg(2, *cameraBuffer);
+	kernelPathTracing1xPass->setArg(3, *infiniteLightBuffer);
+	kernelPathTracing1xPass->setArg(4, *toneMapFrameBuffer);
+	kernelPathTracing1xPass->setArg(5, *matBuffer);
+	kernelPathTracing1xPass->setArg(6, *matIndexBuffer);
 }
 
 OCLRenderer::~OCLRenderer() {
@@ -209,16 +230,168 @@ OCLRenderer::~OCLRenderer() {
 	FreeOCLBuffer(&gpuTaskBuffer);
 	FreeOCLBuffer(&cameraBuffer);
 	FreeOCLBuffer(&infiniteLightBuffer);
+	FreeOCLBuffer(&matBuffer);
+	FreeOCLBuffer(&matIndexBuffer);
 
 	delete pboBuff;
 	glDeleteBuffersARB(1, &pbo);
 
-	delete kernelPathTracing;
+	delete kernelPathTracing1xPass;
 	delete kernelUpdatePixelBuffer;
 	delete kernelInitToneMapFB;
 	delete kernelInit;
 	delete cmdQueue;
 	delete ctx;
+}
+
+void OCLRenderer::CompileMaterial(Material *m, ocl_kernels::Material *gpum) {
+	gpum->emi_r = m->GetEmission().r;
+	gpum->emi_g = m->GetEmission().g;
+	gpum->emi_b = m->GetEmission().b;
+
+	switch (m->GetType()) {
+		case MATTE: {
+			enable_MAT_MATTE = true;
+			MatteMaterial *mm = (MatteMaterial *)m;
+
+			gpum->type = MAT_MATTE;
+			gpum->param.matte.r = mm->GetKd().r;
+			gpum->param.matte.g = mm->GetKd().g;
+			gpum->param.matte.b = mm->GetKd().b;
+			break;
+		}
+		case MIRROR: {
+			enable_MAT_MIRROR = true;
+			MirrorMaterial *mm = (MirrorMaterial *)m;
+
+			gpum->type = MAT_MIRROR;
+			gpum->param.mirror.r = mm->GetKr().r;
+			gpum->param.mirror.g = mm->GetKr().g;
+			gpum->param.mirror.b = mm->GetKr().b;
+			break;
+		}
+		case GLASS: {
+			enable_MAT_GLASS = true;
+			GlassMaterial *gm = (GlassMaterial *)m;
+
+			gpum->type = MAT_GLASS;
+			gpum->param.glass.refl_r = gm->GetKrefl().r;
+			gpum->param.glass.refl_g = gm->GetKrefl().g;
+			gpum->param.glass.refl_b = gm->GetKrefl().b;
+
+			gpum->param.glass.refrct_r = gm->GetKrefrct().r;
+			gpum->param.glass.refrct_g = gm->GetKrefrct().g;
+			gpum->param.glass.refrct_b = gm->GetKrefrct().b;
+
+			gpum->param.glass.ousideIor = gm->GetOutsideIOR();
+			gpum->param.glass.ior = gm->GetIOR();
+			gpum->param.glass.R0 = gm->GetR0();
+			break;
+		}
+		case METAL: {
+			enable_MAT_METAL = true;
+			MetalMaterial *mm = (MetalMaterial *)m;
+
+			gpum->type = MAT_METAL;
+			gpum->param.metal.r = mm->GetKr().r;
+			gpum->param.metal.g = mm->GetKr().g;
+			gpum->param.metal.b = mm->GetKr().b;
+			gpum->param.metal.exponent = mm->GetExp();
+			break;
+		}
+		case ALLOY: {
+			enable_MAT_ALLOY = true;
+			AlloyMaterial *am = (AlloyMaterial *)m;
+
+			gpum->type = MAT_ALLOY;
+			gpum->param.alloy.refl_r= am->GetKrefl().r;
+			gpum->param.alloy.refl_g = am->GetKrefl().g;
+			gpum->param.alloy.refl_b = am->GetKrefl().b;
+
+			gpum->param.alloy.diff_r = am->GetKd().r;
+			gpum->param.alloy.diff_g = am->GetKd().g;
+			gpum->param.alloy.diff_b = am->GetKd().b;
+
+			gpum->param.alloy.exponent = am->GetExp();
+			gpum->param.alloy.R0 = am->GetR0();
+			break;
+		}
+		default: {
+			enable_MAT_MATTE = true;
+			gpum->type = MAT_MATTE;
+			gpum->param.matte.r = 0.75f;
+			gpum->param.matte.g = 0.75f;
+			gpum->param.matte.b = 0.75f;
+			break;
+		}
+	}
+}
+
+void OCLRenderer::CompileMaterials() {
+	SFERA_LOG("[OCLRenderer] Compile Materials");
+
+	Scene &scene(*(gameLevel->scene));
+
+	//--------------------------------------------------------------------------
+	// Translate material definitions
+	//--------------------------------------------------------------------------
+
+	const double tStart = WallClockTime();
+
+	enable_MAT_MATTE = false;
+	enable_MAT_MIRROR = false;
+	enable_MAT_GLASS = false;
+	enable_MAT_METAL = false;
+	enable_MAT_ALLOY = false;
+
+	const unsigned int materialsCount = scene.materials.size() + GAMEPLAYER_PUPPET_SIZE;
+	mats.resize(materialsCount);
+
+	// Add scene materials
+	for (unsigned int i = 0; i < scene.materials.size(); ++i) {
+		Material *m = scene.materials[i];
+		ocl_kernels::Material *gpum = &mats[i];
+
+		CompileMaterial(m, gpum);
+	}
+
+	// Add player materials
+	for (unsigned int i = 0; i < GAMEPLAYER_PUPPET_SIZE; ++i) {
+		Material *m = gameLevel->player->puppetMaterial[i];
+		ocl_kernels::Material *gpum = &mats[i + scene.materials.size()];
+
+		CompileMaterial(m, gpum);
+	}
+
+	//--------------------------------------------------------------------------
+	// Translate sphere material indices
+	//--------------------------------------------------------------------------
+
+	const unsigned int sphereCount = scene.sphereMaterials.size() + GAMEPLAYER_PUPPET_SIZE;
+	sphereMats.resize(sphereCount);
+
+	// Translate scene material indices
+	for (unsigned int i = 0; i < scene.sphereMaterials.size(); ++i) {
+		Material *m = scene.sphereMaterials[i];
+
+		// Look for the index
+		unsigned int index = 0;
+		for (unsigned int j = 0; j < scene.materials.size(); ++j) {
+			if (m == scene.materials[j]) {
+				index = j;
+				break;
+			}
+		}
+
+		sphereMats[i] = index;
+	}
+
+	// Translate player material indices
+	for (unsigned int i = 0; i < GAMEPLAYER_PUPPET_SIZE; ++i)
+		sphereMats[i + scene.sphereMaterials.size()] = i + scene.materials.size();
+
+	const double tEnd = WallClockTime();
+	SFERA_LOG("[OCLRenderer] Material compilation time: " << int((tEnd - tStart) * 1000.0) << "ms");
 }
 
 void OCLRenderer::AllocOCLBufferRO(cl::Buffer **buff, void *src, const size_t size, const string &desc) {
@@ -288,14 +461,14 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	if (!bvhBuffer) {
 		AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
 
-		kernelPathTracing->setArg(1, *bvhBuffer);
+		kernelPathTracing1xPass->setArg(1, *bvhBuffer);
 	} else {
 		// Check if the buffer is of the right size
 		if (bvhBuffer->getInfo<CL_MEM_SIZE>() < bvhBufferSize) {
 			FreeOCLBuffer(&bvhBuffer);
 			AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
 
-			kernelPathTracing->setArg(1, *bvhBuffer);
+			kernelPathTracing1xPass->setArg(1, *bvhBuffer);
 		}
 	}
 
@@ -327,7 +500,7 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 			cl::NDRange(64));
 
 	for (unsigned int i = 0; i < samplePerPass; ++i) {
-		cmdQueue->enqueueNDRangeKernel(*kernelPathTracing, cl::NullRange,
+		cmdQueue->enqueueNDRangeKernel(*kernelPathTracing1xPass, cl::NullRange,
 			cl::NDRange(RoundUp<unsigned int>(width * height, 64)),
 			cl::NDRange(64));
 	}

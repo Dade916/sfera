@@ -82,6 +82,8 @@ typedef struct {
 
 typedef struct {
 	unsigned int type;
+	float emi_r, emi_g, emi_b;
+
 	union {
 		MatteParam matte;
 		MirrorParam mirror;
@@ -105,6 +107,9 @@ protected:
 	void AllocOCLBufferRW(cl::Buffer **buff, const size_t size, const string &desc);
 	void FreeOCLBuffer(cl::Buffer **buff);
 
+	void CompileMaterial(Material *m, ocl_kernels::Material *gpum);
+	void CompileMaterials();
+
 	cl::Device dev;
 	cl::Context *ctx;
 	cl::CommandQueue *cmdQueue;
@@ -112,13 +117,15 @@ protected:
 	cl::Kernel *kernelInit;
 	cl::Kernel *kernelInitToneMapFB;
 	cl::Kernel *kernelUpdatePixelBuffer;
-	cl::Kernel *kernelPathTracing;
+	cl::Kernel *kernelPathTracing1xPass;
 
 	cl::Buffer *toneMapFrameBuffer;
 	cl::Buffer *bvhBuffer;
 	cl::Buffer *gpuTaskBuffer;
 	cl::Buffer *cameraBuffer;
 	cl::Buffer *infiniteLightBuffer;
+	cl::Buffer *matBuffer;
+	cl::Buffer *matIndexBuffer;
 
 	GLuint pbo;
 	cl::BufferGL *pboBuff;
@@ -128,6 +135,12 @@ protected:
 	FrameBuffer *frameBuffer;
 
 	ocl_kernels::Camera camera;
+
+	// Compiled Materials
+	bool enable_MAT_MATTE, enable_MAT_MIRROR, enable_MAT_GLASS,
+		enable_MAT_METAL, enable_MAT_ALLOY;
+	vector<ocl_kernels::Material> mats;
+	vector<unsigned int> sphereMats;
 
 	double timeSinceLastCameraEdit, timeSinceLastNoCameraEdit;
 };

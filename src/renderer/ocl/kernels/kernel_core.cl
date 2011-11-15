@@ -31,6 +31,11 @@
 //  PARAM_IL_GAIN_B
 //  PARAM_IL_MAP_WIDTH
 //  PARAM_IL_MAP_HEIGHT
+//  PARAM_ENABLE_MAT_MATTE
+//  PARAM_ENABLE_MAT_MIRROR
+//  PARAM_ENABLE_MAT_GLASS
+//  PARAM_ENABLE_MAT_METAL
+//  PARAM_ENABLE_MAT_ALLOY
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
@@ -42,14 +47,6 @@
 
 #ifndef INV_TWOPI
 #define INV_TWOPI  0.15915494309189533577f
-#endif
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-#ifndef FALSE
-#define FALSE 0
 #endif
 
 //------------------------------------------------------------------------------
@@ -139,6 +136,8 @@ typedef struct {
 
 typedef struct {
 	unsigned int type;
+	float emi_r, emi_g, emi_b;
+
 	union {
 		MatteParam matte;
 		MirrorParam mirror;
@@ -490,6 +489,7 @@ bool Sphere_IntersectP(__global BVHAccelArrayNode *bvhNode, const Ray *ray, floa
 
 bool BVH_Intersect(
 		Ray *ray,
+		__global Sphere **hitSphere,
 		uint *primitiveIndex,
 		__global BVHAccelArrayNode *bvhTree) {
 	unsigned int currentNode = 0; // Root Node
@@ -501,6 +501,7 @@ bool BVH_Intersect(
 		if (Sphere_IntersectP(&bvhTree[currentNode], ray, &hitT)) {
 			if ((bvhTree[currentNode].primitiveIndex != 0xffffffffu) && (hitT < ray->maxt)){
 				ray->maxt = hitT;
+				*hitSphere = &bvhTree[currentNode].bsphere;
 				*primitiveIndex = bvhTree[currentNode].primitiveIndex;
 				// Continue testing for closer intersections
 			}
@@ -511,6 +512,244 @@ bool BVH_Intersect(
 	}
 
 	return (*primitiveIndex) != 0xffffffffu;
+}
+
+//------------------------------------------------------------------------------
+// Materials
+//------------------------------------------------------------------------------
+
+void Matte_Sample_f(const __global MatteParam *mat, const Vector *wo, Vector *wi,
+		float *pdf, Spectrum *f, const Vector *shadeN,
+		Seed *seed,
+		bool *diffuseBounce) {
+	Vector dir;
+	CosineSampleHemisphere(&dir, RndFloatValue(seed), RndFloatValue(seed));
+	*pdf = dir.z * INV_PI;
+
+	Vector v1, v2;
+	CoordinateSystem(shadeN, &v1, &v2);
+
+	wi->x = v1.x * dir.x + v2.x * dir.y + shadeN->x * dir.z;
+	wi->y = v1.y * dir.x + v2.y * dir.y + shadeN->y * dir.z;
+	wi->z = v1.z * dir.x + v2.z * dir.y + shadeN->z * dir.z;
+
+	// Using 0.0001 instead of 0.0 to cut down fireflies
+	if (dir.z <= 0.0001f)
+		*pdf = 0.f;
+	else {
+		f->r = mat->r;
+		f->g = mat->g;
+		f->b = mat->b;
+	}
+
+	*diffuseBounce = true;
+}
+
+void Mirror_Sample_f(const __global MirrorParam *mat, const Vector *wo, Vector *wi,
+		float *pdf, Spectrum *f, const Vector *shadeN,
+		bool *diffuseBounce) {
+    const float k = 2.f * Dot(shadeN, wo);
+	wi->x = k * shadeN->x - wo->x;
+	wi->y = k * shadeN->y - wo->y;
+	wi->z = k * shadeN->z - wo->z;
+
+	*pdf = 1.f;
+
+	f->r = mat->r;
+	f->g = mat->g;
+	f->b = mat->b;
+
+	*diffuseBounce = false;
+}
+
+void Glass_Sample_f(const __global GlassParam *mat,
+    const Vector *wo, Vector *wi, float *pdf, Spectrum *f, const Vector *N, const Vector *shadeN,
+    Seed *seed,
+	bool *diffuseBounce) {
+    Vector reflDir;
+    const float k = 2.f * Dot(N, wo);
+    reflDir.x = k * N->x - wo->x;
+    reflDir.y = k * N->y - wo->y;
+    reflDir.z = k * N->z - wo->z;
+
+    // Ray from outside going in ?
+    const bool into = (Dot(N, shadeN) > 0.f);
+
+    const float nc = mat->ousideIor;
+    const float nt = mat->ior;
+    const float nnt = into ? (nc / nt) : (nt / nc);
+    const float ddn = -Dot(wo, shadeN);
+    const float cos2t = 1.f - nnt * nnt * (1.f - ddn * ddn);
+
+	*diffuseBounce = false;
+
+    // Total internal reflection
+    if (cos2t < 0.f) {
+        *wi = reflDir;
+        *pdf = 1.f;
+
+        f->r = mat->refl_r;
+        f->g = mat->refl_g;
+        f->b = mat->refl_b;
+    } else {
+        const float kk = (into ? 1.f : -1.f) * (ddn * nnt + sqrt(cos2t));
+        Vector nkk = *N;
+        nkk.x *= kk;
+        nkk.y *= kk;
+        nkk.z *= kk;
+
+        Vector transDir;
+        transDir.x = -nnt * wo->x - nkk.x;
+        transDir.y = -nnt * wo->y - nkk.y;
+        transDir.z = -nnt * wo->z - nkk.z;
+        Normalize(&transDir);
+
+        const float c = 1.f - (into ? -ddn : Dot(&transDir, N));
+
+        const float R0 = mat->R0;
+        const float Re = R0 + (1.f - R0) * c * c * c * c * c;
+        const float Tr = 1.f - Re;
+        const float P = .25f + .5f * Re;
+
+        if (Tr == 0.f) {
+            if (Re == 0.f)
+                *pdf = 0.f;
+            else {
+                *wi = reflDir;
+                *pdf = 1.f;
+
+                f->r = mat->refl_r;
+                f->g = mat->refl_g;
+                f->b = mat->refl_b;
+            }
+        } else if (Re == 0.f) {
+            *wi = transDir;
+            *pdf = 1.f;
+
+            f->r = mat->refrct_r;
+            f->g = mat->refrct_g;
+            f->b = mat->refrct_b;
+        } else if (RndFloatValue(seed) < P) {
+            *wi = reflDir;
+            *pdf = P / Re;
+
+            f->r = mat->refl_r / (*pdf);
+            f->g = mat->refl_g / (*pdf);
+            f->b = mat->refl_b / (*pdf);
+        } else {
+            *wi = transDir;
+            *pdf = (1.f - P) / Tr;
+
+            f->r = mat->refrct_r / (*pdf);
+            f->g = mat->refrct_g / (*pdf);
+            f->b = mat->refrct_b / (*pdf);
+        }
+    }
+}
+
+void GlossyReflection(const Vector *wo, Vector *wi, const float exponent,
+		const Vector *shadeN,
+		const float u0, const float u1) {
+    const float phi = 2.f * M_PI * u0;
+    const float cosTheta = pow(1.f - u1, exponent);
+    const float sinTheta = sqrt(1.f - cosTheta * cosTheta);
+    const float x = cos(phi) * sinTheta;
+    const float y = sin(phi) * sinTheta;
+    const float z = cosTheta;
+
+    Vector w;
+    const float RdotShadeN = Dot(shadeN, wo);
+	w.x = (2.f * RdotShadeN) * shadeN->x - wo->x;
+	w.y = (2.f * RdotShadeN) * shadeN->y - wo->y;
+	w.z = (2.f * RdotShadeN) * shadeN->z - wo->z;
+
+    Vector u, a;
+    if (fabs(shadeN->x) > .1f) {
+        a.x = 0.f;
+        a.y = 1.f;
+    } else {
+        a.x = 1.f;
+        a.y = 0.f;
+    }
+    a.z = 0.f;
+    Cross(&u, &a, &w);
+    Normalize(&u);
+    Vector v;
+    Cross(&v, &w, &u);
+
+    wi->x = x * u.x + y * v.x + z * w.x;
+    wi->y = x * u.y + y * v.y + z * w.y;
+    wi->z = x * u.z + y * v.z + z * w.z;
+}
+
+void Metal_Sample_f(const __global MetalParam *mat, const Vector *wo, Vector *wi,
+		float *pdf, Spectrum *f, const Vector *shadeN,
+		Seed *seed,
+		bool *diffuseBounce) {
+        GlossyReflection(wo, wi, mat->exponent, shadeN, RndFloatValue(seed), RndFloatValue(seed));
+
+		if (Dot(wi, shadeN) > 0.f) {
+			*pdf = 1.f;
+
+            f->r = mat->r;
+            f->g = mat->g;
+            f->b = mat->b;
+
+			*diffuseBounce = true;
+		} else
+			*pdf = 0.f;
+}
+
+void Alloy_Sample_f(const __global AlloyParam *mat, const Vector *wo, Vector *wi,
+		float *pdf, Spectrum *f, const Vector *shadeN,
+		Seed *seed,
+		bool *diffuseBounce) {
+    // Schilick's approximation
+    const float c = 1.f - Dot(wo, shadeN);
+    const float R0 = mat->R0;
+    const float Re = R0 + (1.f - R0) * c * c * c * c * c;
+
+    const float P = .25f + .5f * Re;
+
+	const float u0 = RndFloatValue(seed);
+	const float u1 = RndFloatValue(seed);
+
+    if (RndFloatValue(seed) <= P) {
+        GlossyReflection(wo, wi, mat->exponent, shadeN, u0, u1);
+        *pdf = P / Re;
+
+        f->r = mat->refl_r / (*pdf);
+        f->g = mat->refl_g / (*pdf);
+        f->b = mat->refl_b / (*pdf);
+
+		*diffuseBounce = true;
+    } else {
+        Vector dir;
+        CosineSampleHemisphere(&dir, u0, u1);
+        *pdf = dir.z * INV_PI;
+
+        Vector v1, v2;
+        CoordinateSystem(shadeN, &v1, &v2);
+
+        wi->x = v1.x * dir.x + v2.x * dir.y + shadeN->x * dir.z;
+        wi->y = v1.y * dir.x + v2.y * dir.y + shadeN->y * dir.z;
+        wi->z = v1.z * dir.x + v2.z * dir.y + shadeN->z * dir.z;
+
+        // Using 0.0001 instead of 0.0 to cut down fireflies
+        if (dir.z <= 0.0001f)
+            *pdf = 0.f;
+        else {
+			const float iRe = 1.f - Re;
+			const float k = (1.f - P) / iRe;
+            *pdf *= k;
+
+            f->r = mat->diff_r / k;
+            f->g = mat->diff_g / k;
+            f->b = mat->diff_b / k;
+
+			*diffuseBounce = false;
+		}
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -556,12 +795,147 @@ __kernel void InitFB(
 // PathTracing Kernel
 //------------------------------------------------------------------------------
 
-__kernel void PathTracing(
+void PathTracingPass(
+		__global BVHAccelArrayNode *bvhRoot,
+		__global Camera *camera,
+		__global Spectrum *infiniteLightMap,
+		__global Pixel *frameBuffer,
+		__global Material *mats,
+		__global uint *sphereMats,
+		Seed *seed,
+		const uint pixelIndex,
+		Spectrum *radiance
+		) {
+	Ray ray;
+	GenerateCameraRay(seed, camera, pixelIndex, &ray);
+
+	Spectrum throughput;
+	throughput.r = 1.f;
+	throughput.g = 1.f;
+	throughput.b = 1.f;
+
+	uint diffuseBounces = 0;
+	uint specularGlossyBounces = 0;
+
+	for(;;) {
+		__global Sphere *hitSphere;
+		uint sphereIndex;
+		if (BVH_Intersect(&ray, &hitSphere, &sphereIndex, bvhRoot)) {
+			const __global Material *hitPointMat = &mats[sphereMats[sphereIndex]];
+
+			Point hitPoint;
+			hitPoint.x = ray.o.x + ray.maxt * ray.d.x;
+			hitPoint.y = ray.o.y + ray.maxt * ray.d.y;
+			hitPoint.z = ray.o.z + ray.maxt * ray.d.z;
+
+			Vector N;
+			N.x = hitPoint.x - hitSphere->center.x;
+			N.y = hitPoint.y - hitSphere->center.y;
+			N.z = hitPoint.z - hitSphere->center.z;
+			Normalize(&N);
+
+			// Check if I have to flip the normal
+			const bool flipNormal = (Dot(&N, &ray.d) > 0.f);
+			Vector shadeN;
+			shadeN.x = flipNormal ? (-N.x) : N.x;
+			shadeN.y = flipNormal ? (-N.y) : N.y;
+			shadeN.z = flipNormal ? (-N.z) : N.z;
+
+			uint matType = hitPointMat->type;
+			radiance->r += throughput.r * hitPointMat->emi_r;
+			radiance->g += throughput.g * hitPointMat->emi_g;
+			radiance->b += throughput.b * hitPointMat->emi_b;
+
+			Vector wo;
+			wo.x = -ray.d.x;
+			wo.y = -ray.d.y;
+			wo.z = -ray.d.z;
+			Vector wi;
+			float materialPdf;
+			Spectrum f;
+			bool diffuseBounce;
+			switch (matType) {
+
+#if defined(PARAM_ENABLE_MAT_MATTE)
+				case MAT_MATTE:
+					Matte_Sample_f(&hitPointMat->param.matte, &wo, &wi, &materialPdf, &f, &shadeN, seed, &diffuseBounce);
+					break;
+#endif
+
+#if defined(PARAM_ENABLE_MAT_MIRROR)
+				case MAT_MIRROR:
+					Mirror_Sample_f(&hitPointMat->param.mirror, &wo, &wi, &materialPdf, &f, &shadeN, &diffuseBounce);
+					break;
+#endif
+
+#if defined(PARAM_ENABLE_MAT_GLASS)
+				case MAT_GLASS:
+					Glass_Sample_f(&hitPointMat->param.glass, &wo, &wi, &materialPdf, &f, &N, &shadeN, seed, &diffuseBounce);
+					break;
+#endif
+
+#if defined(PARAM_ENABLE_MAT_METAL)
+				case MAT_METAL:
+					Metal_Sample_f(&hitPointMat->param.metal, &wo, &wi, &materialPdf, &f, &shadeN, seed, &diffuseBounce);
+					break;
+#endif
+
+#if defined(PARAM_ENABLE_MAT_ALLOY)
+				case MAT_ALLOY:
+					Alloy_Sample_f(&hitPointMat->param.alloy, &wo, &wi, &materialPdf, &f, &shadeN, seed, &diffuseBounce);
+					break;
+#endif
+
+				default:
+					// Huston, we have a problem...
+					diffuseBounce = false;
+					materialPdf = 0.f;
+					break;
+			}
+
+			if (materialPdf == 0.f)
+				break;
+
+			if (diffuseBounce) {
+				++diffuseBounces;
+
+				if (diffuseBounces > PARAM_MAX_DIFFUSE_BOUNCE)
+					break;
+			} else {
+				++specularGlossyBounces;
+
+				if (specularGlossyBounces > PARAM_MAX_SPECULARGLOSSY_BOUNCE)
+					break;
+			}
+
+			const float invMaterialPdf = 1.f / materialPdf;
+			throughput.r *= f.r * invMaterialPdf;
+			throughput.g *= f.g * invMaterialPdf;
+			throughput.b *= f.b * invMaterialPdf;
+
+			ray.o = hitPoint;
+			ray.d = wi;
+			ray.mint = PARAM_RAY_EPSILON;
+			ray.maxt = INFINITY;
+		} else {
+			Spectrum iLe;
+			InfiniteLight_Le(infiniteLightMap, &iLe, &ray.d);
+
+			radiance->r += throughput.r * iLe.r;
+			radiance->g += throughput.g * iLe.g;
+			radiance->b += throughput.b * iLe.b;
+			break;
+		}
+	}
+}
+__kernel void PathTracing1xPass(
 		__global GPUTask *tasks,
 		__global BVHAccelArrayNode *bvhRoot,
 		__global Camera *camera,
 		__global Spectrum *infiniteLightMap,
-		__global Pixel *frameBuffer
+		__global Pixel *frameBuffer,
+		__global Material *mats,
+		__global uint *sphereMats
 		) {
 	const size_t gid = get_global_id(0);
 	if (gid >= PARAM_SCREEN_WIDTH * PARAM_SCREEN_HEIGHT)
@@ -576,43 +950,18 @@ __kernel void PathTracing(
 	seed.s2 = task->seed.s2;
 	seed.s3 = task->seed.s3;
 
-	Ray ray;
-	GenerateCameraRay(&seed, camera, pixelIndex, &ray);
-
-	Spectrum throughput;
-	throughput.r = 1.f;
-	throughput.g = 1.f;
-	throughput.b = 1.f;
 	Spectrum radiance;
 	radiance.r = 0.f;
 	radiance.g = 0.f;
 	radiance.b = 0.f;
 
-	uint diffuseBounces = 0;
-	uint specularGlossyBounces = 0;
-
-	Pixel pixelRadiance;
-	for(;;) {
-		uint sphereIndex;
-		if (BVH_Intersect(&ray,&sphereIndex, bvhRoot)) {
-			pixelRadiance.r = 1.f;
-			pixelRadiance.g = 1.f;
-			pixelRadiance.b = 1.f;
-		} else {
-			Spectrum iLe;
-			InfiniteLight_Le(infiniteLightMap, &iLe, &ray.d);
-
-			pixelRadiance.r = radiance.r + throughput.r * iLe.r;
-			pixelRadiance.g = radiance.g + throughput.g * iLe.g;
-			pixelRadiance.b = radiance.b + throughput.b * iLe.b;
-		}
-		break;
-	}
+	PathTracingPass(bvhRoot, camera, infiniteLightMap, frameBuffer, mats, sphereMats,
+		&seed, pixelIndex, &radiance);
 
 	__global Pixel *p = &frameBuffer[pixelIndex];
-	p->r += pixelRadiance.r * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
-	p->g += pixelRadiance.g * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
-	p->b += pixelRadiance.b * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
+	p->r += radiance.r * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
+	p->g += radiance.g * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
+	p->b += radiance.b * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
 
 	// Save the seed
 	task->seed.s1 = seed.s1;
