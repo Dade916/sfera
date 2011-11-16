@@ -36,6 +36,9 @@
 //  PARAM_ENABLE_MAT_GLASS
 //  PARAM_ENABLE_MAT_METAL
 //  PARAM_ENABLE_MAT_ALLOY
+//  PARAM_HAS_TEXTUREMAPS
+
+//#pragma OPENCL EXTENSION cl_amd_printf : enable
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
@@ -101,6 +104,30 @@ typedef Spectrum Pixel;
 
 //------------------------------------------------------------------------------
 
+typedef struct {
+	float lensRadius;
+	float focalDistance;
+	float yon, hither;
+
+	float rasterToCameraMatrix[4][4];
+	float cameraToWorldMatrix[4][4];
+} Camera;
+
+//------------------------------------------------------------------------------
+
+typedef struct {
+	unsigned int rgbOffset;
+	unsigned int width, height;
+} TexMap;
+
+typedef struct {
+	unsigned int texMapIndex;
+	float shiftU, shiftV;
+	float scaleU, scaleV;
+} TexMapInstance;
+
+//------------------------------------------------------------------------------
+
 #define MAT_MATTE 0
 #define MAT_MIRROR 1
 #define MAT_GLASS 2
@@ -146,22 +173,6 @@ typedef struct {
         AlloyParam alloy;
 	} param;
 } Material;
-
-//------------------------------------------------------------------------------
-
-typedef struct {
-	uint rgbOffset, alphaOffset;
-	uint width, height;
-} TexMap;
-
-typedef struct {
-	float lensRadius;
-	float focalDistance;
-	float yon, hither;
-
-	float rasterToCameraMatrix[4][4];
-	float cameraToWorldMatrix[4][4];
-} Camera;
 
 //------------------------------------------------------------------------------
 // Random number generator
@@ -803,6 +814,11 @@ __kernel void PathTracing(
 		__global Pixel *frameBuffer,
 		__global Material *mats,
 		__global uint *sphereMats
+#if defined(PARAM_HAS_TEXTUREMAPS)
+		, __global TexMap *texMaps
+		, __global Spectrum *texMapRGB
+		, __global TexMapInstance *sphereTexMaps
+#endif
 		) {
 	const size_t gid = get_global_id(0);
 	if (gid >= PARAM_SCREEN_WIDTH * PARAM_SCREEN_HEIGHT)
@@ -838,6 +854,9 @@ __kernel void PathTracing(
 		uint sphereIndex;
 		if (BVH_Intersect(&ray, &hitSphere, &sphereIndex, bvhRoot)) {
 			const __global Material *hitPointMat = &mats[sphereMats[sphereIndex]];
+#if defined(PARAM_HAS_TEXTUREMAPS)
+			const __global TexMapInstance *hitTexMapInst = &sphereTexMaps[sphereIndex];
+#endif
 
 			Point hitPoint;
 			hitPoint.x = ray.o.x + ray.maxt * ray.d.x;
@@ -911,6 +930,28 @@ __kernel void PathTracing(
 
 			if (materialPdf == 0.f)
 				break;
+
+#if defined(PARAM_HAS_TEXTUREMAPS)
+			uint texMapIndex = hitTexMapInst->texMapIndex;
+			if (texMapIndex != 0xffffffffu) {
+				Vector dir;
+				dir.x = hitPoint.x - hitSphere->center.x;
+				dir.y = hitPoint.y - hitSphere->center.y;
+				dir.z = hitPoint.z - hitSphere->center.z;
+				Normalize(&dir);
+
+				const float u = SphericalPhi(&dir) * INV_TWOPI * hitTexMapInst->scaleU + hitTexMapInst->shiftU;
+				const float v = SphericalTheta(&dir) * INV_PI  * hitTexMapInst->scaleV + hitTexMapInst->shiftV;
+
+				__global TexMap *tm = &texMaps[texMapIndex];
+				Spectrum col;
+				TexMap_GetColor(&texMapRGB[tm->rgbOffset], tm->width, tm->height, u, v, &col);
+
+				f.r *= col.r;
+				f.g *= col.g;
+				f.b *= col.b;
+			}
+#endif
 
 			if (diffuseBounce) {
 				++diffuseBounces;

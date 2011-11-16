@@ -38,6 +38,17 @@ typedef struct {
 	float cameraToWorldMatrix[4][4];
 } Camera;
 
+typedef struct {
+	unsigned int rgbOffset;
+	unsigned int width, height;
+} TexMap;
+
+typedef struct {
+	unsigned int texMapIndex;
+	float shiftU, shiftV;
+	float scaleU, scaleV;
+} TexMapInstance;
+
 #define MAT_MATTE 0
 #define MAT_MIRROR 1
 #define MAT_GLASS 2
@@ -103,11 +114,19 @@ public:
 	vector<compiledscene::Material> mats;
 	vector<unsigned int> sphereMats;
 
+	// Compiled TextureMaps
+	vector<compiledscene::TexMap> texMaps;
+	unsigned int totRGBTexMem;
+	Spectrum *rgbTexMem;
+
+	vector<compiledscene::TexMapInstance> sphereTexs;
+
 private:
 	void CompileCamera();
 	void CompileGeometry();
 	void CompileMaterial(Material *m, compiledscene::Material *gpum);
 	void CompileMaterials();
+	void CompileTextureMaps();
 
 	const GameLevel *gameLevel;
 };

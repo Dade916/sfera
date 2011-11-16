@@ -69,6 +69,9 @@ protected:
 	cl::Buffer *infiniteLightBuffer;
 	cl::Buffer *matBuffer;
 	cl::Buffer *matIndexBuffer;
+	cl::Buffer *texMapBuffer;
+	cl::Buffer *texMapRGBBuffer;
+	cl::Buffer *texMapInstanceBuffer;
 
 	GLuint pbo;
 	cl::BufferGL *pboBuff;

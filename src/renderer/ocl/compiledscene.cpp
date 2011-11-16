@@ -25,6 +25,10 @@
 
 CompiledScene::CompiledScene(const GameLevel *level) : gameLevel(level) {
 	accel = NULL;
+	totRGBTexMem = 0;
+	rgbTexMem = NULL;
+
+	CompileTextureMaps();
 
 	EditActionList ea;
 	ea.AddAllAction();
@@ -34,6 +38,7 @@ CompiledScene::CompiledScene(const GameLevel *level) : gameLevel(level) {
 
 CompiledScene::~CompiledScene() {
 	delete accel;
+	delete[] rgbTexMem;
 }
 
 void CompiledScene::CompileCamera() {
@@ -47,8 +52,7 @@ void CompiledScene::CompileCamera() {
 }
 
 void CompiledScene::CompileGeometry() {
-	if (accel)
-		delete accel;
+	delete accel;
 
 	//--------------------------------------------------------------------------
 	// Build the Accelerator
@@ -220,6 +224,95 @@ void CompiledScene::CompileMaterials() {
 
 	const double tEnd = WallClockTime();
 	SFERA_LOG("[OCLRenderer::CompiledScene] Material compilation time: " << int((tEnd - tStart) * 1000.0) << "ms");
+}
+
+void CompiledScene::CompileTextureMaps() {
+	SFERA_LOG("[OCLRenderer::CompiledScene] Compile TextureMaps");
+
+	Scene &scene(*(gameLevel->scene));
+
+	texMaps.resize(0);
+	sphereTexs.resize(0);
+	delete[] rgbTexMem;
+
+	//--------------------------------------------------------------------------
+	// Translate sphere texture maps
+	//--------------------------------------------------------------------------
+
+	const double tStart = WallClockTime();
+
+	std::vector<TextureMap *> tms;
+	gameLevel->texMapCache->GetTexMaps(tms);
+	// Calculate the amount of ram to allocate
+	totRGBTexMem = 0;
+
+	for (unsigned int i = 0; i < tms.size(); ++i) {
+		TextureMap *tm = tms[i];
+		const unsigned int pixelCount = tm->GetWidth() * tm->GetHeight();
+
+		totRGBTexMem += pixelCount;
+	}
+
+	// Allocate texture map memory
+	if (totRGBTexMem > 0) {
+		texMaps.resize(tms.size());
+
+		if (totRGBTexMem > 0) {
+			unsigned int rgbOffset = 0;
+			rgbTexMem = new Spectrum[totRGBTexMem];
+
+			for (unsigned int i = 0; i < tms.size(); ++i) {
+				TextureMap *tm = tms[i];
+				const unsigned int pixelCount = tm->GetWidth() * tm->GetHeight();
+
+				memcpy(&rgbTexMem[rgbOffset], tm->GetPixels(), pixelCount * sizeof(Spectrum));
+				texMaps[i].rgbOffset = rgbOffset;
+				texMaps[i].width = tm->GetWidth();
+				texMaps[i].height = tm->GetHeight();
+
+				rgbOffset += pixelCount;
+			}
+		} else
+			rgbTexMem = NULL;
+
+		//----------------------------------------------------------------------
+
+		// Translate sphere texture instances
+		const unsigned int sphereCount = scene.spheres.size();
+		sphereTexs.resize(sphereCount + GAMEPLAYER_PUPPET_SIZE);
+		for (unsigned int i = 0; i < sphereCount; ++i) {
+			TexMapInstance *t = scene.sphereTexMaps[i];
+
+			if (t) {
+				// Look for the index
+				unsigned int index = 0;
+				for (unsigned int j = 0; j < tms.size(); ++j) {
+					if (t->GetTexMap() == tms[j]) {
+						index = j;
+						break;
+					}
+				}
+
+				sphereTexs[i].texMapIndex = index;
+				sphereTexs[i].shiftU = t->GetShiftU();
+				sphereTexs[i].shiftV = t->GetShiftV();
+				sphereTexs[i].scaleU = t->GetScaleU();
+				sphereTexs[i].scaleV = t->GetScaleV();
+			} else
+				sphereTexs[i].texMapIndex = 0xffffffffu;
+		}
+
+		// Player puppet has no texture maps
+		for (unsigned int i = 0; i < GAMEPLAYER_PUPPET_SIZE; ++i)
+			sphereTexs[i + sphereCount].texMapIndex = 0xffffffffu;
+	} else {
+		texMaps.resize(0);
+		sphereTexs.resize(0);
+		rgbTexMem = NULL;
+	}
+
+	const double tEnd = WallClockTime();
+	SFERA_LOG("[OCLRenderer::CompiledScene] Texture maps compilation time: " << int((tEnd - tStart) * 1000.0) << "ms");
 }
 
 void CompiledScene::Recompile(const EditActionList &editActions) {

@@ -75,7 +75,11 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 		}
 	}
 
-	if (!deviceFound)
+	if (deviceFound) {
+		SFERA_LOG("Selected OpenCL device: " << selectedDevice.getInfo<CL_DEVICE_NAME>());
+		SFERA_LOG("  Type: " << OCLDeviceTypeString(selectedDevice.getInfo<CL_DEVICE_TYPE>()));
+		SFERA_LOG("  Units: " << selectedDevice.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>());
+	} else
 		throw runtime_error("Unable to find a OpenCL GPU device");
 
 	// Allocate a context with the selected device
@@ -126,6 +130,9 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	infiniteLightBuffer = NULL;
 	matBuffer = NULL;
 	matIndexBuffer = NULL;
+	texMapBuffer = NULL;
+	texMapRGBBuffer = NULL;
+	texMapInstanceBuffer = NULL;
 
 	AllocOCLBufferRW(&toneMapFrameBuffer, sizeof(Pixel) * width * height, "ToneMap FrameBuffer");
 	AllocOCLBufferRW(&gpuTaskBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "GPUTask");
@@ -138,6 +145,17 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 			sizeof(compiledscene::Material) * compiledScene->mats.size(), "Materials");
 	AllocOCLBufferRO(&matIndexBuffer, (void *)(&compiledScene->sphereMats[0]),
 			sizeof(unsigned int) * compiledScene->sphereMats.size(), "Material Indices");
+
+	if (compiledScene->texMaps.size() > 0) {
+		AllocOCLBufferRO(&texMapBuffer, (void *)(&compiledScene->texMaps[0]),
+				sizeof(compiledscene::TexMap) * compiledScene->texMaps.size(), "Texture Maps");
+
+		AllocOCLBufferRO(&texMapRGBBuffer, (void *)(compiledScene->rgbTexMem),
+				sizeof(Spectrum) * compiledScene->totRGBTexMem, "Texture Map Images");
+
+		AllocOCLBufferRO(&texMapInstanceBuffer, (void *)(&compiledScene->sphereTexs[0]),
+				sizeof(compiledscene::TexMap) * compiledScene->sphereTexs.size(), "Texture Map Instances");
+	}
 
 	//--------------------------------------------------------------------------
 	// Create pixel buffer object for display
@@ -183,6 +201,9 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	if (compiledScene->enable_MAT_ALLOY)
 		ss << " -D PARAM_ENABLE_MAT_ALLOY";
 
+	if (texMapBuffer)
+		ss << " -D PARAM_HAS_TEXTUREMAPS";
+
 #if defined(__APPLE__)
 	ss << " -D __APPLE__";
 #endif
@@ -217,12 +238,19 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	kernelUpdatePixelBuffer->setArg(1, *pboBuff);
 
 	kernelPathTracing = new cl::Kernel(program, "PathTracing");
-	kernelPathTracing->setArg(0, *gpuTaskBuffer);
-	kernelPathTracing->setArg(2, *cameraBuffer);
-	kernelPathTracing->setArg(3, *infiniteLightBuffer);
-	kernelPathTracing->setArg(4, *toneMapFrameBuffer);
-	kernelPathTracing->setArg(5, *matBuffer);
-	kernelPathTracing->setArg(6, *matIndexBuffer);
+	unsigned int argIndex = 0;
+	kernelPathTracing->setArg(argIndex++, *gpuTaskBuffer);
+	argIndex++;
+	kernelPathTracing->setArg(argIndex++, *cameraBuffer);
+	kernelPathTracing->setArg(argIndex++, *infiniteLightBuffer);
+	kernelPathTracing->setArg(argIndex++, *toneMapFrameBuffer);
+	kernelPathTracing->setArg(argIndex++, *matBuffer);
+	kernelPathTracing->setArg(argIndex++, *matIndexBuffer);
+	if (texMapBuffer) {
+		kernelPathTracing->setArg(argIndex++, *texMapBuffer);
+		kernelPathTracing->setArg(argIndex++, *texMapRGBBuffer);
+		kernelPathTracing->setArg(argIndex++, *texMapInstanceBuffer);
+	}
 }
 
 OCLRenderer::~OCLRenderer() {
@@ -233,6 +261,9 @@ OCLRenderer::~OCLRenderer() {
 	FreeOCLBuffer(&infiniteLightBuffer);
 	FreeOCLBuffer(&matBuffer);
 	FreeOCLBuffer(&matIndexBuffer);
+	FreeOCLBuffer(&texMapBuffer);
+	FreeOCLBuffer(&texMapRGBBuffer);
+	FreeOCLBuffer(&texMapInstanceBuffer);
 
 	delete pboBuff;
 	glDeleteBuffersARB(1, &pbo);
