@@ -154,7 +154,7 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 				sizeof(Spectrum) * compiledScene->totRGBTexMem, "Texture Map Images");
 
 		AllocOCLBufferRO(&texMapInstanceBuffer, (void *)(&compiledScene->sphereTexs[0]),
-				sizeof(compiledscene::TexMap) * compiledScene->sphereTexs.size(), "Texture Map Instances");
+				sizeof(compiledscene::TexMapInstance) * compiledScene->sphereTexs.size(), "Texture Map Instances");
 	}
 
 	//--------------------------------------------------------------------------

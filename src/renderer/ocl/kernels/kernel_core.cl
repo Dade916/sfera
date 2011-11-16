@@ -931,6 +931,18 @@ __kernel void PathTracing(
 			if (materialPdf == 0.f)
 				break;
 
+			if (diffuseBounce) {
+				++diffuseBounces;
+
+				if (diffuseBounces > PARAM_MAX_DIFFUSE_BOUNCE)
+					break;
+			} else {
+				++specularGlossyBounces;
+
+				if (specularGlossyBounces > PARAM_MAX_SPECULARGLOSSY_BOUNCE)
+					break;
+			}
+
 #if defined(PARAM_HAS_TEXTUREMAPS)
 			uint texMapIndex = hitTexMapInst->texMapIndex;
 			if (texMapIndex != 0xffffffffu) {
@@ -952,18 +964,6 @@ __kernel void PathTracing(
 				f.b *= col.b;
 			}
 #endif
-
-			if (diffuseBounce) {
-				++diffuseBounces;
-
-				if (diffuseBounces > PARAM_MAX_DIFFUSE_BOUNCE)
-					break;
-			} else {
-				++specularGlossyBounces;
-
-				if (specularGlossyBounces > PARAM_MAX_SPECULARGLOSSY_BOUNCE)
-					break;
-			}
 
 			const float invMaterialPdf = 1.f / materialPdf;
 			throughput.r *= f.r * invMaterialPdf;
