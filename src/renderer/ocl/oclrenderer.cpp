@@ -40,6 +40,8 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	frameBuffer = new FrameBuffer(width, height);
 	frameBuffer->Clear();
 
+	compiledScene = new CompiledScene(level);
+
 	//--------------------------------------------------------------------------
 	// OpenCL setup
 	//--------------------------------------------------------------------------
@@ -132,11 +134,10 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 			sizeof(Spectrum) * gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() *
 			gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight(), "Inifinite Light");
 
-	CompileMaterials();
-	AllocOCLBufferRO(&matBuffer, (void *)(&mats[0]),
-			sizeof(ocl_kernels::Material) * mats.size(), "Materials");
-	AllocOCLBufferRO(&matIndexBuffer, (void *)(&sphereMats[0]),
-			sizeof(unsigned int) * sphereMats.size(), "Material Indices");
+	AllocOCLBufferRO(&matBuffer, (void *)(&compiledScene->mats[0]),
+			sizeof(compiledscene::Material) * compiledScene->mats.size(), "Materials");
+	AllocOCLBufferRO(&matIndexBuffer, (void *)(&compiledScene->sphereMats[0]),
+			sizeof(unsigned int) * compiledScene->sphereMats.size(), "Material Indices");
 
 	//--------------------------------------------------------------------------
 	// Create pixel buffer object for display
@@ -171,15 +172,15 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 			" -D PARAM_IL_MAP_WIDTH=" << gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() <<
 			" -D PARAM_IL_MAP_HEIGHT=" << gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight();
 
-	if (enable_MAT_MATTE)
+	if (compiledScene->enable_MAT_MATTE)
 		ss << " -D PARAM_ENABLE_MAT_MATTE";
-	if (enable_MAT_MIRROR)
+	if (compiledScene->enable_MAT_MIRROR)
 		ss << " -D PARAM_ENABLE_MAT_MIRROR";
-	if (enable_MAT_GLASS)
+	if (compiledScene->enable_MAT_GLASS)
 		ss << " -D PARAM_ENABLE_MAT_GLASS";
-	if (enable_MAT_METAL)
+	if (compiledScene->enable_MAT_METAL)
 		ss << " -D PARAM_ENABLE_MAT_METAL";
-	if (enable_MAT_ALLOY)
+	if (compiledScene->enable_MAT_ALLOY)
 		ss << " -D PARAM_ENABLE_MAT_ALLOY";
 
 #if defined(__APPLE__)
@@ -244,156 +245,6 @@ OCLRenderer::~OCLRenderer() {
 	delete ctx;
 }
 
-void OCLRenderer::CompileMaterial(Material *m, ocl_kernels::Material *gpum) {
-	gpum->emi_r = m->GetEmission().r;
-	gpum->emi_g = m->GetEmission().g;
-	gpum->emi_b = m->GetEmission().b;
-
-	switch (m->GetType()) {
-		case MATTE: {
-			enable_MAT_MATTE = true;
-			MatteMaterial *mm = (MatteMaterial *)m;
-
-			gpum->type = MAT_MATTE;
-			gpum->param.matte.r = mm->GetKd().r;
-			gpum->param.matte.g = mm->GetKd().g;
-			gpum->param.matte.b = mm->GetKd().b;
-			break;
-		}
-		case MIRROR: {
-			enable_MAT_MIRROR = true;
-			MirrorMaterial *mm = (MirrorMaterial *)m;
-
-			gpum->type = MAT_MIRROR;
-			gpum->param.mirror.r = mm->GetKr().r;
-			gpum->param.mirror.g = mm->GetKr().g;
-			gpum->param.mirror.b = mm->GetKr().b;
-			break;
-		}
-		case GLASS: {
-			enable_MAT_GLASS = true;
-			GlassMaterial *gm = (GlassMaterial *)m;
-
-			gpum->type = MAT_GLASS;
-			gpum->param.glass.refl_r = gm->GetKrefl().r;
-			gpum->param.glass.refl_g = gm->GetKrefl().g;
-			gpum->param.glass.refl_b = gm->GetKrefl().b;
-
-			gpum->param.glass.refrct_r = gm->GetKrefrct().r;
-			gpum->param.glass.refrct_g = gm->GetKrefrct().g;
-			gpum->param.glass.refrct_b = gm->GetKrefrct().b;
-
-			gpum->param.glass.ousideIor = gm->GetOutsideIOR();
-			gpum->param.glass.ior = gm->GetIOR();
-			gpum->param.glass.R0 = gm->GetR0();
-			break;
-		}
-		case METAL: {
-			enable_MAT_METAL = true;
-			MetalMaterial *mm = (MetalMaterial *)m;
-
-			gpum->type = MAT_METAL;
-			gpum->param.metal.r = mm->GetKr().r;
-			gpum->param.metal.g = mm->GetKr().g;
-			gpum->param.metal.b = mm->GetKr().b;
-			gpum->param.metal.exponent = mm->GetExp();
-			break;
-		}
-		case ALLOY: {
-			enable_MAT_ALLOY = true;
-			AlloyMaterial *am = (AlloyMaterial *)m;
-
-			gpum->type = MAT_ALLOY;
-			gpum->param.alloy.refl_r= am->GetKrefl().r;
-			gpum->param.alloy.refl_g = am->GetKrefl().g;
-			gpum->param.alloy.refl_b = am->GetKrefl().b;
-
-			gpum->param.alloy.diff_r = am->GetKd().r;
-			gpum->param.alloy.diff_g = am->GetKd().g;
-			gpum->param.alloy.diff_b = am->GetKd().b;
-
-			gpum->param.alloy.exponent = am->GetExp();
-			gpum->param.alloy.R0 = am->GetR0();
-			break;
-		}
-		default: {
-			enable_MAT_MATTE = true;
-			gpum->type = MAT_MATTE;
-			gpum->param.matte.r = 0.75f;
-			gpum->param.matte.g = 0.75f;
-			gpum->param.matte.b = 0.75f;
-			break;
-		}
-	}
-}
-
-void OCLRenderer::CompileMaterials() {
-	SFERA_LOG("[OCLRenderer] Compile Materials");
-
-	Scene &scene(*(gameLevel->scene));
-
-	//--------------------------------------------------------------------------
-	// Translate material definitions
-	//--------------------------------------------------------------------------
-
-	const double tStart = WallClockTime();
-
-	enable_MAT_MATTE = false;
-	enable_MAT_MIRROR = false;
-	enable_MAT_GLASS = false;
-	enable_MAT_METAL = false;
-	enable_MAT_ALLOY = false;
-
-	const unsigned int materialsCount = scene.materials.size() + GAMEPLAYER_PUPPET_SIZE;
-	mats.resize(materialsCount);
-
-	// Add scene materials
-	for (unsigned int i = 0; i < scene.materials.size(); ++i) {
-		Material *m = scene.materials[i];
-		ocl_kernels::Material *gpum = &mats[i];
-
-		CompileMaterial(m, gpum);
-	}
-
-	// Add player materials
-	for (unsigned int i = 0; i < GAMEPLAYER_PUPPET_SIZE; ++i) {
-		Material *m = gameLevel->player->puppetMaterial[i];
-		ocl_kernels::Material *gpum = &mats[i + scene.materials.size()];
-
-		CompileMaterial(m, gpum);
-	}
-
-	//--------------------------------------------------------------------------
-	// Translate sphere material indices
-	//--------------------------------------------------------------------------
-
-	const unsigned int sphereCount = scene.sphereMaterials.size() + GAMEPLAYER_PUPPET_SIZE;
-	sphereMats.resize(sphereCount);
-
-	// Translate scene material indices
-	for (unsigned int i = 0; i < scene.sphereMaterials.size(); ++i) {
-		Material *m = scene.sphereMaterials[i];
-
-		// Look for the index
-		unsigned int index = 0;
-		for (unsigned int j = 0; j < scene.materials.size(); ++j) {
-			if (m == scene.materials[j]) {
-				index = j;
-				break;
-			}
-		}
-
-		sphereMats[i] = index;
-	}
-
-	// Translate player material indices
-	for (unsigned int i = 0; i < GAMEPLAYER_PUPPET_SIZE; ++i)
-		sphereMats[i + scene.sphereMaterials.size()] = i + scene.materials.size();
-
-	const double tEnd = WallClockTime();
-	SFERA_LOG("[OCLRenderer] Material compilation time: " << int((tEnd - tStart) * 1000.0) << "ms");
-}
-
 void OCLRenderer::AllocOCLBufferRO(cl::Buffer **buff, void *src, const size_t size, const string &desc) {
 	if (*buff) {
 		// Check the size of the already allocated buffer
@@ -437,54 +288,41 @@ void OCLRenderer::FreeOCLBuffer(cl::Buffer **buff) {
 
 size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	//--------------------------------------------------------------------------
-	// Build the Accelerator
+	// Recompile the scene
 	//--------------------------------------------------------------------------
 
-	const int treeType = 4; // Tree type to generate (2 = binary, 4 = quad, 8 = octree)
-	const int isectCost = 80;
-	const int travCost = 10;
-	const float emptyBonus = 0.5f;
+	compiledScene->Recompile(editActionList);
 
-	const vector<GameSphere> &spheres(gameLevel->scene->spheres);
-	vector<const Sphere *> sphereList(gameLevel->scene->spheres.size() + GAMEPLAYER_PUPPET_SIZE);
-	for (size_t s = 0; s < spheres.size(); ++s)
-		sphereList[s] = &(spheres[s].sphere);
-	for (size_t s = 0; s < GAMEPLAYER_PUPPET_SIZE; ++s) {
-		const Sphere *puppet = &(gameLevel->player->puppet[s]);
+	//--------------------------------------------------------------------------
+	// Upload the new Camera to the GPU
+	//--------------------------------------------------------------------------
 
-		sphereList[s + spheres.size()] = puppet;
-	}
+	if (editActionList.Has(CAMERA_EDIT))
+		cmdQueue->enqueueWriteBuffer(*cameraBuffer, CL_FALSE, 0, sizeof(compiledscene::Camera), &compiledScene->camera);
 
-	BVHAccel *accel = new BVHAccel(sphereList, treeType, isectCost, travCost, emptyBonus);
+	//--------------------------------------------------------------------------
+	// Check if I have to update the BVH buffer
+	//--------------------------------------------------------------------------
 
-	size_t bvhBufferSize = accel->nNodes * sizeof(BVHAccelArrayNode);
+	size_t bvhBufferSize = compiledScene->accel->nNodes * sizeof(BVHAccelArrayNode);
 	if (!bvhBuffer) {
 		AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
+		// Upload the new BVH to the GPU
+		cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene->accel->bvhTree);
 
 		kernelPathTracing->setArg(1, *bvhBuffer);
-	} else {
+	} else if (bvhBuffer->getInfo<CL_MEM_SIZE>() < bvhBufferSize) {
 		// Check if the buffer is of the right size
-		if (bvhBuffer->getInfo<CL_MEM_SIZE>() < bvhBufferSize) {
-			FreeOCLBuffer(&bvhBuffer);
-			AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
+		FreeOCLBuffer(&bvhBuffer);
+		AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
+		// Upload the new BVH to the GPU
+		cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene->accel->bvhTree);
 
-			kernelPathTracing->setArg(1, *bvhBuffer);
-		}
+		kernelPathTracing->setArg(1, *bvhBuffer);
+	} else if (editActionList.Has(GEOMETRY_EDIT)) {
+		// Upload the new BVH to the GPU
+		cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene->accel->bvhTree);
 	}
-
-	// Upload the new BVH to the GPU
-	cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, accel->bvhTree);
-
-	// Upload the new Camera to the GPU
-	PerspectiveCamera &perpCamera(*(gameLevel->camera));
-	camera.lensRadius = perpCamera.GetLensRadius();
-	camera.focalDistance = perpCamera.GetFocalDistance();
-	camera.yon = perpCamera.GetClipYon();
-	camera.hither = perpCamera.GetClipHither();
-	memcpy(camera.rasterToCameraMatrix, perpCamera.GetRasterToCameraMatrix().m, sizeof(float[4][4]));
-	memcpy(camera.cameraToWorldMatrix, perpCamera.GetCameraToWorldMatrix().m, sizeof(float[4][4]));
-
-	cmdQueue->enqueueWriteBuffer(*cameraBuffer, CL_FALSE, 0, sizeof(ocl_kernels::Camera), &camera);
 
 	//--------------------------------------------------------------------------
 	// Render
@@ -533,8 +371,6 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pbo);
     glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-
-	delete accel;
 
 	return samplePerPass * width * height;
 }

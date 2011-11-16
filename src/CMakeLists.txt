@@ -83,6 +83,7 @@ set(Sfera_SRCS
 	renderer/cpu/cpurenderer.cpp
 	renderer/cpu/singlecpurenderer.cpp
 	renderer/cpu/multicpurenderer.cpp
+	renderer/ocl/compiledscene.cpp
 	renderer/ocl/kernels/kernel_core.cpp
 	renderer/ocl/oclrenderer.cpp
 	physic/gamephysic.cpp

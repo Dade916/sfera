@@ -25,6 +25,7 @@
 
 #include "gamelevel.h"
 #include "renderer/levelrenderer.h"
+#include "renderer/ocl/compiledscene.h"
 #include "pixel/framebuffer.h"
 
 namespace ocl_kernels {
@@ -37,61 +38,6 @@ typedef struct {
 	// The task seed
 	Seed seed;
 } GPUTask;
-
-typedef struct {
-	float lensRadius;
-	float focalDistance;
-	float yon, hither;
-
-	float rasterToCameraMatrix[4][4];
-	float cameraToWorldMatrix[4][4];
-} Camera;
-
-#define MAT_MATTE 0
-#define MAT_MIRROR 1
-#define MAT_GLASS 2
-#define MAT_METAL 3
-#define MAT_ALLOY 4
-
-typedef struct {
-    float r, g, b;
-} MatteParam;
-
-typedef struct {
-    float r, g, b;
-} MirrorParam;
-
-typedef struct {
-    float refl_r, refl_g, refl_b;
-    float refrct_r, refrct_g, refrct_b;
-    float ousideIor, ior;
-    float R0;
-} GlassParam;
-
-typedef struct {
-    float r, g, b;
-    float exponent;
-} MetalParam;
-
-typedef struct {
-    float diff_r, diff_g, diff_b;
-    float refl_r, refl_g, refl_b;
-    float exponent;
-    float R0;
-} AlloyParam;
-
-typedef struct {
-	unsigned int type;
-	float emi_r, emi_g, emi_b;
-
-	union {
-		MatteParam matte;
-		MirrorParam mirror;
-        GlassParam glass;
-        MetalParam metal;
-        AlloyParam alloy;
-	} param;
-} Material;
 
 }
 
@@ -106,9 +52,6 @@ protected:
 	void AllocOCLBufferRO(cl::Buffer **buff, void *src, const size_t size, const string &desc);
 	void AllocOCLBufferRW(cl::Buffer **buff, const size_t size, const string &desc);
 	void FreeOCLBuffer(cl::Buffer **buff);
-
-	void CompileMaterial(Material *m, ocl_kernels::Material *gpum);
-	void CompileMaterials();
 
 	cl::Device dev;
 	cl::Context *ctx;
@@ -134,13 +77,7 @@ protected:
 
 	FrameBuffer *frameBuffer;
 
-	ocl_kernels::Camera camera;
-
-	// Compiled Materials
-	bool enable_MAT_MATTE, enable_MAT_MIRROR, enable_MAT_GLASS,
-		enable_MAT_METAL, enable_MAT_ALLOY;
-	vector<ocl_kernels::Material> mats;
-	vector<unsigned int> sphereMats;
+	CompiledScene *compiledScene;
 
 	double timeSinceLastCameraEdit, timeSinceLastNoCameraEdit;
 };

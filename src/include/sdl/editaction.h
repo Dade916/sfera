@@ -26,7 +26,9 @@
 #include "sfera.h"
 
 enum EditAction {
-	CAMERA_EDIT // Use this for any Camera parameter editing
+	CAMERA_EDIT, // Use this for any Camera parameter editing
+	GEOMETRY_EDIT, // Use this for any objects editing
+	MATERIALS_EDIT // Use this for any Material related editing
 };
 
 class EditActionList {
@@ -38,6 +40,8 @@ public:
 	void AddAction(const EditAction a) { actions.insert(a); };
 	void AddAllAction() {
 		AddAction(CAMERA_EDIT);
+		AddAction(GEOMETRY_EDIT);
+		AddAction(MATERIALS_EDIT);
 	}
 	bool Has(const EditAction a) const { return (actions.find(a) != actions.end()); };
 	size_t Size() const { return actions.size(); };
