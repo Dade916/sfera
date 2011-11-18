@@ -233,6 +233,7 @@ void CompiledScene::CompileTextureMaps() {
 
 	texMaps.resize(0);
 	sphereTexs.resize(0);
+	sphereBumps.resize(0);
 	delete[] rgbTexMem;
 
 	//--------------------------------------------------------------------------
@@ -305,9 +306,46 @@ void CompiledScene::CompileTextureMaps() {
 		// Player puppet has no texture maps
 		for (unsigned int i = 0; i < GAMEPLAYER_PUPPET_SIZE; ++i)
 			sphereTexs[i + sphereCount].texMapIndex = 0xffffffffu;
+
+		//----------------------------------------------------------------------
+
+		// Translate sphere bump map instances
+		bool hasBumpMapping = false;
+		sphereBumps.resize(sphereCount + GAMEPLAYER_PUPPET_SIZE);
+		for (unsigned int i = 0; i < sphereCount; ++i) {
+			BumpMapInstance *b = scene.sphereBumpMaps[i];
+
+			if (b) {
+				// Look for the index
+				unsigned int index = 0;
+				for (unsigned int j = 0; j < tms.size(); ++j) {
+					if (b->GetTexMap() == tms[j]) {
+						index = j;
+						break;
+					}
+				}
+
+				sphereBumps[i].texMapIndex = index;
+				sphereBumps[i].shiftU = b->GetShiftU();
+				sphereBumps[i].shiftV = b->GetShiftV();
+				sphereBumps[i].scaleU = b->GetScaleU();
+				sphereBumps[i].scaleV = b->GetScaleV();
+				sphereBumps[i].scale = b->GetScale();
+				hasBumpMapping = true;
+			} else
+				sphereBumps[i].texMapIndex = 0xffffffffu;
+		}
+
+		// Player puppet has no bump maps
+		for (unsigned int i = 0; i < GAMEPLAYER_PUPPET_SIZE; ++i)
+			sphereBumps[i + sphereCount].texMapIndex = 0xffffffffu;
+
+		if (!hasBumpMapping)
+			sphereBumps.resize(0);
 	} else {
 		texMaps.resize(0);
 		sphereTexs.resize(0);
+		sphereBumps.resize(0);
 		rgbTexMem = NULL;
 	}
 

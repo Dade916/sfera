@@ -133,6 +133,7 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	texMapBuffer = NULL;
 	texMapRGBBuffer = NULL;
 	texMapInstanceBuffer = NULL;
+	bumpMapInstanceBuffer = NULL;
 
 	AllocOCLBufferRW(&toneMapFrameBuffer, sizeof(Pixel) * width * height, "ToneMap FrameBuffer");
 	AllocOCLBufferRW(&gpuTaskBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "GPUTask");
@@ -155,6 +156,10 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 
 		AllocOCLBufferRO(&texMapInstanceBuffer, (void *)(&compiledScene->sphereTexs[0]),
 				sizeof(compiledscene::TexMapInstance) * compiledScene->sphereTexs.size(), "Texture Map Instances");
+
+		if (compiledScene->sphereBumps.size() > 0)
+			AllocOCLBufferRO(&bumpMapInstanceBuffer, (void *)(&compiledScene->sphereBumps[0]),
+					sizeof(compiledscene::BumpMapInstance) * compiledScene->sphereBumps.size(), "Bump Map Instances");
 	}
 
 	//--------------------------------------------------------------------------
@@ -201,8 +206,12 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	if (compiledScene->enable_MAT_ALLOY)
 		ss << " -D PARAM_ENABLE_MAT_ALLOY";
 
-	if (texMapBuffer)
+	if (texMapBuffer) {
 		ss << " -D PARAM_HAS_TEXTUREMAPS";
+		
+		if (compiledScene->sphereBumps.size() > 0)
+			ss << " -D PARAM_HAS_BUMPMAPS";
+	}
 
 #if defined(__APPLE__)
 	ss << " -D __APPLE__";
@@ -226,13 +235,14 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 
 	kernelInit = new cl::Kernel(program, "Init");
 	kernelInit->setArg(0, *gpuTaskBuffer);
+	kernelInit->setArg(1, *toneMapFrameBuffer);
 	cmdQueue->enqueueNDRangeKernel(*kernelInit, cl::NullRange,
 			cl::NDRange(RoundUp<unsigned int>(width * height, 64)),
 			cl::NDRange(64));
 
 	kernelInitToneMapFB = new cl::Kernel(program, "InitFB");
 	kernelInitToneMapFB->setArg(0, *toneMapFrameBuffer);
-
+	
 	kernelUpdatePixelBuffer = new cl::Kernel(program, "UpdatePixelBuffer");
 	kernelUpdatePixelBuffer->setArg(0, *toneMapFrameBuffer);
 	kernelUpdatePixelBuffer->setArg(1, *pboBuff);
@@ -250,6 +260,8 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 		kernelPathTracing->setArg(argIndex++, *texMapBuffer);
 		kernelPathTracing->setArg(argIndex++, *texMapRGBBuffer);
 		kernelPathTracing->setArg(argIndex++, *texMapInstanceBuffer);
+		if (compiledScene->sphereBumps.size() > 0)
+			kernelPathTracing->setArg(argIndex++, *bumpMapInstanceBuffer);
 	}
 }
 
@@ -264,6 +276,7 @@ OCLRenderer::~OCLRenderer() {
 	FreeOCLBuffer(&texMapBuffer);
 	FreeOCLBuffer(&texMapRGBBuffer);
 	FreeOCLBuffer(&texMapInstanceBuffer);
+	FreeOCLBuffer(&bumpMapInstanceBuffer);
 
 	delete pboBuff;
 	glDeleteBuffersARB(1, &pbo);

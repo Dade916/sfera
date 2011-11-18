@@ -37,6 +37,7 @@
 //  PARAM_ENABLE_MAT_METAL
 //  PARAM_ENABLE_MAT_ALLOY
 //  PARAM_HAS_TEXTUREMAPS
+//  PARAM_HAS_BUMPMAPS
 
 //#pragma OPENCL EXTENSION cl_amd_printf : enable
 
@@ -125,6 +126,13 @@ typedef struct {
 	float shiftU, shiftV;
 	float scaleU, scaleV;
 } TexMapInstance;
+
+typedef struct {
+	unsigned int texMapIndex;
+	float shiftU, shiftV;
+	float scaleU, scaleV;
+	float scale;
+} BumpMapInstance;
 
 //------------------------------------------------------------------------------
 
@@ -218,6 +226,10 @@ float RndFloatValue(Seed *s) {
 
 float Spectrum_Y(const Spectrum *s) {
 	return 0.212671f * s->r + 0.715160f * s->g + 0.072169f * s->b;
+}
+
+float Spectrum_Filter(const Spectrum *s) {
+	return max(max(s->r, s->g), s->b);
 }
 
 float Dot(const Vector *v0, const Vector *v1) {
@@ -768,9 +780,12 @@ void Alloy_Sample_f(const __global AlloyParam *mat, const Vector *wo, Vector *wi
 //------------------------------------------------------------------------------
 
 __kernel void Init(
-		__global GPUTask *tasks
+		__global GPUTask *tasks,
+		__global Pixel *frameBuffer
 		) {
 	const size_t gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_WIDTH * PARAM_SCREEN_HEIGHT)
+		return;
 
 	// Initialize the task
 	__global GPUTask *task = &tasks[gid];
@@ -783,11 +798,19 @@ __kernel void Init(
 	task->seed.s1 = seed.s1;
 	task->seed.s2 = seed.s2;
 	task->seed.s3 = seed.s3;
+
+	// Initialize the frame buffer
+	__global Pixel *p = &frameBuffer[gid];
+	p->r = 0.f;
+	p->g = 0.f;
+	p->b = 0.f;
 }
 
 //------------------------------------------------------------------------------
 // InitFB Kernel
 //------------------------------------------------------------------------------
+
+#define BLEND_FACTOR .25f
 
 __kernel void InitFB(
 		__global Pixel *frameBuffer
@@ -797,9 +820,9 @@ __kernel void InitFB(
 		return;
 
 	__global Pixel *p = &frameBuffer[gid];
-	p->r = 0.f;
-	p->g = 0.f;
-	p->b = 0.f;
+	p->r *= 1.f - BLEND_FACTOR;
+	p->g *= 1.f - BLEND_FACTOR;
+	p->b *= 1.f - BLEND_FACTOR;
 }
 
 //------------------------------------------------------------------------------
@@ -818,6 +841,9 @@ __kernel void PathTracing(
 		, __global TexMap *texMaps
 		, __global Spectrum *texMapRGB
 		, __global TexMapInstance *sphereTexMaps
+#if defined (PARAM_HAS_BUMPMAPS)
+		, __global BumpMapInstance *sphereBumpMaps
+#endif
 #endif
 		) {
 	const size_t gid = get_global_id(0);
@@ -856,6 +882,9 @@ __kernel void PathTracing(
 			const __global Material *hitPointMat = &mats[sphereMats[sphereIndex]];
 #if defined(PARAM_HAS_TEXTUREMAPS)
 			const __global TexMapInstance *hitTexMapInst = &sphereTexMaps[sphereIndex];
+#if defined (PARAM_HAS_BUMPMAPS)
+			const __global BumpMapInstance *hitBumpMapInst = &sphereBumpMaps[sphereIndex];
+#endif
 #endif
 
 			Point hitPoint;
@@ -869,12 +898,90 @@ __kernel void PathTracing(
 			N.z = hitPoint.z - hitSphere->center.z;
 			Normalize(&N);
 
+			Vector shadeN = N;
+
+#if defined(PARAM_HAS_TEXTUREMAPS)
+			Spectrum texCol;
+			texCol.r = 1.f;
+			texCol.g = 1.f;
+			texCol.b = 1.f;
+
+			const uint texMapIndex = hitTexMapInst->texMapIndex;
+#if defined (PARAM_HAS_BUMPMAPS)
+			const uint bumpMapIndex = hitBumpMapInst->texMapIndex;
+#endif
+
+			if ((texMapIndex != 0xffffffffu)
+#if defined (PARAM_HAS_BUMPMAPS)
+				|| (bumpMapIndex != 0xffffffffu)
+#endif
+				) {
+				Vector dir;
+				dir.x = hitPoint.x - hitSphere->center.x;
+				dir.y = hitPoint.y - hitSphere->center.y;
+				dir.z = hitPoint.z - hitSphere->center.z;
+				Normalize(&dir);
+
+				const float u = SphericalPhi(&dir) * INV_TWOPI;
+				const float v = SphericalTheta(&dir) * INV_PI;
+
+				if (texMapIndex != 0xffffffffu) {
+					const float tu = u * hitTexMapInst->scaleU + hitTexMapInst->shiftU;
+					const float tv = v * hitTexMapInst->scaleV + hitTexMapInst->shiftV;
+
+					__global TexMap *tm = &texMaps[texMapIndex];
+					TexMap_GetColor(&texMapRGB[tm->rgbOffset], tm->width, tm->height, tu, tv, &texCol);
+				}
+
+#if defined (PARAM_HAS_BUMPMAPS)
+				if (bumpMapIndex != 0xffffffffu) {
+					const float u0 = u * hitBumpMapInst->scaleU + hitBumpMapInst->shiftU;
+					const float v0 = v * hitBumpMapInst->scaleV + hitBumpMapInst->shiftV;
+
+					__global TexMap *tm = &texMaps[bumpMapIndex];
+					const unsigned int width = tm->width;
+					const unsigned int height = tm->height;
+
+					const float du = 1.f / width;
+					const float dv = 1.f / height;
+
+					Spectrum col0;
+					TexMap_GetColor(&texMapRGB[tm->rgbOffset], width, height, u0, v0, &col0);
+					const float b0 = Spectrum_Filter(&col0);
+
+					Spectrum colu;
+					TexMap_GetColor(&texMapRGB[tm->rgbOffset], width, height, u0 + du, v0, &colu);
+					const float bu = Spectrum_Filter(&colu);
+
+					Spectrum colv;
+					TexMap_GetColor(&texMapRGB[tm->rgbOffset], width, height, u0, v0 + dv, &colv);
+					const float bv = Spectrum_Filter(&colv);
+
+					const float scale = hitBumpMapInst->scale;
+					Vector bump;
+					bump.x = scale * (bu - b0);
+					bump.y = scale * (bv - b0);
+					bump.z = 1.f;
+
+					Vector v1, v2;
+					CoordinateSystem(&N, &v1, &v2);
+
+					shadeN.x = v1.x * bump.x + v2.x * bump.y + N.x * bump.z;
+					shadeN.y = v1.y * bump.x + v2.y * bump.y + N.y * bump.z;
+					shadeN.z = v1.z * bump.x + v2.z * bump.y + N.z * bump.z;
+					Normalize(&shadeN);
+				}
+#endif
+			}
+#endif
+
 			// Check if I have to flip the normal
 			const bool flipNormal = (Dot(&N, &ray.d) > 0.f);
-			Vector shadeN;
-			shadeN.x = flipNormal ? (-N.x) : N.x;
-			shadeN.y = flipNormal ? (-N.y) : N.y;
-			shadeN.z = flipNormal ? (-N.z) : N.z;
+			if (flipNormal) {
+				shadeN.x *= -1.f;
+				shadeN.y *= -1.f;
+				shadeN.z *= -1.f;
+			}
 
 			uint matType = hitPointMat->type;
 			radiance.r += throughput.r * hitPointMat->emi_r;
@@ -943,32 +1050,16 @@ __kernel void PathTracing(
 					break;
 			}
 
-#if defined(PARAM_HAS_TEXTUREMAPS)
-			uint texMapIndex = hitTexMapInst->texMapIndex;
-			if (texMapIndex != 0xffffffffu) {
-				Vector dir;
-				dir.x = hitPoint.x - hitSphere->center.x;
-				dir.y = hitPoint.y - hitSphere->center.y;
-				dir.z = hitPoint.z - hitSphere->center.z;
-				Normalize(&dir);
-
-				const float u = SphericalPhi(&dir) * INV_TWOPI * hitTexMapInst->scaleU + hitTexMapInst->shiftU;
-				const float v = SphericalTheta(&dir) * INV_PI  * hitTexMapInst->scaleV + hitTexMapInst->shiftV;
-
-				__global TexMap *tm = &texMaps[texMapIndex];
-				Spectrum col;
-				TexMap_GetColor(&texMapRGB[tm->rgbOffset], tm->width, tm->height, u, v, &col);
-
-				f.r *= col.r;
-				f.g *= col.g;
-				f.b *= col.b;
-			}
-#endif
-
 			const float invMaterialPdf = 1.f / materialPdf;
+#if defined(PARAM_HAS_TEXTUREMAPS)
+			throughput.r *= texCol.r * f.r * invMaterialPdf;
+			throughput.g *= texCol.g * f.g * invMaterialPdf;
+			throughput.b *= texCol.b * f.b * invMaterialPdf;
+#else
 			throughput.r *= f.r * invMaterialPdf;
 			throughput.g *= f.g * invMaterialPdf;
 			throughput.b *= f.b * invMaterialPdf;
+#endif
 
 			ray.o = hitPoint;
 			ray.d = wi;
@@ -986,9 +1077,9 @@ __kernel void PathTracing(
 	}
 
 	__global Pixel *p = &frameBuffer[pixelIndex];
-	p->r += radiance.r * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
-	p->g += radiance.g * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
-	p->b += radiance.b * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
+	p->r += BLEND_FACTOR * radiance.r * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
+	p->g += BLEND_FACTOR * radiance.g * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
+	p->b += BLEND_FACTOR * radiance.b * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
 
 	// Save the seed
 	task->seed.s1 = seed.s1;

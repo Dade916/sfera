@@ -49,6 +49,13 @@ typedef struct {
 	float scaleU, scaleV;
 } TexMapInstance;
 
+typedef struct {
+	unsigned int texMapIndex;
+	float shiftU, shiftV;
+	float scaleU, scaleV;
+	float scale;
+} BumpMapInstance;
+
 #define MAT_MATTE 0
 #define MAT_MIRROR 1
 #define MAT_GLASS 2
@@ -120,6 +127,7 @@ public:
 	Spectrum *rgbTexMem;
 
 	vector<compiledscene::TexMapInstance> sphereTexs;
+	vector<compiledscene::BumpMapInstance> sphereBumps;
 
 private:
 	void CompileCamera();

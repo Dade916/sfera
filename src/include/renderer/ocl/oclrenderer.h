@@ -72,6 +72,7 @@ protected:
 	cl::Buffer *texMapBuffer;
 	cl::Buffer *texMapRGBBuffer;
 	cl::Buffer *texMapInstanceBuffer;
+	cl::Buffer *bumpMapInstanceBuffer;
 
 	GLuint pbo;
 	cl::BufferGL *pboBuff;
