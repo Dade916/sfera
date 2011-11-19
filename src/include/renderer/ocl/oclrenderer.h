@@ -61,7 +61,10 @@ protected:
 	cl::Kernel *kernelInitToneMapFB;
 	cl::Kernel *kernelUpdatePixelBuffer;
 	cl::Kernel *kernelPathTracing;
+	cl::Kernel *kernelApplyBlurLightFilterXR1;
+	cl::Kernel *kernelApplyBlurLightFilterYR1;
 
+	cl::Buffer *tmpFrameBuffer;
 	cl::Buffer *toneMapFrameBuffer;
 	cl::Buffer *bvhBuffer;
 	cl::Buffer *gpuTaskBuffer;

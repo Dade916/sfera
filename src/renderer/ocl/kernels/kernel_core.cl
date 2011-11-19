@@ -810,7 +810,8 @@ __kernel void Init(
 // InitFB Kernel
 //------------------------------------------------------------------------------
 
-#define BLEND_FACTOR .25f
+//#define BLEND_FACTOR .25f
+#define BLEND_FACTOR 1.f
 
 __kernel void InitFB(
 		__global Pixel *frameBuffer
@@ -1108,4 +1109,123 @@ __kernel void UpdatePixelBuffer(
 	const uint g = Radiance2PixelUInt(p->g);
 	const uint b = Radiance2PixelUInt(p->b);
 	pbo[gid] = r | (g << 8) | (b << 16);
+}
+
+//------------------------------------------------------------------------------
+// Image filtering kernels
+//------------------------------------------------------------------------------
+
+__kernel void ApplyBlurLightFilterXR1(
+		__global Pixel *src,
+		__global Pixel *dst
+		) {
+	const size_t gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_HEIGHT)
+		return;
+
+	src += gid * PARAM_SCREEN_WIDTH;
+	dst += gid * PARAM_SCREEN_WIDTH;
+
+	const float aF = .15f;
+	const float bF = 1.f;
+	const float cF = .15f;
+
+	// Do left edge
+	Pixel a;
+	a.r = 0.f;
+	a.g = 0.f;
+	a.b = 0.f;
+	Pixel b = src[0];
+	Pixel c = src[1];
+
+	const float leftTotF = bF + cF;
+	const float bLeftK = bF / leftTotF;
+	const float cLeftK = cF / leftTotF;
+	dst[0].r = bLeftK  * b.r + cLeftK * c.r;
+	dst[0].g = bLeftK  * b.g + cLeftK * c.g;
+	dst[0].b = bLeftK  * b.b + cLeftK * c.b;
+
+    // Main loop
+	const float totF = aF + bF + cF;
+	const float aK = aF / totF;
+	const float bK = bF / totF;
+	const float cK = cF / totF;
+
+	for (unsigned int x = 1; x < PARAM_SCREEN_WIDTH - 1; ++x) {
+		a = b;
+		b = c;
+		c = src[x + 1];
+
+		dst[x].r = aK * a.r + bK * b.r + cK * c.r;
+		dst[x].g = aK * a.g + bK * b.g + cK * c.g;
+		dst[x].b = aK * a.b + bK * b.b + cK * c.b;
+    }
+
+    // Do right edge
+	const float rightTotF = aF + bF;
+	const float aRightK = aF / rightTotF;
+	const float bRightK = bF / rightTotF;
+	a = b;
+	b = c;
+	dst[PARAM_SCREEN_WIDTH - 1].r = aRightK * a.r + bRightK * b.r;
+	dst[PARAM_SCREEN_WIDTH - 1].g = aRightK * a.g + bRightK * b.g;
+	dst[PARAM_SCREEN_WIDTH - 1].b = aRightK * a.b + bRightK * b.b;
+
+}
+
+__kernel void ApplyBlurLightFilterYR1(
+		__global Pixel *src,
+		__global Pixel *dst
+		) {
+	const size_t gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_WIDTH)
+		return;
+
+	src += gid;
+	dst += gid;
+
+	const float aF = .15f;
+	const float bF = 1.f;
+	const float cF = .15f;
+
+	// Do left edge
+	Pixel a;
+	a.r = 0.f;
+	a.g = 0.f;
+	a.b = 0.f;
+	Pixel b = src[0];
+	Pixel c = src[PARAM_SCREEN_WIDTH];
+
+	const float leftTotF = bF + cF;
+	const float bLeftK = bF / leftTotF;
+	const float cLeftK = cF / leftTotF;
+	dst[0].r = bLeftK  * b.r + cLeftK * c.r;
+	dst[0].g = bLeftK  * b.g + cLeftK * c.g;
+	dst[0].b = bLeftK  * b.b + cLeftK * c.b;
+
+    // Main loop
+	const float totF = aF + bF + cF;
+	const float aK = aF / totF;
+	const float bK = bF / totF;
+	const float cK = cF / totF;
+
+    for (unsigned int y = 1; y < PARAM_SCREEN_HEIGHT - 1; ++y) {
+		a = b;
+		b = c;
+		c = src[(y + 1) * PARAM_SCREEN_WIDTH];
+
+		dst[y * PARAM_SCREEN_WIDTH].r = aK * a.r + bK * b.r + cK * c.r;
+		dst[y * PARAM_SCREEN_WIDTH].g = aK * a.g + bK * b.g + cK * c.g;
+		dst[y * PARAM_SCREEN_WIDTH].b = aK * a.b + bK * b.b + cK * c.b;
+    }
+
+    // Do right edge
+	const float rightTotF = aF + bF;
+	const float aRightK = aF / rightTotF;
+	const float bRightK = bF / rightTotF;
+	a = b;
+	b = c;
+	dst[(PARAM_SCREEN_HEIGHT - 1) * PARAM_SCREEN_WIDTH].r = aRightK * a.r + bRightK * b.r;
+	dst[(PARAM_SCREEN_HEIGHT - 1) * PARAM_SCREEN_WIDTH].g = aRightK * a.g + bRightK * b.g;
+	dst[(PARAM_SCREEN_HEIGHT - 1) * PARAM_SCREEN_WIDTH].b = aRightK * a.b + bRightK * b.b;
 }

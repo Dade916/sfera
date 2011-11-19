@@ -123,6 +123,7 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	// Allocate the buffers
 	//--------------------------------------------------------------------------
 
+	tmpFrameBuffer = NULL;
 	toneMapFrameBuffer = NULL;
 	bvhBuffer = NULL;
 	gpuTaskBuffer = NULL;
@@ -135,6 +136,7 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	texMapInstanceBuffer = NULL;
 	bumpMapInstanceBuffer = NULL;
 
+	AllocOCLBufferRW(&tmpFrameBuffer, sizeof(Pixel) * width * height, "Temporary FrameBuffer");
 	AllocOCLBufferRW(&toneMapFrameBuffer, sizeof(Pixel) * width * height, "ToneMap FrameBuffer");
 	AllocOCLBufferRW(&gpuTaskBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "GPUTask");
 	AllocOCLBufferRW(&cameraBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "Camera");
@@ -263,9 +265,18 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 		if (compiledScene->sphereBumps.size() > 0)
 			kernelPathTracing->setArg(argIndex++, *bumpMapInstanceBuffer);
 	}
+
+	kernelApplyBlurLightFilterXR1 = new cl::Kernel(program, "ApplyBlurLightFilterXR1");
+	kernelApplyBlurLightFilterXR1->setArg(0, *toneMapFrameBuffer);
+	kernelApplyBlurLightFilterXR1->setArg(1, *tmpFrameBuffer);
+
+	kernelApplyBlurLightFilterYR1 = new cl::Kernel(program, "ApplyBlurLightFilterYR1");
+	kernelApplyBlurLightFilterYR1->setArg(0, *tmpFrameBuffer);
+	kernelApplyBlurLightFilterYR1->setArg(1, *toneMapFrameBuffer);
 }
 
 OCLRenderer::~OCLRenderer() {
+	FreeOCLBuffer(&tmpFrameBuffer);
 	FreeOCLBuffer(&toneMapFrameBuffer);
 	FreeOCLBuffer(&bvhBuffer);
 	FreeOCLBuffer(&gpuTaskBuffer);
@@ -387,6 +398,29 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 			cl::NDRange(64));
 	}
 
+	//--------------------------------------------------------------------------
+	// Apply a filter: approximated by applying a box filter multiple times
+	//--------------------------------------------------------------------------
+
+	const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+	for (unsigned int i = 0; i < filterPassCount; ++i) {
+		cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurLightFilterXR1, cl::NullRange,
+				cl::NDRange(RoundUp<unsigned int>(height, 64)),
+				cl::NDRange(64));
+
+		cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurLightFilterYR1, cl::NullRange,
+				cl::NDRange(RoundUp<unsigned int>(width, 64)),
+				cl::NDRange(64));
+	}
+
+	//--------------------------------------------------------------------------
+	// Blend the new frame with the old one
+	//--------------------------------------------------------------------------
+
+	//--------------------------------------------------------------------------
+	// Tone mapping
+	//--------------------------------------------------------------------------
+
 	// Copy the OpenCL frame buffer to OpenGL one
 	VECTOR_CLASS<cl::Memory> buffs;
 	buffs.push_back(*pboBuff);
@@ -398,18 +432,6 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 
 	cmdQueue->enqueueReleaseGLObjects(&buffs);
 	cmdQueue->finish();
-
-	//--------------------------------------------------------------------------
-	// Apply a filter: approximated by applying a box filter multiple times
-	//--------------------------------------------------------------------------
-
-	//--------------------------------------------------------------------------
-	// Blend the new frame with the old one
-	//--------------------------------------------------------------------------
-
-	//--------------------------------------------------------------------------
-	// Tone mapping
-	//--------------------------------------------------------------------------
 
 	// Draw the image on the screen
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pbo);
