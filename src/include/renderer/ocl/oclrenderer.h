@@ -28,6 +28,8 @@
 #include "renderer/ocl/compiledscene.h"
 #include "pixel/framebuffer.h"
 
+#define WORKGROUP_SIZE 64
+
 namespace ocl_kernels {
 
 typedef struct {

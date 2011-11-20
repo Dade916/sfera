@@ -239,12 +239,12 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	kernelInit->setArg(0, *gpuTaskBuffer);
 	kernelInit->setArg(1, *toneMapFrameBuffer);
 	cmdQueue->enqueueNDRangeKernel(*kernelInit, cl::NullRange,
-			cl::NDRange(RoundUp<unsigned int>(width * height, 64)),
-			cl::NDRange(64));
+			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
+			cl::NDRange(WORKGROUP_SIZE));
 
 	kernelInitToneMapFB = new cl::Kernel(program, "InitFB");
 	kernelInitToneMapFB->setArg(0, *toneMapFrameBuffer);
-	
+
 	kernelUpdatePixelBuffer = new cl::Kernel(program, "UpdatePixelBuffer");
 	kernelUpdatePixelBuffer->setArg(0, *toneMapFrameBuffer);
 	kernelUpdatePixelBuffer->setArg(1, *pboBuff);
@@ -411,13 +411,13 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	const unsigned int samplePerPass = gameConfig.GetRendererSamplePerPass();
 
 	cmdQueue->enqueueNDRangeKernel(*kernelInitToneMapFB, cl::NullRange,
-			cl::NDRange(RoundUp<unsigned int>(width * height, 64)),
-			cl::NDRange(64));
+			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
+			cl::NDRange(WORKGROUP_SIZE));
 
 	for (unsigned int i = 0; i < samplePerPass; ++i) {
 		cmdQueue->enqueueNDRangeKernel(*kernelPathTracing, cl::NullRange,
-			cl::NDRange(RoundUp<unsigned int>(width * height, 64)),
-			cl::NDRange(64));
+			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
+			cl::NDRange(WORKGROUP_SIZE));
 	}
 
 	//--------------------------------------------------------------------------
@@ -431,12 +431,12 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
 			for (unsigned int i = 0; i < filterPassCount; ++i) {
 				cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurLightFilterXR1, cl::NullRange,
-						cl::NDRange(RoundUp<unsigned int>(height, 64)),
-						cl::NDRange(64));
+						cl::NDRange(RoundUp<unsigned int>(height, WORKGROUP_SIZE)),
+						cl::NDRange(WORKGROUP_SIZE));
 
 				cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurLightFilterYR1, cl::NullRange,
-						cl::NDRange(RoundUp<unsigned int>(width, 64)),
-						cl::NDRange(64));
+						cl::NDRange(RoundUp<unsigned int>(width, WORKGROUP_SIZE)),
+						cl::NDRange(WORKGROUP_SIZE));
 			}
 			break;
 		}
@@ -444,12 +444,12 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
 			for (unsigned int i = 0; i < filterPassCount; ++i) {
 				cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurHeavyFilterXR1, cl::NullRange,
-						cl::NDRange(RoundUp<unsigned int>(height, 64)),
-						cl::NDRange(64));
+						cl::NDRange(RoundUp<unsigned int>(height, WORKGROUP_SIZE)),
+						cl::NDRange(WORKGROUP_SIZE));
 
 				cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurHeavyFilterYR1, cl::NullRange,
-						cl::NDRange(RoundUp<unsigned int>(width, 64)),
-						cl::NDRange(64));
+						cl::NDRange(RoundUp<unsigned int>(width, WORKGROUP_SIZE)),
+						cl::NDRange(WORKGROUP_SIZE));
 			}
 			break;
 		}
@@ -457,12 +457,12 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
 			for (unsigned int i = 0; i < filterPassCount; ++i) {
 				cmdQueue->enqueueNDRangeKernel(*kernelApplyBoxFilterXR1, cl::NullRange,
-						cl::NDRange(RoundUp<unsigned int>(height, 64)),
-						cl::NDRange(64));
+						cl::NDRange(RoundUp<unsigned int>(height, WORKGROUP_SIZE)),
+						cl::NDRange(WORKGROUP_SIZE));
 
 				cmdQueue->enqueueNDRangeKernel(*kernelApplyBoxFilterYR1, cl::NullRange,
-						cl::NDRange(RoundUp<unsigned int>(width, 64)),
-						cl::NDRange(64));
+						cl::NDRange(RoundUp<unsigned int>(width, WORKGROUP_SIZE)),
+						cl::NDRange(WORKGROUP_SIZE));
 			}
 			break;
 		}
@@ -482,8 +482,8 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	cmdQueue->enqueueAcquireGLObjects(&buffs);
 
 	cmdQueue->enqueueNDRangeKernel(*kernelUpdatePixelBuffer, cl::NullRange,
-			cl::NDRange(RoundUp<unsigned int>(width * height, 64)),
-			cl::NDRange(64));
+			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
+			cl::NDRange(WORKGROUP_SIZE));
 
 	cmdQueue->enqueueReleaseGLObjects(&buffs);
 	cmdQueue->finish();
