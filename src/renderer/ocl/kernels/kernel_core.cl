@@ -901,78 +901,44 @@ __kernel void PathTracing(
 
 			Vector shadeN = N;
 
-#if defined(PARAM_HAS_TEXTUREMAPS)
-			Spectrum texCol;
-			texCol.r = 1.f;
-			texCol.g = 1.f;
-			texCol.b = 1.f;
-
-			const uint texMapIndex = hitTexMapInst->texMapIndex;
 #if defined (PARAM_HAS_BUMPMAPS)
 			const uint bumpMapIndex = hitBumpMapInst->texMapIndex;
-#endif
+			if (bumpMapIndex != 0xffffffffu) {
+				const float u0 = SphericalPhi(&N) * INV_TWOPI * hitBumpMapInst->scaleU + hitBumpMapInst->shiftU;
+				const float v0 = SphericalTheta(&N) * INV_PI * hitBumpMapInst->scaleV + hitBumpMapInst->shiftV;
 
-			if ((texMapIndex != 0xffffffffu)
-#if defined (PARAM_HAS_BUMPMAPS)
-				|| (bumpMapIndex != 0xffffffffu)
-#endif
-				) {
-				Vector dir;
-				dir.x = hitPoint.x - hitSphere->center.x;
-				dir.y = hitPoint.y - hitSphere->center.y;
-				dir.z = hitPoint.z - hitSphere->center.z;
-				Normalize(&dir);
+				__global TexMap *tm = &texMaps[bumpMapIndex];
+				const unsigned int width = tm->width;
+				const unsigned int height = tm->height;
 
-				const float u = SphericalPhi(&dir) * INV_TWOPI;
-				const float v = SphericalTheta(&dir) * INV_PI;
+				const float du = 1.f / width;
+				const float dv = 1.f / height;
 
-				if (texMapIndex != 0xffffffffu) {
-					const float tu = u * hitTexMapInst->scaleU + hitTexMapInst->shiftU;
-					const float tv = v * hitTexMapInst->scaleV + hitTexMapInst->shiftV;
+				Spectrum col0;
+				TexMap_GetColor(&texMapRGB[tm->rgbOffset], width, height, u0, v0, &col0);
+				const float b0 = Spectrum_Filter(&col0);
 
-					__global TexMap *tm = &texMaps[texMapIndex];
-					TexMap_GetColor(&texMapRGB[tm->rgbOffset], tm->width, tm->height, tu, tv, &texCol);
-				}
+				Spectrum colu;
+				TexMap_GetColor(&texMapRGB[tm->rgbOffset], width, height, u0 + du, v0, &colu);
+				const float bu = Spectrum_Filter(&colu);
 
-#if defined (PARAM_HAS_BUMPMAPS)
-				if (bumpMapIndex != 0xffffffffu) {
-					const float u0 = u * hitBumpMapInst->scaleU + hitBumpMapInst->shiftU;
-					const float v0 = v * hitBumpMapInst->scaleV + hitBumpMapInst->shiftV;
+				Spectrum colv;
+				TexMap_GetColor(&texMapRGB[tm->rgbOffset], width, height, u0, v0 + dv, &colv);
+				const float bv = Spectrum_Filter(&colv);
 
-					__global TexMap *tm = &texMaps[bumpMapIndex];
-					const unsigned int width = tm->width;
-					const unsigned int height = tm->height;
+				const float scale = hitBumpMapInst->scale;
+				Vector bump;
+				bump.x = scale * (bu - b0);
+				bump.y = scale * (bv - b0);
+				bump.z = 1.f;
 
-					const float du = 1.f / width;
-					const float dv = 1.f / height;
+				Vector v1, v2;
+				CoordinateSystem(&N, &v1, &v2);
 
-					Spectrum col0;
-					TexMap_GetColor(&texMapRGB[tm->rgbOffset], width, height, u0, v0, &col0);
-					const float b0 = Spectrum_Filter(&col0);
-
-					Spectrum colu;
-					TexMap_GetColor(&texMapRGB[tm->rgbOffset], width, height, u0 + du, v0, &colu);
-					const float bu = Spectrum_Filter(&colu);
-
-					Spectrum colv;
-					TexMap_GetColor(&texMapRGB[tm->rgbOffset], width, height, u0, v0 + dv, &colv);
-					const float bv = Spectrum_Filter(&colv);
-
-					const float scale = hitBumpMapInst->scale;
-					Vector bump;
-					bump.x = scale * (bu - b0);
-					bump.y = scale * (bv - b0);
-					bump.z = 1.f;
-
-					Vector v1, v2;
-					CoordinateSystem(&N, &v1, &v2);
-
-					shadeN.x = v1.x * bump.x + v2.x * bump.y + N.x * bump.z;
-					shadeN.y = v1.y * bump.x + v2.y * bump.y + N.y * bump.z;
-					shadeN.z = v1.z * bump.x + v2.z * bump.y + N.z * bump.z;
-					Normalize(&shadeN);
-				}
-#endif
+				shadeN.x = v1.x * bump.x + v2.x * bump.y + N.x * bump.z;
+				shadeN.y = v1.y * bump.x + v2.y * bump.y + N.y * bump.z;
+				shadeN.z = v1.z * bump.x + v2.z * bump.y + N.z * bump.z;
+				Normalize(&shadeN);
 			}
 #endif
 
@@ -1051,16 +1017,27 @@ __kernel void PathTracing(
 					break;
 			}
 
-			const float invMaterialPdf = 1.f / materialPdf;
 #if defined(PARAM_HAS_TEXTUREMAPS)
-			throughput.r *= texCol.r * f.r * invMaterialPdf;
-			throughput.g *= texCol.g * f.g * invMaterialPdf;
-			throughput.b *= texCol.b * f.b * invMaterialPdf;
-#else
+		const uint texMapIndex = hitTexMapInst->texMapIndex;
+
+		if (texMapIndex != 0xffffffffu) {
+			const float tu = SphericalPhi(&N) * INV_TWOPI * hitTexMapInst->scaleU + hitTexMapInst->shiftU;
+			const float tv = SphericalTheta(&N) * INV_PI * hitTexMapInst->scaleV + hitTexMapInst->shiftV;
+
+			__global TexMap *tm = &texMaps[texMapIndex];
+			Spectrum texCol;
+			TexMap_GetColor(&texMapRGB[tm->rgbOffset], tm->width, tm->height, tu, tv, &texCol);
+
+			f.r *= texCol.r;
+			f.g *= texCol.g;
+			f.b *= texCol.b;
+		}
+#endif
+
+			const float invMaterialPdf = 1.f / materialPdf;
 			throughput.r *= f.r * invMaterialPdf;
 			throughput.g *= f.g * invMaterialPdf;
 			throughput.b *= f.b * invMaterialPdf;
-#endif
 
 			ray.o = hitPoint;
 			ray.d = wi;

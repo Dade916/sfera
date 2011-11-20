@@ -116,35 +116,22 @@ Spectrum CPURenderer::SampleImage(
 			const Point hitPoint(ray(ray.maxt));
 			Normal N(Normalize(hitPoint - hitSphere->center));
 
+			// Apply bump mapping
+			Normal shadeN;
+			if (bumpMap)
+				shadeN = bumpMap->SphericalMap(Vector(N), N);
+			else
+				shadeN = N;
+
 			// Check if I have to flip the normal
-			Normal ShadeN = (Dot(Vector(N), ray.d) > 0.f) ? (-N) : N;
-
-			// Check if there is a texture map or a bump map to apply
-			Spectrum f;
-			if (texMap || bumpMap) {
-				const Vector dir = Normalize(hitPoint - hitSphere->center);
-
-				if (texMap) {
-					// Apply texture map
-					f = texMap->SphericalMap(dir);
-				}
-
-				if (bumpMap) {
-					// Apply bump mapping
-					ShadeN = bumpMap->SphericalMap(dir, ShadeN);
-				}
-			} else {
-				f.r = 1.f;
-				f.g = 1.f;
-				f.b = 1.f;
-			}
+			shadeN = (Dot(Vector(N), ray.d) > 0.f) ? (-shadeN) : shadeN;
 
 			radiance += throughput * hitMat->GetEmission();
 
 			Vector wi;
 			float pdf;
 			bool diffuseBounce;
-			f *= hitMat->Sample_f(-ray.d, &wi, N, ShadeN,
+			Spectrum f = hitMat->Sample_f(-ray.d, &wi, N, shadeN,
 					rnd.floatValue(), rnd.floatValue(), rnd.floatValue(),
 					&pdf, diffuseBounce);
 			if ((pdf <= 0.f) || f.Black())
@@ -161,6 +148,10 @@ Spectrum CPURenderer::SampleImage(
 				if (specularGlossyBounces > maxSpecularGlossyBounces)
 					return radiance;
 			}
+
+			// Apply texture map
+			if (texMap)
+				f *= texMap->SphericalMap(Vector(N));
 
 			throughput *= f / pdf;
 
