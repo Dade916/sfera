@@ -547,7 +547,14 @@ void Matte_Sample_f(const __global MatteParam *mat, const Vector *wo, Vector *wi
 		bool *diffuseBounce) {
 	Vector dir;
 	CosineSampleHemisphere(&dir, RndFloatValue(seed), RndFloatValue(seed));
-	*pdf = dir.z * INV_PI;
+	const float dp = dir.z;
+	// Using 0.0001 instead of 0.0 to cut down fireflies
+	if (dp <= 0.0001f) {
+		*pdf = 0.f;
+		return;
+	}
+
+	*pdf = INV_PI;
 
 	Vector v1, v2;
 	CoordinateSystem(shadeN, &v1, &v2);
@@ -556,14 +563,9 @@ void Matte_Sample_f(const __global MatteParam *mat, const Vector *wo, Vector *wi
 	wi->y = v1.y * dir.x + v2.y * dir.y + shadeN->y * dir.z;
 	wi->z = v1.z * dir.x + v2.z * dir.y + shadeN->z * dir.z;
 
-	// Using 0.0001 instead of 0.0 to cut down fireflies
-	if (dir.z <= 0.0001f)
-		*pdf = 0.f;
-	else {
-		f->r = mat->r;
-		f->g = mat->g;
-		f->b = mat->b;
-	}
+	f->r = mat->r * dp;
+	f->g = mat->g * dp;
+	f->b = mat->b * dp;
 
 	*diffuseBounce = true;
 }
@@ -749,7 +751,14 @@ void Alloy_Sample_f(const __global AlloyParam *mat, const Vector *wo, Vector *wi
     } else {
         Vector dir;
         CosineSampleHemisphere(&dir, u0, u1);
-        *pdf = dir.z * INV_PI;
+		const float dp = dir.z;
+		// Using 0.0001 instead of 0.0 to cut down fireflies
+		if (dp <= 0.0001f) {
+			*pdf = 0.f;
+			return;
+		}
+
+        *pdf = INV_PI;
 
         Vector v1, v2;
         CoordinateSystem(shadeN, &v1, &v2);
@@ -758,20 +767,16 @@ void Alloy_Sample_f(const __global AlloyParam *mat, const Vector *wo, Vector *wi
         wi->y = v1.y * dir.x + v2.y * dir.y + shadeN->y * dir.z;
         wi->z = v1.z * dir.x + v2.z * dir.y + shadeN->z * dir.z;
 
-        // Using 0.0001 instead of 0.0 to cut down fireflies
-        if (dir.z <= 0.0001f)
-            *pdf = 0.f;
-        else {
-			const float iRe = 1.f - Re;
-			const float k = (1.f - P) / iRe;
-            *pdf *= k;
+		const float iRe = 1.f - Re;
+		const float k = (1.f - P) / iRe;
+		*pdf *= k;
 
-            f->r = mat->diff_r / k;
-            f->g = mat->diff_g / k;
-            f->b = mat->diff_b / k;
+		const float dpk = dp / k;
+		f->r = mat->diff_r * dpk;
+		f->g = mat->diff_g * dpk;
+		f->b = mat->diff_b * dpk;
 
-			*diffuseBounce = false;
-		}
+		*diffuseBounce = false;
 	}
 }
 
@@ -1018,26 +1023,25 @@ __kernel void PathTracing(
 			}
 
 #if defined(PARAM_HAS_TEXTUREMAPS)
-		const uint texMapIndex = hitTexMapInst->texMapIndex;
+			const uint texMapIndex = hitTexMapInst->texMapIndex;
 
-		if (texMapIndex != 0xffffffffu) {
-			const float tu = SphericalPhi(&N) * INV_TWOPI * hitTexMapInst->scaleU + hitTexMapInst->shiftU;
-			const float tv = SphericalTheta(&N) * INV_PI * hitTexMapInst->scaleV + hitTexMapInst->shiftV;
+			if (texMapIndex != 0xffffffffu) {
+				const float tu = SphericalPhi(&N) * INV_TWOPI * hitTexMapInst->scaleU + hitTexMapInst->shiftU;
+				const float tv = SphericalTheta(&N) * INV_PI * hitTexMapInst->scaleV + hitTexMapInst->shiftV;
 
-			__global TexMap *tm = &texMaps[texMapIndex];
-			Spectrum texCol;
-			TexMap_GetColor(&texMapRGB[tm->rgbOffset], tm->width, tm->height, tu, tv, &texCol);
+				__global TexMap *tm = &texMaps[texMapIndex];
+				Spectrum texCol;
+				TexMap_GetColor(&texMapRGB[tm->rgbOffset], tm->width, tm->height, tu, tv, &texCol);
 
-			f.r *= texCol.r;
-			f.g *= texCol.g;
-			f.b *= texCol.b;
-		}
+				f.r *= texCol.r;
+				f.g *= texCol.g;
+				f.b *= texCol.b;
+			}
 #endif
 
-			const float invMaterialPdf = 1.f / materialPdf;
-			throughput.r *= f.r * invMaterialPdf;
-			throughput.g *= f.g * invMaterialPdf;
-			throughput.b *= f.b * invMaterialPdf;
+			throughput.r *= f.r;
+			throughput.g *= f.g;
+			throughput.b *= f.b;
 
 			ray.o = hitPoint;
 			ray.d = wi;

@@ -21,6 +21,7 @@
 #include "geometry/vector_normal.h"
 #include "utils/mc.h"
 #include "sdl/material.h"
+#include "utils/randomgen.h"
 
 Vector MetalMaterial::GlossyReflection(const Vector &wo, const float exponent,
 	const Normal &shadeN, const float u0, const float u1) {
@@ -49,11 +50,21 @@ Vector MetalMaterial::GlossyReflection(const Vector &wo, const float exponent,
 	return x * u + y * v + z * w;
 }
 
-Spectrum MatteMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
-	const float u0, const float u1,  const float u2,
-	float *pdf, bool &diffuseBounce) const {
-	Vector dir = CosineSampleHemisphere(u0, u1);
-	*pdf = dir.z * INV_PI;
+Spectrum MatteMaterial::Sample_f(RandomGenerator &rnd,
+		const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
+		float *pdf, bool &diffuseBounce) const {
+	Vector dir = CosineSampleHemisphere(rnd.floatValue(), rnd.floatValue());
+	if (dir.z < 0.f)
+		dir.z = -dir.z;
+
+	const float dp = dir.z;
+	// Using 0.0001 instead of 0.0 to cut down fireflies
+	if (dp <= 0.0001f) {
+		*pdf = 0.f;
+		return Spectrum();
+	}
+
+	*pdf = INV_PI;
 
 	Vector v1, v2;
 	CoordinateSystem(Vector(shadeN), &v1, &v2);
@@ -65,22 +76,14 @@ Spectrum MatteMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 
 	(*wi) = dir;
 
-	const float dp = Dot(shadeN, *wi);
-	// Using 0.0001 instead of 0.0 to cut down fireflies
-	if (dp <= 0.0001f) {
-		*pdf = 0.f;
-		return Spectrum();
-	}
-	*pdf /=  dp;
-
 	diffuseBounce = true;
 
-	return KdOverPI;
+	return Kd * dp;
 }
 
-Spectrum MirrorMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
-	const float u0, const float u1,  const float u2,
-	float *pdf, bool &diffuseBounce) const {
+Spectrum MirrorMaterial::Sample_f(RandomGenerator &rnd,
+		const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
+		float *pdf, bool &diffuseBounce) const {
 	const Vector dir = -wo;
 	const float dp = Dot(shadeN, dir);
 	(*wi) = dir - (2.f * dp) * Vector(shadeN);
@@ -91,9 +94,9 @@ Spectrum MirrorMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N,
 	return Kr;
 }
 
-Spectrum GlassMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
-	const float u0, const float u1,  const float u2,
-	float *pdf, bool &diffuseBounce) const {
+Spectrum GlassMaterial::Sample_f(RandomGenerator &rnd,
+		const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
+		float *pdf, bool &diffuseBounce) const {
 	const Vector rayDir = -wo;
 	const Vector reflDir = rayDir - (2.f * Dot(N, rayDir)) * Vector(N);
 
@@ -141,23 +144,23 @@ Spectrum GlassMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 		*pdf = 1.f;
 
 		return Krefrct;
-	} else if (u0 < P) {
+	} else if (rnd.floatValue() < P) {
 		(*wi) = reflDir;
 		*pdf = P / Re;
 
-		return Krefl;
+		return Krefl / (*pdf);
 	} else {
 		(*wi) = transDir;
 		*pdf = (1.f - P) / Tr;
 
-		return Krefrct;
+		return Krefrct / (*pdf);
 	}
 }
 
-Spectrum MetalMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
-	const float u0, const float u1,  const float u,
-	float *pdf, bool &diffuseBounce) const {
-	(*wi) = GlossyReflection(wo, exponent, shadeN, u0, u1);
+Spectrum MetalMaterial::Sample_f(RandomGenerator &rnd,
+		const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
+		float *pdf, bool &diffuseBounce) const {
+	(*wi) = GlossyReflection(wo, exponent, shadeN, rnd.floatValue(), rnd.floatValue());
 
 	if (Dot(*wi, shadeN) > 0.f) {
 		diffuseBounce = false;
@@ -171,24 +174,35 @@ Spectrum MetalMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 	}
 }
 
-Spectrum AlloyMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
-	const float u0, const float u1,  const float u2,
-	float *pdf, bool &diffuseBounce) const {
+Spectrum AlloyMaterial::Sample_f(RandomGenerator &rnd,
+		const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
+		float *pdf, bool &diffuseBounce) const {
 	// Schilick's approximation
 	const float c = 1.f - Dot(wo, shadeN);
 	const float Re = R0 + (1.f - R0) * c * c * c * c * c;
 
 	const float P = .25f + .5f * Re;
 
-	if (u2 < P) {
-		(*wi) = MetalMaterial::GlossyReflection(wo, exponent, shadeN, u0, u1);
+	if (rnd.floatValue() < P) {
+		(*wi) = MetalMaterial::GlossyReflection(wo, exponent, shadeN,
+				rnd.floatValue(), rnd.floatValue());
 		*pdf = P / Re;
 		diffuseBounce = false;
 
-		return Re * Krefl;
+		return Krefl / (*pdf);
 	} else {
-		Vector dir = CosineSampleHemisphere(u0, u1);
-		*pdf = dir.z * INV_PI;
+		Vector dir = CosineSampleHemisphere(rnd.floatValue(), rnd.floatValue());
+		if (dir.z < 0.f)
+			dir.z = -dir.z;
+
+		const float dp = dir.z;
+		// Using 0.0001 instead of 0.0 to cut down fireflies
+		if (dp <= 0.0001f) {
+			*pdf = 0.f;
+			return Spectrum();
+		}
+
+		*pdf = INV_PI;
 
 		Vector v1, v2;
 		CoordinateSystem(Vector(shadeN), &v1, &v2);
@@ -200,19 +214,10 @@ Spectrum AlloyMaterial::Sample_f(const Vector &wo, Vector *wi, const Normal &N, 
 
 		(*wi) = dir;
 
-		const float dp = Dot(shadeN, *wi);
-		// Using 0.0001 instead of 0.0 to cut down fireflies
-		if (dp <= 0.0001f) {
-			*pdf = 0.f;
-			return Spectrum();
-		}
-		*pdf /=  dp;
-
 		const float iRe = 1.f - Re;
 		*pdf *= (1.f - P) / iRe;
 		diffuseBounce = true;
 
-		return iRe * Kdiff;
-
+		return Kdiff * dp;
 	}
 }

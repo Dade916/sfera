@@ -131,9 +131,7 @@ Spectrum CPURenderer::SampleImage(
 			Vector wi;
 			float pdf;
 			bool diffuseBounce;
-			Spectrum f = hitMat->Sample_f(-ray.d, &wi, N, shadeN,
-					rnd.floatValue(), rnd.floatValue(), rnd.floatValue(),
-					&pdf, diffuseBounce);
+			Spectrum f = hitMat->Sample_f(rnd, -ray.d, &wi, N, shadeN, &pdf, diffuseBounce);
 			if ((pdf <= 0.f) || f.Black())
 				return radiance;
 
@@ -153,7 +151,7 @@ Spectrum CPURenderer::SampleImage(
 			if (texMap)
 				f *= texMap->SphericalMap(Vector(N));
 
-			throughput *= f / pdf;
+			throughput *= f;
 
 			ray = Ray(hitPoint, wi);
 		} else

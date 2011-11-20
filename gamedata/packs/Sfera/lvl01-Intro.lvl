@@ -42,7 +42,7 @@ scene.materials.glass.kt=0.75 0.75 0.75
 scene.materials.glass.ior=1.0 1.4
 # Infinite light source
 scene.infinitelight.file=textures/hdr/Ridgecrest_Road_Ref.exr
-scene.infinitelight.gain=1.0 1.0 1.0
+scene.infinitelight.gain=1.4 1.4 1.4
 scene.infinitelight.shift=0.0 0.0
 ################################################################################
 # Spheres

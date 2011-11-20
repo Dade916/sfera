@@ -27,6 +27,7 @@
 #include "geometry/normal.h"
 #include "pixel/spectrum.h"
 #include "utils/utils.h"
+#include "utils/randomgen.h"
 
 class Scene;
 
@@ -41,9 +42,9 @@ public:
 
 	virtual MaterialType GetType() const = 0;
 
-	virtual Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N,
-		const Normal &shadeN, const float u0, const float u1,  const float u2,
-		float *pdf, bool &diffuseBounce) const = 0;
+	virtual Spectrum Sample_f(RandomGenerator &rnd,
+		const Vector &wo, Vector *wi, const Normal &N,
+		const Normal &shadeN, float *pdf, bool &diffuseBounce) const = 0;
 
 	void SetEmission(const Spectrum &e) { emission = e; }
 	const Spectrum &GetEmission() const { return emission; }
@@ -56,19 +57,18 @@ class MatteMaterial : public Material {
 public:
 	MatteMaterial(const Spectrum &col) {
 		Kd = col;
-		KdOverPI = Kd * INV_PI;
 	}
 
 	MaterialType GetType() const { return MATTE; }
 
-	Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
-		const float u0, const float u1,  const float u2,
+	Spectrum Sample_f(RandomGenerator &rnd,
+		const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 		float *pdf, bool &diffuseBounce) const;
 
 	const Spectrum &GetKd() const { return Kd; }
 
 private:
-	Spectrum Kd, KdOverPI;
+	Spectrum Kd;
 };
 
 class MirrorMaterial : public Material {
@@ -79,8 +79,8 @@ public:
 
 	MaterialType GetType() const { return MIRROR; }
 
-	Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
-		const float u0, const float u1,  const float u2,
+	Spectrum Sample_f(RandomGenerator &rnd,
+		const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 		float *pdf, bool &diffuseBounce) const;
 
 	const Spectrum &GetKr() const { return Kr; }
@@ -107,8 +107,8 @@ public:
 
 	MaterialType GetType() const { return GLASS; }
 
-	Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
-		const float u0, const float u1,  const float u2,
+	Spectrum Sample_f(RandomGenerator &rnd,
+		const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 		float *pdf, bool &diffuseBounce) const;
 
 	const Spectrum &GetKrefl() const { return Krefl; }
@@ -132,8 +132,8 @@ public:
 
 	MaterialType GetType() const { return METAL; }
 
-	Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
-		const float u0, const float u1,  const float u,
+	Spectrum Sample_f(RandomGenerator &rnd,
+		const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 		float *pdf, bool &diffuseBounce) const;
 
 	const Spectrum &GetKr() const { return Kr; }
@@ -160,8 +160,8 @@ public:
 
 	MaterialType GetType() const { return ALLOY; }
 
-	Spectrum Sample_f(const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
-		const float u0, const float u1,  const float u2,
+	Spectrum Sample_f(RandomGenerator &rnd,
+		const Vector &wo, Vector *wi, const Normal &N, const Normal &shadeN,
 		float *pdf, bool &diffuseBounce) const;
 
 	const Spectrum &GetKrefl() const { return Krefl; }
