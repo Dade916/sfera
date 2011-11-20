@@ -70,6 +70,7 @@ protected:
 	cl::Kernel *kernelApplyBoxFilterXR1;
 	cl::Kernel *kernelApplyBoxFilterYR1;
 	cl::Kernel *kernelBlendFrame;
+	cl::Kernel *kernelToneMapLinear;
 
 	cl::Buffer *passFrameBuffer;
 	cl::Buffer *tmpFrameBuffer;

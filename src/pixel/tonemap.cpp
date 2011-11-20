@@ -18,6 +18,7 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "sfera.h"
 #include "pixel/tonemap.h"
 #include "pixel/framebuffer.h"
 
@@ -49,7 +50,7 @@ void LinearToneMap::Map(FrameBuffer *src, FrameBuffer *dst) const {
 	Pixel *pixels = dst->GetPixels();
 
 	for (unsigned int i = 0; i < pixelCount; ++i) {
-		*pixels = Radiance2Pixel(*samplePixels);
+		*pixels = Radiance2Pixel(scale * (*samplePixels));
 
 		++samplePixels;
 		++pixels;

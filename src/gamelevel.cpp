@@ -48,10 +48,10 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 	const float gamma = lvlProp.GetFloat("film.gamma", 2.2f);
 
 	const string toneMapType = lvlProp.GetString("film.tonemap.type", "LINEAR");
-	if (toneMapType.compare("LINEAR")) {
+	if (toneMapType == "LINEAR") {
 		const float scale = lvlProp.GetFloat("film.tonemap.linear.scale", 1.f);
 		toneMap = new LinearToneMap(gamma, scale);
-	} else if (toneMapType.compare("REINHARD02")) {
+	} else if (toneMapType == "REINHARD02") {
 		const float preScale = lvlProp.GetFloat("film.tonemap.reinhard02.prescale", 1.f);
 		const float postScale = lvlProp.GetFloat("film.tonemap.reinhard02.postscale", 1.2f);
 		const float burn = lvlProp.GetFloat("film.tonemap.reinhard02.burn", 3.75f);

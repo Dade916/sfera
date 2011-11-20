@@ -217,6 +217,20 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 			ss << " -D PARAM_HAS_BUMPMAPS";
 	}
 
+	switch (gameLevel->toneMap->GetType()) {
+		case TONEMAP_REINHARD02:
+			ss << " -D PARAM_TM_LINEAR_SCALE=1.0f";
+			break;
+		case TONEMAP_LINEAR: {
+			LinearToneMap *tm = (LinearToneMap *)gameLevel->toneMap;
+			ss << " -D PARAM_TM_LINEAR_SCALE=" << tm->scale << "f";
+			break;
+		}
+		default:
+			assert (false);
+
+	}
+
 #if defined(__APPLE__)
 	ss << " -D __APPLE__";
 #endif
@@ -292,10 +306,13 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	kernelBlendFrame->setArg(0, *passFrameBuffer);
 	kernelBlendFrame->setArg(1, *frameBuffer);
 
-	kernelUpdatePixelBuffer = new cl::Kernel(program, "UpdatePixelBuffer");
-	kernelUpdatePixelBuffer->setArg(0, *frameBuffer);
-	kernelUpdatePixelBuffer->setArg(1, *pboBuff);
+	kernelToneMapLinear = new cl::Kernel(program, "ToneMapLinear");
+	kernelToneMapLinear->setArg(0, *frameBuffer);
+	kernelToneMapLinear->setArg(1, *toneMapFrameBuffer);
 
+	kernelUpdatePixelBuffer = new cl::Kernel(program, "UpdatePixelBuffer");
+	kernelUpdatePixelBuffer->setArg(0, *toneMapFrameBuffer);
+	kernelUpdatePixelBuffer->setArg(1, *pboBuff);
 }
 
 OCLRenderer::~OCLRenderer() {
@@ -317,6 +334,8 @@ OCLRenderer::~OCLRenderer() {
 	delete pboBuff;
 	glDeleteBuffersARB(1, &pbo);
 
+	delete kernelUpdatePixelBuffer;
+	delete kernelToneMapLinear;
 	delete kernelBlendFrame;
 	delete kernelApplyBoxFilterXR1;
 	delete kernelApplyBoxFilterYR1;
@@ -325,7 +344,6 @@ OCLRenderer::~OCLRenderer() {
 	delete kernelApplyBlurLightFilterXR1;
 	delete kernelApplyBlurLightFilterYR1;
 	delete kernelPathTracing;
-	delete kernelUpdatePixelBuffer;
 	delete kernelInitToneMapFB;
 	delete kernelInit;
 	delete cmdQueue;
@@ -476,6 +494,8 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 			}
 			break;
 		}
+		default:
+			assert (false);
 	}
 
 	//--------------------------------------------------------------------------
@@ -507,7 +527,22 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	// Tone mapping
 	//--------------------------------------------------------------------------
 
+	switch (gameLevel->toneMap->GetType()) {
+		case TONEMAP_REINHARD02:
+		case TONEMAP_LINEAR: 
+			cmdQueue->enqueueNDRangeKernel(*kernelToneMapLinear, cl::NullRange,
+			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
+			cl::NDRange(WORKGROUP_SIZE));
+			break;
+		default:
+			assert (false);
+
+	}
+
+	//--------------------------------------------------------------------------
 	// Copy the OpenCL frame buffer to OpenGL one
+	//--------------------------------------------------------------------------
+
 	VECTOR_CLASS<cl::Memory> buffs;
 	buffs.push_back(*pboBuff);
 	cmdQueue->enqueueAcquireGLObjects(&buffs);

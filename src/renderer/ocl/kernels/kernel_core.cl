@@ -39,6 +39,7 @@
 //  PARAM_HAS_TEXTUREMAPS
 //  PARAM_HAS_BUMPMAPS
 //  PARAM_GAMMA
+//  PARAM_TM_LINEAR_SCALE
 
 //#pragma OPENCL EXTENSION cl_amd_printf : enable
 
@@ -1293,13 +1294,33 @@ __kernel void BlendFrame(
 	if (gid >= PARAM_SCREEN_WIDTH * PARAM_SCREEN_HEIGHT)
 		return;
 
-	Pixel sp = src[gid];
-	Pixel dp = dst[gid];
+	const Pixel sp = src[gid];
+	const Pixel dp = dst[gid];
+	__global Pixel *p = &dst[gid];
 
 	const float blendFactorDst = 1.f - blendFactorSrc;
-	dst[gid].r = blendFactorDst * dp.r + blendFactorSrc * sp.r;
-	dst[gid].g = blendFactorDst * dp.g + blendFactorSrc * sp.g;
-	dst[gid].b = blendFactorDst * dp.b + blendFactorSrc * sp.b;
+	p->r = blendFactorDst * dp.r + blendFactorSrc * sp.r;
+	p->g = blendFactorDst * dp.g + blendFactorSrc * sp.g;
+	p->b = blendFactorDst * dp.b + blendFactorSrc * sp.b;
+}
+
+//------------------------------------------------------------------------------
+// Linear Tone Map Kernel
+//------------------------------------------------------------------------------
+
+__kernel void ToneMapLinear(
+		__global Pixel *src,
+		__global Pixel *dst) {
+	const int gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_WIDTH * PARAM_SCREEN_HEIGHT)
+		return;
+
+	const Pixel sp = src[gid];
+	__global Pixel *p = &dst[gid];
+
+	p->r = PARAM_TM_LINEAR_SCALE * sp.r;
+	p->g = PARAM_TM_LINEAR_SCALE * sp.g;
+	p->b = PARAM_TM_LINEAR_SCALE * sp.b;
 }
 
 //------------------------------------------------------------------------------
