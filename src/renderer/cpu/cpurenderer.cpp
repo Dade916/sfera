@@ -30,19 +30,19 @@ CPURenderer::CPURenderer(const GameLevel *level) :
 	const unsigned int height = gameLevel->gameConfig->GetScreenHeight();
 
 	passFrameBuffer = new FrameBuffer(width, height);
-	filterFrameBuffer = new FrameBuffer(width, height);
+	tmpFrameBuffer = new FrameBuffer(width, height);
 	frameBuffer = new FrameBuffer(width, height);
 	toneMapFrameBuffer = new FrameBuffer(width, height);
 
 	passFrameBuffer->Clear();
-	filterFrameBuffer->Clear();
+	tmpFrameBuffer->Clear();
 	frameBuffer->Clear();
 	toneMapFrameBuffer->Clear();
 }
 
 CPURenderer::~CPURenderer() {
 	delete passFrameBuffer;
-	delete filterFrameBuffer;
+	delete tmpFrameBuffer;
 	delete frameBuffer;
 	delete toneMapFrameBuffer;
 }
@@ -174,21 +174,21 @@ void CPURenderer::ApplyFilter() {
 		case BLUR_LIGHT: {
 			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
 			for (unsigned int i = 0; i < filterPassCount; ++i)
-				FrameBuffer::ApplyBlurLightFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
+				FrameBuffer::ApplyBlurLightFilter(passFrameBuffer->GetPixels(), tmpFrameBuffer->GetPixels(),
 						width, height);
 			break;
 		}
 		case BLUR_HEAVY: {
 			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
 			for (unsigned int i = 0; i < filterPassCount; ++i)
-				FrameBuffer::ApplyBlurHeavyFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
+				FrameBuffer::ApplyBlurHeavyFilter(passFrameBuffer->GetPixels(), tmpFrameBuffer->GetPixels(),
 						width, height);
 			break;
 		}
 		case BOX: {
 			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
 			for (unsigned int i = 0; i < filterPassCount; ++i)
-				FrameBuffer::ApplyBoxFilter(passFrameBuffer->GetPixels(), filterFrameBuffer->GetPixels(),
+				FrameBuffer::ApplyBoxFilter(passFrameBuffer->GetPixels(), tmpFrameBuffer->GetPixels(),
 						width, height, gameConfig.GetRendererFilterRaidus());
 			break;
 		}

@@ -38,6 +38,7 @@
 //  PARAM_ENABLE_MAT_ALLOY
 //  PARAM_HAS_TEXTUREMAPS
 //  PARAM_HAS_BUMPMAPS
+//  PARAM_GAMMA
 
 //#pragma OPENCL EXTENSION cl_amd_printf : enable
 
@@ -1070,29 +1071,6 @@ __kernel void PathTracing(
 }
 
 //------------------------------------------------------------------------------
-// UpdatePixelBuffer Kernel
-//------------------------------------------------------------------------------
-
-uint Radiance2PixelUInt(const float x) {
-	return (uint)(pow(clamp(x, 0.f, 1.f), 1.f / 2.2f) * 255.f + .5f);
-}
-
-__kernel void UpdatePixelBuffer(
-		__global Pixel *frameBuffer,
-		__global uint *pbo) {
-	const int gid = get_global_id(0);
-	if (gid >= PARAM_SCREEN_WIDTH * PARAM_SCREEN_HEIGHT)
-		return;
-
-	__global Pixel *p = &frameBuffer[gid];
-
-	const uint r = Radiance2PixelUInt(p->r);
-	const uint g = Radiance2PixelUInt(p->g);
-	const uint b = Radiance2PixelUInt(p->b);
-	pbo[gid] = r | (g << 8) | (b << 16);
-}
-
-//------------------------------------------------------------------------------
 // Image filtering kernels
 //------------------------------------------------------------------------------
 
@@ -1301,4 +1279,48 @@ __kernel void ApplyBoxFilterYR1(
 	const float cF = 1.f / 3.f;
 
 	ApplyBlurFilterYR1(src, dst, aF, bF, cF);
+}
+
+//------------------------------------------------------------------------------
+// BlendBuffer Kernel
+//------------------------------------------------------------------------------
+
+__kernel void BlendFrame(
+		__global Pixel *src,
+		__global Pixel *dst,
+		const float blendFactorSrc) {
+	const int gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_WIDTH * PARAM_SCREEN_HEIGHT)
+		return;
+
+	Pixel sp = src[gid];
+	Pixel dp = dst[gid];
+
+	const float blendFactorDst = 1.f - blendFactorSrc;
+	dst[gid].r = blendFactorDst * dp.r + blendFactorSrc * sp.r;
+	dst[gid].g = blendFactorDst * dp.g + blendFactorSrc * sp.g;
+	dst[gid].b = blendFactorDst * dp.b + blendFactorSrc * sp.b;
+}
+
+//------------------------------------------------------------------------------
+// UpdatePixelBuffer Kernel
+//------------------------------------------------------------------------------
+
+uint Radiance2PixelUInt(const float x) {
+	return (uint)(pow(clamp(x, 0.f, 1.f), 1.f / PARAM_GAMMA) * 255.f + .5f);
+}
+
+__kernel void UpdatePixelBuffer(
+		__global Pixel *frameBuffer,
+		__global uint *pbo) {
+	const int gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_WIDTH * PARAM_SCREEN_HEIGHT)
+		return;
+
+	__global Pixel *p = &frameBuffer[gid];
+
+	const uint r = Radiance2PixelUInt(p->r);
+	const uint g = Radiance2PixelUInt(p->g);
+	const uint b = Radiance2PixelUInt(p->b);
+	pbo[gid] = r | (g << 8) | (b << 16);
 }

@@ -36,14 +36,16 @@ typedef enum {
 
 class ToneMap {
 public:
-	ToneMap(const float gamma = 2.2f);
+	ToneMap(const float gamma);
 	virtual ~ToneMap() { }
+
+	float GetGamma() const { return gamma; }
 
 	virtual ToneMapType GetType() const = 0;
 	virtual void Map(FrameBuffer *src, FrameBuffer *dst) const = 0;
 
 protected:
-	void InitGammaTable(const float gamma = 2.2f);
+	void InitGammaTable();
 
 	float Radiance2PixelFloat(const float x) const {
 		// Very slow !
@@ -59,12 +61,13 @@ protected:
 		return Spectrum(Radiance2PixelFloat(c.r), Radiance2PixelFloat(c.g), Radiance2PixelFloat(c.b));
 	}
 
+	float gamma;
 	float gammaTable[GAMMA_TABLE_SIZE];
 };
 
 class LinearToneMap : public ToneMap {
 public:
-	LinearToneMap(const float gamma, const float s = 1.f) : ToneMap(gamma) {
+	LinearToneMap(const float gamma, const float s) : ToneMap(gamma) {
 		scale = s;
 	}
 
@@ -76,8 +79,8 @@ public:
 
 class Reinhard02ToneMap : public ToneMap {
 public:
-	Reinhard02ToneMap(const float gamma, const float preS = 1.f,
-			const float postS = 1.2f, const float b = 3.75f) : ToneMap(gamma) {
+	Reinhard02ToneMap(const float gamma, const float preS,
+			const float postS, const float b) : ToneMap(gamma) {
 		preScale = preS;
 		postScale = postS;
 		burn = b;

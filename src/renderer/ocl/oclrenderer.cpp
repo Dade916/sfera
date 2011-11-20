@@ -37,9 +37,6 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	const unsigned int width = gameLevel->gameConfig->GetScreenWidth();
 	const unsigned int height = gameLevel->gameConfig->GetScreenHeight();
 
-	frameBuffer = new FrameBuffer(width, height);
-	frameBuffer->Clear();
-
 	compiledScene = new CompiledScene(level);
 
 	//--------------------------------------------------------------------------
@@ -123,7 +120,9 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	// Allocate the buffers
 	//--------------------------------------------------------------------------
 
+	passFrameBuffer = NULL;
 	tmpFrameBuffer = NULL;
+	frameBuffer = NULL;
 	toneMapFrameBuffer = NULL;
 	bvhBuffer = NULL;
 	gpuTaskBuffer = NULL;
@@ -136,7 +135,9 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	texMapInstanceBuffer = NULL;
 	bumpMapInstanceBuffer = NULL;
 
+	AllocOCLBufferRW(&passFrameBuffer, sizeof(Pixel) * width * height, "Pass FrameBuffer");
 	AllocOCLBufferRW(&tmpFrameBuffer, sizeof(Pixel) * width * height, "Temporary FrameBuffer");
+	AllocOCLBufferRW(&frameBuffer, sizeof(Pixel) * width * height, "FrameBuffer");
 	AllocOCLBufferRW(&toneMapFrameBuffer, sizeof(Pixel) * width * height, "ToneMap FrameBuffer");
 	AllocOCLBufferRW(&gpuTaskBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "GPUTask");
 	AllocOCLBufferRW(&cameraBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "Camera");
@@ -195,7 +196,8 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 			" -D PARAM_IL_GAIN_G=" << gameLevel->scene->infiniteLight->GetGain().g << "f" <<
 			" -D PARAM_IL_GAIN_B=" << gameLevel->scene->infiniteLight->GetGain().b << "f" <<
 			" -D PARAM_IL_MAP_WIDTH=" << gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() <<
-			" -D PARAM_IL_MAP_HEIGHT=" << gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight();
+			" -D PARAM_IL_MAP_HEIGHT=" << gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight() <<
+			" -D PARAM_GAMMA=" << gameLevel->toneMap->GetGamma() << "f";
 
 	if (compiledScene->enable_MAT_MATTE)
 		ss << " -D PARAM_ENABLE_MAT_MATTE";
@@ -237,17 +239,13 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 
 	kernelInit = new cl::Kernel(program, "Init");
 	kernelInit->setArg(0, *gpuTaskBuffer);
-	kernelInit->setArg(1, *toneMapFrameBuffer);
+	kernelInit->setArg(1, *passFrameBuffer);
 	cmdQueue->enqueueNDRangeKernel(*kernelInit, cl::NullRange,
 			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
 			cl::NDRange(WORKGROUP_SIZE));
 
 	kernelInitToneMapFB = new cl::Kernel(program, "InitFB");
-	kernelInitToneMapFB->setArg(0, *toneMapFrameBuffer);
-
-	kernelUpdatePixelBuffer = new cl::Kernel(program, "UpdatePixelBuffer");
-	kernelUpdatePixelBuffer->setArg(0, *toneMapFrameBuffer);
-	kernelUpdatePixelBuffer->setArg(1, *pboBuff);
+	kernelInitToneMapFB->setArg(0, *passFrameBuffer);
 
 	kernelPathTracing = new cl::Kernel(program, "PathTracing");
 	unsigned int argIndex = 0;
@@ -255,7 +253,7 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	argIndex++;
 	kernelPathTracing->setArg(argIndex++, *cameraBuffer);
 	kernelPathTracing->setArg(argIndex++, *infiniteLightBuffer);
-	kernelPathTracing->setArg(argIndex++, *toneMapFrameBuffer);
+	kernelPathTracing->setArg(argIndex++, *passFrameBuffer);
 	kernelPathTracing->setArg(argIndex++, *matBuffer);
 	kernelPathTracing->setArg(argIndex++, *matIndexBuffer);
 	if (texMapBuffer) {
@@ -267,32 +265,43 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	}
 
 	kernelApplyBlurLightFilterXR1 = new cl::Kernel(program, "ApplyBlurLightFilterXR1");
-	kernelApplyBlurLightFilterXR1->setArg(0, *toneMapFrameBuffer);
+	kernelApplyBlurLightFilterXR1->setArg(0, *passFrameBuffer);
 	kernelApplyBlurLightFilterXR1->setArg(1, *tmpFrameBuffer);
 
 	kernelApplyBlurLightFilterYR1 = new cl::Kernel(program, "ApplyBlurLightFilterYR1");
 	kernelApplyBlurLightFilterYR1->setArg(0, *tmpFrameBuffer);
-	kernelApplyBlurLightFilterYR1->setArg(1, *toneMapFrameBuffer);
+	kernelApplyBlurLightFilterYR1->setArg(1, *passFrameBuffer);
 
 	kernelApplyBlurHeavyFilterXR1 = new cl::Kernel(program, "ApplyBlurHeavyFilterXR1");
-	kernelApplyBlurHeavyFilterXR1->setArg(0, *toneMapFrameBuffer);
+	kernelApplyBlurHeavyFilterXR1->setArg(0, *passFrameBuffer);
 	kernelApplyBlurHeavyFilterXR1->setArg(1, *tmpFrameBuffer);
 
 	kernelApplyBlurHeavyFilterYR1 = new cl::Kernel(program, "ApplyBlurHeavyFilterYR1");
 	kernelApplyBlurHeavyFilterYR1->setArg(0, *tmpFrameBuffer);
-	kernelApplyBlurHeavyFilterYR1->setArg(1, *toneMapFrameBuffer);
+	kernelApplyBlurHeavyFilterYR1->setArg(1, *passFrameBuffer);
 
 	kernelApplyBoxFilterXR1 = new cl::Kernel(program, "ApplyBoxFilterXR1");
-	kernelApplyBoxFilterXR1->setArg(0, *toneMapFrameBuffer);
+	kernelApplyBoxFilterXR1->setArg(0, *passFrameBuffer);
 	kernelApplyBoxFilterXR1->setArg(1, *tmpFrameBuffer);
 
 	kernelApplyBoxFilterYR1 = new cl::Kernel(program, "ApplyBoxFilterYR1");
 	kernelApplyBoxFilterYR1->setArg(0, *tmpFrameBuffer);
-	kernelApplyBoxFilterYR1->setArg(1, *toneMapFrameBuffer);
+	kernelApplyBoxFilterYR1->setArg(1, *passFrameBuffer);
+
+	kernelBlendFrame = new cl::Kernel(program, "BlendFrame");
+	kernelBlendFrame->setArg(0, *passFrameBuffer);
+	kernelBlendFrame->setArg(1, *frameBuffer);
+
+	kernelUpdatePixelBuffer = new cl::Kernel(program, "UpdatePixelBuffer");
+	kernelUpdatePixelBuffer->setArg(0, *frameBuffer);
+	kernelUpdatePixelBuffer->setArg(1, *pboBuff);
+
 }
 
 OCLRenderer::~OCLRenderer() {
+	FreeOCLBuffer(&passFrameBuffer);
 	FreeOCLBuffer(&tmpFrameBuffer);
+	FreeOCLBuffer(&frameBuffer);
 	FreeOCLBuffer(&toneMapFrameBuffer);
 	FreeOCLBuffer(&bvhBuffer);
 	FreeOCLBuffer(&gpuTaskBuffer);
@@ -308,6 +317,7 @@ OCLRenderer::~OCLRenderer() {
 	delete pboBuff;
 	glDeleteBuffersARB(1, &pbo);
 
+	delete kernelBlendFrame;
 	delete kernelApplyBoxFilterXR1;
 	delete kernelApplyBoxFilterYR1;
 	delete kernelApplyBlurHeavyFilterXR1;
@@ -471,6 +481,27 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	//--------------------------------------------------------------------------
 	// Blend the new frame with the old one
 	//--------------------------------------------------------------------------
+
+	float k;
+	if (editActionList.Has(CAMERA_EDIT)) {
+		timeSinceLastCameraEdit = WallClockTime();
+
+		const double dt = Min(WallClockTime() - timeSinceLastNoCameraEdit, 2.0);
+		k = 1.f - dt / 2.f;
+	} else {
+		timeSinceLastNoCameraEdit = WallClockTime();
+
+		const double dt = Min(WallClockTime() - timeSinceLastCameraEdit, 5.0);
+		k = dt / 5.0f;
+	}
+
+	const float blendFactor = (1.f - k) * gameConfig.GetRendererGhostFactorCameraEdit() +
+		k * gameConfig.GetRendererGhostFactorNoCameraEdit();
+	kernelBlendFrame->setArg(2, blendFactor);
+
+	cmdQueue->enqueueNDRangeKernel(*kernelBlendFrame, cl::NullRange,
+			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
+			cl::NDRange(WORKGROUP_SIZE));
 
 	//--------------------------------------------------------------------------
 	// Tone mapping

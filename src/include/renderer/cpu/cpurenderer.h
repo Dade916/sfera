@@ -46,7 +46,7 @@ protected:
 	void CopyFrame();
 
 	FrameBuffer *passFrameBuffer;
-	FrameBuffer *filterFrameBuffer;
+	FrameBuffer *tmpFrameBuffer;
 	FrameBuffer *frameBuffer;
 	FrameBuffer *toneMapFrameBuffer;
 

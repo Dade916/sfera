@@ -13,10 +13,10 @@ path.maxspecularglossybounces=4
 # Tone mapping
 #film.tonemap.type=LINEAR
 #film.tonemap.linear.scale=1.0
-film.tonemap.type=REINHARD02
-film.tonemap.prescale=1.0
-film.tonemap.postscale=1.2
-film.tonemap.burn=3.75
+film.tonemap.reinhard02.type=REINHARD02
+film.tonemap.reinhard02.prescale=1.0
+film.tonemap.reinhard02.postscale=1.2
+film.tonemap.reinhard02.burn=3.75
 ################################################################################
 scene.gravity.constant=50.0
 ################################################################################
@@ -42,7 +42,7 @@ scene.materials.glass.kt=0.75 0.75 0.75
 scene.materials.glass.ior=1.0 1.4
 # Infinite light source
 scene.infinitelight.file=textures/hdr/Ridgecrest_Road_Ref.exr
-scene.infinitelight.gain=1.4 1.4 1.4
+scene.infinitelight.gain=1.2 1.2 1.2
 scene.infinitelight.shift=0.0 0.0
 ################################################################################
 # Spheres

@@ -69,9 +69,13 @@ protected:
 	cl::Kernel *kernelApplyBlurHeavyFilterYR1;
 	cl::Kernel *kernelApplyBoxFilterXR1;
 	cl::Kernel *kernelApplyBoxFilterYR1;
+	cl::Kernel *kernelBlendFrame;
 
+	cl::Buffer *passFrameBuffer;
 	cl::Buffer *tmpFrameBuffer;
+	cl::Buffer *frameBuffer;
 	cl::Buffer *toneMapFrameBuffer;
+
 	cl::Buffer *bvhBuffer;
 	cl::Buffer *gpuTaskBuffer;
 	cl::Buffer *cameraBuffer;
@@ -87,8 +91,6 @@ protected:
 	cl::BufferGL *pboBuff;
 
 	size_t usedDeviceMemory;
-
-	FrameBuffer *frameBuffer;
 
 	CompiledScene *compiledScene;
 

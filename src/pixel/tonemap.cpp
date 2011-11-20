@@ -25,11 +25,11 @@
 // Tonemapping
 //------------------------------------------------------------------------------
 
-ToneMap::ToneMap(const float gamma) {
-	InitGammaTable(gamma);
+ToneMap::ToneMap(const float g) : gamma(g) {
+	InitGammaTable();
 }
 
-void ToneMap::InitGammaTable(const float gamma) {
+void ToneMap::InitGammaTable() {
 	float x = 0.f;
 	const float dx = 1.f / GAMMA_TABLE_SIZE;
 	for (unsigned int i = 0; i < GAMMA_TABLE_SIZE; ++i, x += dx)
