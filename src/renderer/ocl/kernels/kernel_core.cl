@@ -1115,21 +1115,13 @@ __kernel void UpdatePixelBuffer(
 // Image filtering kernels
 //------------------------------------------------------------------------------
 
-__kernel void ApplyBlurLightFilterXR1(
+void ApplyBlurFilterXR1(
 		__global Pixel *src,
-		__global Pixel *dst
+		__global Pixel *dst,
+		const float aF,
+		const float bF,
+		const float cF
 		) {
-	const size_t gid = get_global_id(0);
-	if (gid >= PARAM_SCREEN_HEIGHT)
-		return;
-
-	src += gid * PARAM_SCREEN_WIDTH;
-	dst += gid * PARAM_SCREEN_WIDTH;
-
-	const float aF = .15f;
-	const float bF = 1.f;
-	const float cF = .15f;
-
 	// Do left edge
 	Pixel a;
 	a.r = 0.f;
@@ -1173,21 +1165,13 @@ __kernel void ApplyBlurLightFilterXR1(
 
 }
 
-__kernel void ApplyBlurLightFilterYR1(
+void ApplyBlurFilterYR1(
 		__global Pixel *src,
-		__global Pixel *dst
+		__global Pixel *dst,
+		const float aF,
+		const float bF,
+		const float cF
 		) {
-	const size_t gid = get_global_id(0);
-	if (gid >= PARAM_SCREEN_WIDTH)
-		return;
-
-	src += gid;
-	dst += gid;
-
-	const float aF = .15f;
-	const float bF = 1.f;
-	const float cF = .15f;
-
 	// Do left edge
 	Pixel a;
 	a.r = 0.f;
@@ -1228,4 +1212,112 @@ __kernel void ApplyBlurLightFilterYR1(
 	dst[(PARAM_SCREEN_HEIGHT - 1) * PARAM_SCREEN_WIDTH].r = aRightK * a.r + bRightK * b.r;
 	dst[(PARAM_SCREEN_HEIGHT - 1) * PARAM_SCREEN_WIDTH].g = aRightK * a.g + bRightK * b.g;
 	dst[(PARAM_SCREEN_HEIGHT - 1) * PARAM_SCREEN_WIDTH].b = aRightK * a.b + bRightK * b.b;
+}
+
+__kernel void ApplyBlurLightFilterXR1(
+		__global Pixel *src,
+		__global Pixel *dst
+		) {
+	const size_t gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_HEIGHT)
+		return;
+
+	src += gid * PARAM_SCREEN_WIDTH;
+	dst += gid * PARAM_SCREEN_WIDTH;
+
+	const float aF = .15f;
+	const float bF = 1.f;
+	const float cF = .15f;
+
+	ApplyBlurFilterXR1(src, dst, aF, bF, cF);
+}
+
+__kernel void ApplyBlurLightFilterYR1(
+		__global Pixel *src,
+		__global Pixel *dst
+		) {
+	const size_t gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_WIDTH)
+		return;
+
+	src += gid;
+	dst += gid;
+
+	const float aF = .15f;
+	const float bF = 1.f;
+	const float cF = .15f;
+
+	ApplyBlurFilterYR1(src, dst, aF, bF, cF);
+}
+
+__kernel void ApplyBlurHeavyFilterXR1(
+		__global Pixel *src,
+		__global Pixel *dst
+		) {
+	const size_t gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_HEIGHT)
+		return;
+
+	src += gid * PARAM_SCREEN_WIDTH;
+	dst += gid * PARAM_SCREEN_WIDTH;
+
+	const float aF = .35f;
+	const float bF = 1.f;
+	const float cF = .35f;
+
+	ApplyBlurFilterXR1(src, dst, aF, bF, cF);
+}
+
+__kernel void ApplyBlurHeavyFilterYR1(
+		__global Pixel *src,
+		__global Pixel *dst
+		) {
+	const size_t gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_WIDTH)
+		return;
+
+	src += gid;
+	dst += gid;
+
+	const float aF = .35f;
+	const float bF = 1.f;
+	const float cF = .35f;
+
+	ApplyBlurFilterYR1(src, dst, aF, bF, cF);
+}
+
+__kernel void ApplyBoxFilterXR1(
+		__global Pixel *src,
+		__global Pixel *dst
+		) {
+	const size_t gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_HEIGHT)
+		return;
+
+	src += gid * PARAM_SCREEN_WIDTH;
+	dst += gid * PARAM_SCREEN_WIDTH;
+
+	const float aF = .35f;
+	const float bF = 1.f;
+	const float cF = .35f;
+
+	ApplyBlurFilterXR1(src, dst, aF, bF, cF);
+}
+
+__kernel void ApplyBoxFilterYR1(
+		__global Pixel *src,
+		__global Pixel *dst
+		) {
+	const size_t gid = get_global_id(0);
+	if (gid >= PARAM_SCREEN_WIDTH)
+		return;
+
+	src += gid;
+	dst += gid;
+
+	const float aF = 1.f / 3.f;
+	const float bF = 1.f / 3.f;
+	const float cF = 1.f / 3.f;
+
+	ApplyBlurFilterYR1(src, dst, aF, bF, cF);
 }

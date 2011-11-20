@@ -63,6 +63,10 @@ protected:
 	cl::Kernel *kernelPathTracing;
 	cl::Kernel *kernelApplyBlurLightFilterXR1;
 	cl::Kernel *kernelApplyBlurLightFilterYR1;
+	cl::Kernel *kernelApplyBlurHeavyFilterXR1;
+	cl::Kernel *kernelApplyBlurHeavyFilterYR1;
+	cl::Kernel *kernelApplyBoxFilterXR1;
+	cl::Kernel *kernelApplyBoxFilterYR1;
 
 	cl::Buffer *tmpFrameBuffer;
 	cl::Buffer *toneMapFrameBuffer;

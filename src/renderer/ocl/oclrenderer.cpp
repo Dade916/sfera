@@ -273,6 +273,22 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	kernelApplyBlurLightFilterYR1 = new cl::Kernel(program, "ApplyBlurLightFilterYR1");
 	kernelApplyBlurLightFilterYR1->setArg(0, *tmpFrameBuffer);
 	kernelApplyBlurLightFilterYR1->setArg(1, *toneMapFrameBuffer);
+
+	kernelApplyBlurHeavyFilterXR1 = new cl::Kernel(program, "ApplyBlurHeavyFilterXR1");
+	kernelApplyBlurHeavyFilterXR1->setArg(0, *toneMapFrameBuffer);
+	kernelApplyBlurHeavyFilterXR1->setArg(1, *tmpFrameBuffer);
+
+	kernelApplyBlurHeavyFilterYR1 = new cl::Kernel(program, "ApplyBlurHeavyFilterYR1");
+	kernelApplyBlurHeavyFilterYR1->setArg(0, *tmpFrameBuffer);
+	kernelApplyBlurHeavyFilterYR1->setArg(1, *toneMapFrameBuffer);
+
+	kernelApplyBoxFilterXR1 = new cl::Kernel(program, "ApplyBoxFilterXR1");
+	kernelApplyBoxFilterXR1->setArg(0, *toneMapFrameBuffer);
+	kernelApplyBoxFilterXR1->setArg(1, *tmpFrameBuffer);
+
+	kernelApplyBoxFilterYR1 = new cl::Kernel(program, "ApplyBoxFilterYR1");
+	kernelApplyBoxFilterYR1->setArg(0, *tmpFrameBuffer);
+	kernelApplyBoxFilterYR1->setArg(1, *toneMapFrameBuffer);
 }
 
 OCLRenderer::~OCLRenderer() {
@@ -292,6 +308,12 @@ OCLRenderer::~OCLRenderer() {
 	delete pboBuff;
 	glDeleteBuffersARB(1, &pbo);
 
+	delete kernelApplyBoxFilterXR1;
+	delete kernelApplyBoxFilterYR1;
+	delete kernelApplyBlurHeavyFilterXR1;
+	delete kernelApplyBlurHeavyFilterYR1;
+	delete kernelApplyBlurLightFilterXR1;
+	delete kernelApplyBlurLightFilterYR1;
 	delete kernelPathTracing;
 	delete kernelUpdatePixelBuffer;
 	delete kernelInitToneMapFB;
@@ -402,15 +424,48 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	// Apply a filter: approximated by applying a box filter multiple times
 	//--------------------------------------------------------------------------
 
-	const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
-	for (unsigned int i = 0; i < filterPassCount; ++i) {
-		cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurLightFilterXR1, cl::NullRange,
-				cl::NDRange(RoundUp<unsigned int>(height, 64)),
-				cl::NDRange(64));
+	switch (gameConfig.GetRendererFilterType()) {
+		case NO_FILTER:
+			break;
+		case BLUR_LIGHT: {
+			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+			for (unsigned int i = 0; i < filterPassCount; ++i) {
+				cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurLightFilterXR1, cl::NullRange,
+						cl::NDRange(RoundUp<unsigned int>(height, 64)),
+						cl::NDRange(64));
 
-		cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurLightFilterYR1, cl::NullRange,
-				cl::NDRange(RoundUp<unsigned int>(width, 64)),
-				cl::NDRange(64));
+				cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurLightFilterYR1, cl::NullRange,
+						cl::NDRange(RoundUp<unsigned int>(width, 64)),
+						cl::NDRange(64));
+			}
+			break;
+		}
+		case BLUR_HEAVY: {
+			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+			for (unsigned int i = 0; i < filterPassCount; ++i) {
+				cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurHeavyFilterXR1, cl::NullRange,
+						cl::NDRange(RoundUp<unsigned int>(height, 64)),
+						cl::NDRange(64));
+
+				cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurHeavyFilterYR1, cl::NullRange,
+						cl::NDRange(RoundUp<unsigned int>(width, 64)),
+						cl::NDRange(64));
+			}
+			break;
+		}
+		case BOX: {
+			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+			for (unsigned int i = 0; i < filterPassCount; ++i) {
+				cmdQueue->enqueueNDRangeKernel(*kernelApplyBoxFilterXR1, cl::NullRange,
+						cl::NDRange(RoundUp<unsigned int>(height, 64)),
+						cl::NDRange(64));
+
+				cmdQueue->enqueueNDRangeKernel(*kernelApplyBoxFilterYR1, cl::NullRange,
+						cl::NDRange(RoundUp<unsigned int>(width, 64)),
+						cl::NDRange(64));
+			}
+			break;
+		}
 	}
 
 	//--------------------------------------------------------------------------
