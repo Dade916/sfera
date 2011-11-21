@@ -284,9 +284,7 @@ void DisplaySession::RunLoop() {
 		}
 
 		currentLevel->Refresh();
-		// Check if the camera has changed
-		if (currentLevel->camera->IsChangedSinceLastUpdate())
-			editActionList.AddAction(CAMERA_EDIT);
+		editActionList.AddAction(CAMERA_EDIT);
 		editActionList.AddAction(GEOMETRY_EDIT);
 
 		totalSampleCount += renderer->DrawFrame(editActionList);

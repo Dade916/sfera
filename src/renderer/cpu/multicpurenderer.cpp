@@ -102,7 +102,7 @@ size_t MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	// Blend the new frame with the old one
 	//--------------------------------------------------------------------------
 
-	BlendFrame(editActionList);
+	BlendFrame();
 
 	//--------------------------------------------------------------------------
 	// Tone mapping

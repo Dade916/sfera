@@ -41,7 +41,7 @@ protected:
 		RandomGenerator &rnd, const Accelerator &accel,
 		const float screenX, const float screenY);
 	void ApplyFilter();
-	void BlendFrame(const EditActionList &editActionList);
+	void BlendFrame();
 	void ApplyToneMapping();
 	void CopyFrame();
 

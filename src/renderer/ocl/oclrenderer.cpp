@@ -402,8 +402,7 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	// Upload the new Camera to the GPU
 	//--------------------------------------------------------------------------
 
-	if (editActionList.Has(CAMERA_EDIT))
-		cmdQueue->enqueueWriteBuffer(*cameraBuffer, CL_FALSE, 0, sizeof(compiledscene::Camera), &compiledScene->camera);
+	cmdQueue->enqueueWriteBuffer(*cameraBuffer, CL_FALSE, 0, sizeof(compiledscene::Camera), &compiledScene->camera);
 
 	//--------------------------------------------------------------------------
 	// Check if I have to update the BVH buffer
@@ -502,17 +501,18 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	// Blend the new frame with the old one
 	//--------------------------------------------------------------------------
 
+	const float ghostTimeLength = gameConfig.GetRendererGhostFactorTime();
 	float k;
-	if (editActionList.Has(CAMERA_EDIT)) {
+	if (gameLevel->camera->IsChangedSinceLastUpdate()) {
 		timeSinceLastCameraEdit = WallClockTime();
 
-		const double dt = Min(WallClockTime() - timeSinceLastNoCameraEdit, 2.0);
-		k = 1.f - dt / 2.f;
+		const double dt = Min<double>(WallClockTime() - timeSinceLastNoCameraEdit, ghostTimeLength);
+		k = 1.f - dt / ghostTimeLength;
 	} else {
 		timeSinceLastNoCameraEdit = WallClockTime();
 
-		const double dt = Min(WallClockTime() - timeSinceLastCameraEdit, 5.0);
-		k = dt / 5.0f;
+		const double dt = Min<double>(WallClockTime() - timeSinceLastCameraEdit, ghostTimeLength);
+		k = dt / ghostTimeLength;
 	}
 
 	const float blendFactor = (1.f - k) * gameConfig.GetRendererGhostFactorCameraEdit() +

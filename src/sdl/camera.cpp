@@ -28,7 +28,6 @@ void PerspectiveCamera::Update(const unsigned int filmWidth, const unsigned int 
 		(DistanceSquared(lastUpdateTarget, target) < EPSILON) &&
 		(Dot(lastUpdateUp, up) > .95f)) {
 		changedSinceLastUpdate = false;
-		return;
 	} else {
 		lastUpdateOrig = orig;
 		lastUpdateTarget = target;

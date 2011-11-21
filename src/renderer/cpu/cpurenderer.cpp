@@ -195,7 +195,7 @@ void CPURenderer::ApplyFilter() {
 	}
 }
 
-void CPURenderer::BlendFrame(const EditActionList &editActionList) {
+void CPURenderer::BlendFrame() {
 	//--------------------------------------------------------------------------
 	// Blend the new frame with the old one
 	//--------------------------------------------------------------------------
@@ -204,17 +204,18 @@ void CPURenderer::BlendFrame(const EditActionList &editActionList) {
 	const unsigned int width = gameConfig.GetScreenWidth();
 	const unsigned int height = gameConfig.GetScreenHeight();
 
+	const float ghostTimeLength = gameConfig.GetRendererGhostFactorTime();
 	float k;
-	if (editActionList.Has(CAMERA_EDIT)) {
+	if (gameLevel->camera->IsChangedSinceLastUpdate()) {
 		timeSinceLastCameraEdit = WallClockTime();
 
-		const double dt = Min(WallClockTime() - timeSinceLastNoCameraEdit, 2.0);
-		k = 1.f - dt / 2.f;
+		const double dt = Min<double>(WallClockTime() - timeSinceLastNoCameraEdit, ghostTimeLength);
+		k = 1.f - dt / ghostTimeLength;
 	} else {
 		timeSinceLastNoCameraEdit = WallClockTime();
 
-		const double dt = Min(WallClockTime() - timeSinceLastCameraEdit, 5.0);
-		k = dt / 5.f;
+		const double dt = Min<double>(WallClockTime() - timeSinceLastCameraEdit, ghostTimeLength);
+		k = dt / ghostTimeLength;
 	}
 
 	const float blendFactor = (1.f - k) * gameConfig.GetRendererGhostFactorCameraEdit() +

@@ -50,6 +50,7 @@ public:
 	unsigned int GetRendererSamplePerPass() const { return rendererSamplePerPass; }
 	float GetRendererGhostFactorCameraEdit() const { return rendererGhostFactorCameraEdit; }
 	float GetRendererGhostFactorNoCameraEdit() const { return rendererGhostFactorNoCameraEdit; }
+	float GetRendererGhostFactorTime() const { return rendererGhostFactorTime; }
 	FilterType GetRendererFilterType() const { return rendererFilterType; }
 	unsigned int GetRendererFilterRaidus() const { return rendererFilterRadius; }
 	unsigned int GetRendererFilterIterations() const { return rendererFilterIterations; }
@@ -74,6 +75,8 @@ private:
 	const static string RENDERER_GHOSTFACTOR_CAMERAEDIT_DEFAULT;
 	const static string RENDERER_GHOSTFACTOR_NOCAMERAEDIT;
 	const static string RENDERER_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT;
+	const static string RENDERER_GHOSTFACTOR_TIME;
+	const static string RENDERER_GHOSTFACTOR_TIME_DEFAULT;
 	const static string RENDERER_FILTER_TYPE;
 	const static string RENDERER_FILTER_TYPE_DEFAULT;
 	const static string RENDERER_FILTER_RADIUS;
@@ -97,6 +100,7 @@ private:
 	unsigned int rendererSamplePerPass;
 	float rendererGhostFactorCameraEdit;
 	float rendererGhostFactorNoCameraEdit;
+	float rendererGhostFactorTime;
 	FilterType rendererFilterType;
 	unsigned int rendererFilterRadius;
 	unsigned int rendererFilterIterations;

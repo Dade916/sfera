@@ -1313,11 +1313,11 @@ __kernel void ToneMapLinear(
 		return;
 
 	const Pixel sp = src[gid];
-	__global Pixel *p = &dst[gid];
+	__global Pixel *dp = &dst[gid];
 
-	p->r = PARAM_TM_LINEAR_SCALE * sp.r;
-	p->g = PARAM_TM_LINEAR_SCALE * sp.g;
-	p->b = PARAM_TM_LINEAR_SCALE * sp.b;
+	dp->r = PARAM_TM_LINEAR_SCALE * sp.r;
+	dp->g = PARAM_TM_LINEAR_SCALE * sp.g;
+	dp->b = PARAM_TM_LINEAR_SCALE * sp.b;
 }
 
 //------------------------------------------------------------------------------

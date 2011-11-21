@@ -72,7 +72,7 @@ size_t SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	// Blend the new frame with the old one
 	//--------------------------------------------------------------------------
 
-	BlendFrame(editActionList);
+	BlendFrame();
 
 	//--------------------------------------------------------------------------
 	// Tone mapping
