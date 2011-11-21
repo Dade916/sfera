@@ -253,7 +253,7 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 
 	kernelInit = new cl::Kernel(program, "Init");
 	kernelInit->setArg(0, *gpuTaskBuffer);
-	kernelInit->setArg(1, *passFrameBuffer);
+	kernelInit->setArg(1, *frameBuffer);
 	cmdQueue->enqueueNDRangeKernel(*kernelInit, cl::NullRange,
 			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
 			cl::NDRange(WORKGROUP_SIZE));

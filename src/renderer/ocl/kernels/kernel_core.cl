@@ -817,9 +817,6 @@ __kernel void Init(
 // InitFB Kernel
 //------------------------------------------------------------------------------
 
-//#define BLEND_FACTOR .25f
-#define BLEND_FACTOR 1.f
-
 __kernel void InitFB(
 		__global Pixel *frameBuffer
 		) {
@@ -828,9 +825,9 @@ __kernel void InitFB(
 		return;
 
 	__global Pixel *p = &frameBuffer[gid];
-	p->r *= 1.f - BLEND_FACTOR;
-	p->g *= 1.f - BLEND_FACTOR;
-	p->b *= 1.f - BLEND_FACTOR;
+	p->r = 0.f;
+	p->g = 0.f;
+	p->b = 0.f;
 }
 
 //------------------------------------------------------------------------------
@@ -1061,9 +1058,9 @@ __kernel void PathTracing(
 	}
 
 	__global Pixel *p = &frameBuffer[pixelIndex];
-	p->r += BLEND_FACTOR * radiance.r * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
-	p->g += BLEND_FACTOR * radiance.g * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
-	p->b += BLEND_FACTOR * radiance.b * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
+	p->r += radiance.r * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
+	p->g += radiance.g * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
+	p->b += radiance.b * (1.f / PARAM_SCREEN_SAMPLEPERPASS);
 
 	// Save the seed
 	task->seed.s1 = seed.s1;

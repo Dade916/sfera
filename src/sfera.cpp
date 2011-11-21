@@ -141,8 +141,15 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		if (!config)
-			config = new GameConfig();
+		if (!config) {
+			// Look for the default config
+
+			if (boost::filesystem::exists("gamedata/cfgs/default.cfg")) {
+				SFERA_LOG("Reading the default configuration file: gamedata/cfgs/default.cfg");
+				config = new GameConfig("gamedata/cfgs/default.cfg");
+			} else
+				config = new GameConfig();
+		}
 
 		// Overtwirte properties with the one defined on command line
 		config->LoadProperties(cmdLineProp);
