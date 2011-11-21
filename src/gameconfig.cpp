@@ -53,15 +53,11 @@ GameConfig::GameConfig(const string &fileName) {
 	SFERA_LOG("Reading configuration file: " << fileName);
 	cfg.LoadFile(fileName);
 	InitCachedValues();
-
-	LogParameters();
 }
 
 GameConfig::GameConfig() {
 	InitValues();
 	InitCachedValues();
-
-	LogParameters();
 }
 
 GameConfig::~GameConfig() {

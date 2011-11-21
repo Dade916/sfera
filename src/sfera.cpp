@@ -153,6 +153,7 @@ int main(int argc, char *argv[]) {
 
 		// Overtwirte properties with the one defined on command line
 		config->LoadProperties(cmdLineProp);
+		config->LogParameters();
 
 		DisplaySession displaySession(config);
 		displaySession.RunLoop();
