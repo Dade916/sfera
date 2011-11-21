@@ -91,7 +91,7 @@ Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
 
 		// Build the sphere
 		const vector<float> vf = Properties::GetParameters(scnProp, propRoot + ".geometry", 4, "0.0 0.0 0.0 1.0");
-		const float mass = scnProp.GetFloat(propRoot + ".mass", 1.f);
+		const float mass = scnProp.GetFloat(propRoot + ".mass", Sphere::CalcMass(vf[3]));
 		const float linearDamping = scnProp.GetFloat(propRoot + ".lineardamping", PHYSIC_DEFAULT_ANGULAR_DAMPING);
 		const float angularDamping = scnProp.GetFloat(propRoot + ".angulardamping", PHYSIC_DEFAULT_LINEAR_DAMPING);
 		const bool staticObject = ("yes" == scnProp.GetString(propRoot + ".static", "no"));

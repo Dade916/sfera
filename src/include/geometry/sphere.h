@@ -41,6 +41,12 @@ public:
 			return false;
 	}
 
+	float Mass() const { return CalcMass(rad); }
+	float Volume() const { return CalcVolume(rad); }
+
+	static float CalcMass(const float r) { return 0.75f * CalcVolume(r); }
+	static float CalcVolume(const float r) { return (4.f / 3.f * M_PI) * r * r * r; }
+
 	Point center;
 	float rad;
 };

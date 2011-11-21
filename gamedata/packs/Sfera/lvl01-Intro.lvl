@@ -1,11 +1,11 @@
 # Player
 player.body.position=0.1 -2.0 -2.0
 player.body.radius=0.25
-player.body.mass=0.3
+#player.body.mass=0.3
 player.body.lineardamping=0.95
 player.body.angulardamping=0.5
-player.forwardspeed=1.5
-player.jumpspeed=5
+player.forwardspeed=1.25
+player.jumpspeed=1
 # Path
 path.epsilon=0.001
 path.maxdiffusebounces=2
@@ -48,7 +48,7 @@ scene.infinitelight.shift=0.0 0.0
 # Spheres
 ################################################################################
 scene.spheres.world1.geometry=0.0 0.0 -6.0 6.0
-scene.spheres.world1.mass=50.0
+scene.spheres.world1.mass=100.0
 scene.spheres.world1.static=yes
 scene.spheres.world1.attractor=yes
 scene.spheres.world1.material=whitematte
@@ -58,27 +58,31 @@ scene.spheres.world1.bumpmap.file=textures/planet_Klendathu1200-bumpmap.png
 #scene.spheres.world1.bumpmap.file=textures/test-map01-bumpmap.jpg
 scene.spheres.world1.bumpmap.scale=5.0
 ################################################################################
-#scene.spheres.world2.geometry=0.0 0.0 20.0 10.0
-#scene.spheres.world2.mass=100.0
+#scene.spheres.world2.geometry=14.0 0.0 -6.0 4.0
+#scene.spheres.world2.mass=1.0
 #scene.spheres.world2.static=yes
 #scene.spheres.world2.attractor=yes
 #scene.spheres.world2.material=whitematte
 ################################################################################
 scene.spheres.w1s01.geometry=0.0 0.0 0.8 0.8
-scene.spheres.w1s01.mass=0.8
 scene.spheres.w1s01.material=greenmetal
 scene.spheres.w1s02.geometry=-1.5 0.0 0.4 0.4
-scene.spheres.w1s02.mass=0.4
 scene.spheres.w1s02.material=mirror
 scene.spheres.w1s03.geometry=1.5 0.0 0.6 0.6
-scene.spheres.w1s03.mass=0.6
 scene.spheres.w1s03.material=redmatte
 scene.spheres.w1s04.geometry=0.0 -1.5 0.4 0.4
-scene.spheres.w1s04.mass=0.4
 scene.spheres.w1s04.material=glass
 #scene.spheres.w1s05.geometry=0.0 -3.0 -1.0 0.4
-#scene.spheres.w1s05.mass=1.4
 #scene.spheres.w1s05.material=light
-scene.spheres.w1tower01.geometry=2.0 0.0 -6.0 4.1
+scene.spheres.w1tower01.geometry=3.0 0.0 -6.0 4.0
 scene.spheres.w1tower01.static=yes
 scene.spheres.w1tower01.material=redmatte
+scene.spheres.w1tower02.geometry=4.5 0.0 -6.0 3.0
+scene.spheres.w1tower02.static=yes
+scene.spheres.w1tower02.material=whitematte
+scene.spheres.w1tower03.geometry=6.0 0.0 -6.0 2.0
+scene.spheres.w1tower03.static=yes
+scene.spheres.w1tower03.material=redmatte
+scene.spheres.w1tower04.geometry=7.5 0.0 -6.0 1.0
+scene.spheres.w1tower04.static=yes
+scene.spheres.w1tower04.material=whitematte

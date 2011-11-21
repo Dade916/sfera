@@ -24,17 +24,16 @@
 #include "physic/gamephysic.h"
 
 GamePlayer::GamePlayer(const Properties &prop)  {
-	forwardSpeed = prop.GetFloat("player.forwardspeed", 1.5f);
-	jumpSpeed = prop.GetFloat("player.jumpspeed", 5.f);
+	forwardSpeed = prop.GetFloat("player.forwardspeed", 1.25f);
+	jumpSpeed = prop.GetFloat("player.jumpspeed", 1.f);
 
 	const std::vector<float> vf = Properties::GetParameters(prop, "player.body.position", 3, "0.0 0.0 0.0");
 	body.sphere.center = Point(vf[0], vf[1], vf[2]);
 
 	body.sphere.rad = prop.GetFloat("player.body.radius", 1.f);
-	body.mass = prop.GetFloat("player.body.mass", 1.f);
-	body.linearDamping = prop.GetFloat("player.body.mass", 1.f);
-	body.angularDamping = prop.GetFloat("player.body.mass", 1.f);
-	body.linearDamping = prop.GetFloat("player.body.lineardamping", PHYSIC_DEFAULT_ANGULAR_DAMPING);
+	body.mass = prop.GetFloat("player.body.mass", body.sphere.Mass());
+	body.linearDamping = prop.GetFloat("player.body.lineardamping", PHYSIC_DEFAULT_LINEAR_DAMPING);
+	body.angularDamping = prop.GetFloat("player.body.angulardamping", PHYSIC_DEFAULT_ANGULAR_DAMPING);
 	body.staticObject = false;
 	body.attractorObject = false;
 
@@ -82,13 +81,13 @@ void GamePlayer::ApplyInputs() {
 	// TODO: movements should be not refresh rate related
 	if (inputTurnLeft) {
 		// Rotate left
-		Transform t = Rotate(10.f, up);
+		Transform t = Rotate(2.5f, up);
 		front = t(front);
 	}
 
 	if (inputTurnRight) {
 		// Rotate right
-		Transform t = Rotate(-10.f, up);
+		Transform t = Rotate(-2.5f, up);
 		front = t(front);
 	}
 }

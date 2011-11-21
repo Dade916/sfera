@@ -71,6 +71,7 @@ void GamePhysic::AddRigidBody(const GameSphere &gameSphere, const size_t index) 
 
 	btRigidBody::btRigidBodyConstructionInfo
 			groundRigidBodyCI(mass, motionState, shape, inertia);
+	groundRigidBodyCI.m_restitution = 0.25f;
 
 	btRigidBody *rigidBody = new btRigidBody(groundRigidBodyCI);
 	dynamicsWorld->addRigidBody(rigidBody);
