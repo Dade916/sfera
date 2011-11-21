@@ -322,8 +322,10 @@ void DisplaySession::RunLoop() {
 			const double sampleSec = totalSampleCount / dt;
 
 			stringstream ss;
-			ss << "[Sample/sec: " << fixed << setprecision(2) << (sampleSec / 100000) << "M sample/ses][Frame/sec: " << frameSec <<
-					"][Physic engine Hz: " << gamePhysic.GetRunningHz() << "]";
+			ss << "[Sample/sec: " << fixed << setprecision(2) << (sampleSec / 100000) << 
+					"M s/s][Frame/sec: " << frameSec <<	"/" << gameConfig->GetScreenRefreshCap() <<
+					"][Physic engine Hz: " << gamePhysic.GetRunningHz() <<
+					"/"<< gameConfig->GetPhysicRefreshRate() << "]";
 			topLabel = ss.str();
 
 			frameStartTime = now;

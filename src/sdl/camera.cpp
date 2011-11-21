@@ -24,8 +24,8 @@
 
 void PerspectiveCamera::Update(const unsigned int filmWidth, const unsigned int filmHeight) {
 	// Check if the camera parameters have changed since the last update
-	if ((DistanceSquared(lastUpdateOrig, orig) < EPSILON) &&
-		(DistanceSquared(lastUpdateTarget, target) < EPSILON) &&
+	if ((DistanceSquared(lastUpdateOrig, orig) < EPSILON * EPSILON) &&
+		(DistanceSquared(lastUpdateTarget, target) < EPSILON * EPSILON) &&
 		(Dot(lastUpdateUp, up) > .95f)) {
 		changedSinceLastUpdate = false;
 	} else {

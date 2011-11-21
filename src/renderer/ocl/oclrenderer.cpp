@@ -50,20 +50,20 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	VECTOR_CLASS<cl::Platform> platforms;
 	cl::Platform::get(&platforms);
 	for (size_t i = 0; i < platforms.size(); ++i) {
-		SFERA_LOG("OpenCL Platform " << i << ": " << platforms[i].getInfo<CL_PLATFORM_VENDOR>());
+		SFERA_LOG("[OCLRenderer] OpenCL Platform " << i << ": " << platforms[i].getInfo<CL_PLATFORM_VENDOR>());
 
 		// Get the list of devices available on the platform
 		VECTOR_CLASS<cl::Device> devices;
 		platforms[i].getDevices(CL_DEVICE_TYPE_ALL, &devices);
 
 		for (size_t j = 0; j < devices.size(); ++j) {
-			SFERA_LOG("  OpenCL device " << j << ": " << devices[j].getInfo<CL_DEVICE_NAME>());
-			SFERA_LOG("    Type: " << OCLDeviceTypeString(devices[j].getInfo<CL_DEVICE_TYPE>()));
-			SFERA_LOG("    Units: " << devices[j].getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>());
-			SFERA_LOG("    Global memory: " << devices[j].getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>() / 1024 << "Kbytes");
-			SFERA_LOG("    Local memory: " << devices[j].getInfo<CL_DEVICE_LOCAL_MEM_SIZE>() / 1024 << "Kbytes");
-			SFERA_LOG("    Local memory type: " << OCLLocalMemoryTypeString(devices[j].getInfo<CL_DEVICE_LOCAL_MEM_TYPE>()));
-			SFERA_LOG("    Constant memory: " << devices[j].getInfo<CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE>() / 1024 << "Kbytes");
+			SFERA_LOG("[OCLRenderer]   OpenCL device " << j << ": " << devices[j].getInfo<CL_DEVICE_NAME>());
+			SFERA_LOG("[OCLRenderer]     Type: " << OCLDeviceTypeString(devices[j].getInfo<CL_DEVICE_TYPE>()));
+			SFERA_LOG("[OCLRenderer]     Units: " << devices[j].getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>());
+			SFERA_LOG("[OCLRenderer]     Global memory: " << devices[j].getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>() / 1024 << "Kbytes");
+			SFERA_LOG("[OCLRenderer]     Local memory: " << devices[j].getInfo<CL_DEVICE_LOCAL_MEM_SIZE>() / 1024 << "Kbytes");
+			SFERA_LOG("[OCLRenderer]     Local memory type: " << OCLLocalMemoryTypeString(devices[j].getInfo<CL_DEVICE_LOCAL_MEM_TYPE>()));
+			SFERA_LOG("[OCLRenderer]     Constant memory: " << devices[j].getInfo<CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE>() / 1024 << "Kbytes");
 
 			if (!deviceFound && (devices[j].getInfo<CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU)) {
 				selectedDevice = devices[j];
@@ -73,9 +73,9 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	}
 
 	if (deviceFound) {
-		SFERA_LOG("Selected OpenCL device: " << selectedDevice.getInfo<CL_DEVICE_NAME>());
-		SFERA_LOG("  Type: " << OCLDeviceTypeString(selectedDevice.getInfo<CL_DEVICE_TYPE>()));
-		SFERA_LOG("  Units: " << selectedDevice.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>());
+		SFERA_LOG("[OCLRenderer] Selected OpenCL device: " << selectedDevice.getInfo<CL_DEVICE_NAME>());
+		SFERA_LOG("[OCLRenderer]   Type: " << OCLDeviceTypeString(selectedDevice.getInfo<CL_DEVICE_TYPE>()));
+		SFERA_LOG("[OCLRenderer]   Units: " << selectedDevice.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>());
 	} else
 		throw runtime_error("Unable to find a OpenCL GPU device");
 
@@ -164,6 +164,8 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 			AllocOCLBufferRO(&bumpMapInstanceBuffer, (void *)(&compiledScene->sphereBumps[0]),
 					sizeof(compiledscene::BumpMapInstance) * compiledScene->sphereBumps.size(), "Bump Map Instances");
 	}
+
+	SFERA_LOG("[OCLRenderer] Total OpenCL device memory used: " << fixed << setprecision(2) << usedDeviceMemory / (1024 * 1024) << "Mbytes");
 
 	//--------------------------------------------------------------------------
 	// Create pixel buffer object for display
