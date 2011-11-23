@@ -19,7 +19,6 @@
  ***************************************************************************/
 
 #include "sdl/editaction.h"
-
 #include "acceleretor/bvhaccel.h"
 #include "renderer/cpu/singlecpurenderer.h"
 #include "renderer/cpu/multicpurenderer.h"

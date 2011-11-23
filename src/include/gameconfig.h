@@ -55,6 +55,9 @@ public:
 	unsigned int GetRendererFilterRaidus() const { return rendererFilterRadius; }
 	unsigned int GetRendererFilterIterations() const { return rendererFilterIterations; }
 
+	bool GetOpenCLUseOnlyGPUs() const { return openCLUseOnlyGPUs; }
+	const string &GetOpenCLDeviceSelect() const { return openCLDeviceSelect; }
+
 private:
 	// List of possible properties
 	const static string SCREEN_WIDTH;
@@ -83,6 +86,10 @@ private:
 	const static string RENDERER_FILTER_RADIUS_DEFAULT;
 	const static string RENDERER_FILTER_ITERATIONS;
 	const static string RENDERER_FILTER_ITERATIONS_DEFAULT;
+	const static string OPENCL_DEVICES_USEONLYGPUS;
+	const static string OPENCL_DEVICES_USEONLYGPUS_DEFAULT;
+	const static string OPENCL_DEVICES_SELECT;
+	const static string OPENCL_DEVICES_SELECT_DEFAULT;
 
 	void InitValues();
 	void InitCachedValues();
@@ -104,6 +111,9 @@ private:
 	FilterType rendererFilterType;
 	unsigned int rendererFilterRadius;
 	unsigned int rendererFilterIterations;
+
+	bool openCLUseOnlyGPUs;
+	string openCLDeviceSelect;
 };
 
 #endif	/* _SFERA_GAMECONFIG_H */

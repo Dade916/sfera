@@ -30,25 +30,24 @@
 #include <GL/glx.h>
 #endif
 
-OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
-		usedDeviceMemory(0),
-		timeSinceLastCameraEdit(WallClockTime()),
-		timeSinceLastNoCameraEdit(WallClockTime()) {
-	const unsigned int width = gameLevel->gameConfig->GetScreenWidth();
-	const unsigned int height = gameLevel->gameConfig->GetScreenHeight();
+//------------------------------------------------------------------------------
+// OCLRenderer
+//------------------------------------------------------------------------------
 
+OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level) {
 	compiledScene = new CompiledScene(level);
 
 	//--------------------------------------------------------------------------
 	// OpenCL setup
 	//--------------------------------------------------------------------------
 
-	bool deviceFound = false;
-	cl::Device selectedDevice;
+	vector<cl::Device> selectedDevices;
 
 	// Scan all platforms and devices available
 	VECTOR_CLASS<cl::Platform> platforms;
 	cl::Platform::get(&platforms);
+	const string &selectString = gameLevel->gameConfig->GetOpenCLDeviceSelect();
+	size_t selectIndex = 0;
 	for (size_t i = 0; i < platforms.size(); ++i) {
 		SFERA_LOG("[OCLRenderer] OpenCL Platform " << i << ": " << platforms[i].getInfo<CL_PLATFORM_VENDOR>());
 
@@ -65,53 +64,135 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 			SFERA_LOG("[OCLRenderer]     Local memory type: " << OCLLocalMemoryTypeString(devices[j].getInfo<CL_DEVICE_LOCAL_MEM_TYPE>()));
 			SFERA_LOG("[OCLRenderer]     Constant memory: " << devices[j].getInfo<CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE>() / 1024 << "Kbytes");
 
-			if (!deviceFound && (devices[j].getInfo<CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU)) {
-				selectedDevice = devices[j];
-				deviceFound = true;
+			bool selected = false;
+			if (!gameLevel->gameConfig->GetOpenCLUseOnlyGPUs() || (devices[j].getInfo<CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_GPU)) {
+				if (selectString.length() == 0)
+					selected = true;
+				else {
+					if (selectString.length() <= selectIndex)
+						throw runtime_error("OpenCL select devices string (opencl.devices.select) has the wrong length");
+
+					if (selectString.at(selectIndex) == '1')
+						selected = true;
+				}
 			}
+
+			if (selected) {
+				selectedDevices.push_back(devices[j]);
+				SFERA_LOG("[OCLRenderer]     SELECTED");
+			} else
+				SFERA_LOG("[OCLRenderer]     NOT SELECTED");
+
+			++selectIndex;
 		}
 	}
 
-	if (deviceFound) {
-		SFERA_LOG("[OCLRenderer] Selected OpenCL device: " << selectedDevice.getInfo<CL_DEVICE_NAME>());
-		SFERA_LOG("[OCLRenderer]   Type: " << OCLDeviceTypeString(selectedDevice.getInfo<CL_DEVICE_TYPE>()));
-		SFERA_LOG("[OCLRenderer]   Units: " << selectedDevice.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>());
-	} else
+	if (selectedDevices.size() == 0)
 		throw runtime_error("Unable to find a OpenCL GPU device");
 
+	// Create synchronization barrier
+	barrier = new boost::barrier(selectedDevices.size() + 1);
+
+	for (size_t i = 0; i < selectedDevices.size(); ++i) {
+		OCLRendererThread *rt = new OCLRendererThread(i, this, selectedDevices[i]);
+		renderThread.push_back(rt);
+	}
+
+	for (size_t i = 0; i < renderThread.size(); ++i)
+		renderThread[i]->Start();
+}
+
+OCLRenderer::~OCLRenderer() {
+	for (size_t i = 0; i < renderThread.size(); ++i) {
+		renderThread[i]->Stop();
+		delete renderThread[i];
+	}
+}
+
+size_t OCLRenderer::DrawFrame(const EditActionList &list) {
+	//--------------------------------------------------------------------------
+	// Recompile the scene
+	//--------------------------------------------------------------------------
+
+	{
+		boost::unique_lock<boost::mutex> lock(gameLevel->levelMutex);
+		compiledScene->Recompile(list);
+	}
+
+	//--------------------------------------------------------------------------
+	// Render
+	//--------------------------------------------------------------------------
+
+	editActionList = &list;
+	barrier->wait();
+	// Other threads do the rendering
+	barrier->wait();
+
+	//--------------------------------------------------------------------------
+	// Blend frame, tone mapping and copy the OpenCL frame buffer to OpenGL one
+	//--------------------------------------------------------------------------
+
+	renderThread[0]->DrawFrame();
+
+	const GameConfig &gameConfig(*(gameLevel->gameConfig));
+	return gameConfig.GetRendererSamplePerPass() *
+			gameConfig.GetScreenWidth() *
+			gameConfig.GetScreenHeight();
+}
+
+//------------------------------------------------------------------------------
+// OCLRendererThread
+//------------------------------------------------------------------------------
+
+OCLRendererThread::OCLRendererThread(const size_t threadIndex, OCLRenderer *renderer,
+			cl::Device device) : index(threadIndex), renderer(renderer),
+		dev(device), usedDeviceMemory(0) {
+	const GameLevel &gameLevel(*(renderer->gameLevel));
+	const unsigned int width = gameLevel.gameConfig->GetScreenWidth();
+	const unsigned int height = gameLevel.gameConfig->GetScreenHeight();
+
+	const CompiledScene &compiledScene(*(renderer->compiledScene));
+
+	//--------------------------------------------------------------------------
+	// OpenCL setup
+	//--------------------------------------------------------------------------
+
 	// Allocate a context with the selected device
-	dev = selectedDevice;
 
 	VECTOR_CLASS<cl::Device> devices;
 	devices.push_back(dev);
 	cl::Platform platform = dev.getInfo<CL_DEVICE_PLATFORM>();
 
+	// The first thread uses OpenCL/OpenGL interoperability
+	if (index == 0) {
 #if defined (__APPLE__)
-	CGLContextObj kCGLContext = CGLGetCurrentContext();
-	CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
-	cl_context_properties cps[] = {
-		CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)kCGLShareGroup,
-		0
-	};
+		CGLContextObj kCGLContext = CGLGetCurrentContext();
+		CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
+		cl_context_properties cps[] = {
+			CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE, (cl_context_properties)kCGLShareGroup,
+			0
+		};
 #else
 #ifdef WIN32
-	cl_context_properties cps[] = {
-		CL_GL_CONTEXT_KHR, (intptr_t)wglGetCurrentContext(),
-		CL_WGL_HDC_KHR, (intptr_t)wglGetCurrentDC(),
-		CL_CONTEXT_PLATFORM, (cl_context_properties)platform(),
-		0
-	};
+		cl_context_properties cps[] = {
+			CL_GL_CONTEXT_KHR, (intptr_t)wglGetCurrentContext(),
+			CL_WGL_HDC_KHR, (intptr_t)wglGetCurrentDC(),
+			CL_CONTEXT_PLATFORM, (cl_context_properties)platform(),
+			0
+		};
 #else
-	cl_context_properties cps[] = {
-		CL_GL_CONTEXT_KHR, (intptr_t)glXGetCurrentContext(),
-		CL_GLX_DISPLAY_KHR, (intptr_t)glXGetCurrentDisplay(),
-		CL_CONTEXT_PLATFORM, (cl_context_properties)platform(),
-		0
-	};
+		cl_context_properties cps[] = {
+			CL_GL_CONTEXT_KHR, (intptr_t)glXGetCurrentContext(),
+			CL_GLX_DISPLAY_KHR, (intptr_t)glXGetCurrentDisplay(),
+			CL_CONTEXT_PLATFORM, (cl_context_properties)platform(),
+			0
+		};
 #endif
 #endif
 
-	ctx = new cl::Context(devices, cps);
+		ctx = new cl::Context(devices, cps);
+	} else
+		ctx = new cl::Context(devices);
 
 	// Allocate the queue for this device
 	cmdQueue = new cl::CommandQueue(*ctx, dev);
@@ -137,46 +218,50 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 
 	AllocOCLBufferRW(&passFrameBuffer, sizeof(Pixel) * width * height, "Pass FrameBuffer");
 	AllocOCLBufferRW(&tmpFrameBuffer, sizeof(Pixel) * width * height, "Temporary FrameBuffer");
-	AllocOCLBufferRW(&frameBuffer, sizeof(Pixel) * width * height, "FrameBuffer");
-	AllocOCLBufferRW(&toneMapFrameBuffer, sizeof(Pixel) * width * height, "ToneMap FrameBuffer");
+	if (index == 0) {
+		AllocOCLBufferRW(&frameBuffer, sizeof(Pixel) * width * height, "FrameBuffer");
+		AllocOCLBufferRW(&toneMapFrameBuffer, sizeof(Pixel) * width * height, "ToneMap FrameBuffer");
+	}
 	AllocOCLBufferRW(&gpuTaskBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "GPUTask");
 	AllocOCLBufferRW(&cameraBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "Camera");
-	AllocOCLBufferRO(&infiniteLightBuffer, (void *)(gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetPixels()),
-			sizeof(Spectrum) * gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() *
-			gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight(), "Inifinite Light");
+	AllocOCLBufferRO(&infiniteLightBuffer, (void *)(gameLevel.scene->infiniteLight->GetTexture()->GetTexMap()->GetPixels()),
+			sizeof(Spectrum) * gameLevel.scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() *
+			gameLevel.scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight(), "Inifinite Light");
 
-	AllocOCLBufferRO(&matBuffer, (void *)(&compiledScene->mats[0]),
-			sizeof(compiledscene::Material) * compiledScene->mats.size(), "Materials");
-	AllocOCLBufferRO(&matIndexBuffer, (void *)(&compiledScene->sphereMats[0]),
-			sizeof(unsigned int) * compiledScene->sphereMats.size(), "Material Indices");
+	AllocOCLBufferRO(&matBuffer, (void *)(&compiledScene.mats[0]),
+			sizeof(compiledscene::Material) * compiledScene.mats.size(), "Materials");
+	AllocOCLBufferRO(&matIndexBuffer, (void *)(&compiledScene.sphereMats[0]),
+			sizeof(unsigned int) * compiledScene.sphereMats.size(), "Material Indices");
 
-	if (compiledScene->texMaps.size() > 0) {
-		AllocOCLBufferRO(&texMapBuffer, (void *)(&compiledScene->texMaps[0]),
-				sizeof(compiledscene::TexMap) * compiledScene->texMaps.size(), "Texture Maps");
+	if (compiledScene.texMaps.size() > 0) {
+		AllocOCLBufferRO(&texMapBuffer, (void *)(&compiledScene.texMaps[0]),
+				sizeof(compiledscene::TexMap) * compiledScene.texMaps.size(), "Texture Maps");
 
-		AllocOCLBufferRO(&texMapRGBBuffer, (void *)(compiledScene->rgbTexMem),
-				sizeof(Spectrum) * compiledScene->totRGBTexMem, "Texture Map Images");
+		AllocOCLBufferRO(&texMapRGBBuffer, (void *)(compiledScene.rgbTexMem),
+				sizeof(Spectrum) * compiledScene.totRGBTexMem, "Texture Map Images");
 
-		AllocOCLBufferRO(&texMapInstanceBuffer, (void *)(&compiledScene->sphereTexs[0]),
-				sizeof(compiledscene::TexMapInstance) * compiledScene->sphereTexs.size(), "Texture Map Instances");
+		AllocOCLBufferRO(&texMapInstanceBuffer, (void *)(&compiledScene.sphereTexs[0]),
+				sizeof(compiledscene::TexMapInstance) * compiledScene.sphereTexs.size(), "Texture Map Instances");
 
-		if (compiledScene->sphereBumps.size() > 0)
-			AllocOCLBufferRO(&bumpMapInstanceBuffer, (void *)(&compiledScene->sphereBumps[0]),
-					sizeof(compiledscene::BumpMapInstance) * compiledScene->sphereBumps.size(), "Bump Map Instances");
+		if (compiledScene.sphereBumps.size() > 0)
+			AllocOCLBufferRO(&bumpMapInstanceBuffer, (void *)(&compiledScene.sphereBumps[0]),
+					sizeof(compiledscene::BumpMapInstance) * compiledScene.sphereBumps.size(), "Bump Map Instances");
 	}
 
 	SFERA_LOG("[OCLRenderer] Total OpenCL device memory used: " << fixed << setprecision(2) << usedDeviceMemory / (1024 * 1024) << "Mbytes");
 
-	//--------------------------------------------------------------------------
-	// Create pixel buffer object for display
-	//--------------------------------------------------------------------------
+	if (index == 0) {
+		//--------------------------------------------------------------------------
+		// Create pixel buffer object for display
+		//--------------------------------------------------------------------------
 
-	glGenBuffersARB(1, &pbo);
-	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pbo);
-	glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, width * height *
-			sizeof(GLubyte) * 4, 0, GL_STREAM_DRAW_ARB);
-	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-	pboBuff = new cl::BufferGL(*ctx, CL_MEM_READ_WRITE, pbo);
+		glGenBuffersARB(1, &pbo);
+		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pbo);
+		glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, width * height *
+				sizeof(GLubyte) * 4, 0, GL_STREAM_DRAW_ARB);
+		glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+		pboBuff = new cl::BufferGL(*ctx, CL_MEM_READ_WRITE, pbo);
+	}
 
 	//--------------------------------------------------------------------------
 	// Compile the kernel source
@@ -188,43 +273,43 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	ss << scientific <<
 			" -D PARAM_SCREEN_WIDTH=" << width <<
 			" -D PARAM_SCREEN_HEIGHT=" << height <<
-			" -D PARAM_SCREEN_SAMPLEPERPASS=" << gameLevel->gameConfig->GetRendererSamplePerPass() <<
+			" -D PARAM_SCREEN_SAMPLEPERPASS=" << gameLevel.gameConfig->GetRendererSamplePerPass() <<
 			" -D PARAM_RAY_EPSILON=" << EPSILON << "f" <<
-			" -D PARAM_MAX_DIFFUSE_BOUNCE=" << gameLevel->maxPathDiffuseBounces <<
-			" -D PARAM_MAX_SPECULARGLOSSY_BOUNCE=" << gameLevel->maxPathSpecularGlossyBounces <<
-			" -D PARAM_IL_SHIFT_U=" << gameLevel->scene->infiniteLight->GetShiftU() << "f" <<
-			" -D PARAM_IL_SHIFT_V=" << gameLevel->scene->infiniteLight->GetShiftV() << "f" <<
-			" -D PARAM_IL_GAIN_R=" << gameLevel->scene->infiniteLight->GetGain().r << "f" <<
-			" -D PARAM_IL_GAIN_G=" << gameLevel->scene->infiniteLight->GetGain().g << "f" <<
-			" -D PARAM_IL_GAIN_B=" << gameLevel->scene->infiniteLight->GetGain().b << "f" <<
-			" -D PARAM_IL_MAP_WIDTH=" << gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() <<
-			" -D PARAM_IL_MAP_HEIGHT=" << gameLevel->scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight() <<
-			" -D PARAM_GAMMA=" << gameLevel->toneMap->GetGamma() << "f";
+			" -D PARAM_MAX_DIFFUSE_BOUNCE=" << gameLevel.maxPathDiffuseBounces <<
+			" -D PARAM_MAX_SPECULARGLOSSY_BOUNCE=" << gameLevel.maxPathSpecularGlossyBounces <<
+			" -D PARAM_IL_SHIFT_U=" << gameLevel.scene->infiniteLight->GetShiftU() << "f" <<
+			" -D PARAM_IL_SHIFT_V=" << gameLevel.scene->infiniteLight->GetShiftV() << "f" <<
+			" -D PARAM_IL_GAIN_R=" << gameLevel.scene->infiniteLight->GetGain().r << "f" <<
+			" -D PARAM_IL_GAIN_G=" << gameLevel.scene->infiniteLight->GetGain().g << "f" <<
+			" -D PARAM_IL_GAIN_B=" << gameLevel.scene->infiniteLight->GetGain().b << "f" <<
+			" -D PARAM_IL_MAP_WIDTH=" << gameLevel.scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() <<
+			" -D PARAM_IL_MAP_HEIGHT=" << gameLevel.scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight() <<
+			" -D PARAM_GAMMA=" << gameLevel.toneMap->GetGamma() << "f";
 
-	if (compiledScene->enable_MAT_MATTE)
+	if (compiledScene.enable_MAT_MATTE)
 		ss << " -D PARAM_ENABLE_MAT_MATTE";
-	if (compiledScene->enable_MAT_MIRROR)
+	if (compiledScene.enable_MAT_MIRROR)
 		ss << " -D PARAM_ENABLE_MAT_MIRROR";
-	if (compiledScene->enable_MAT_GLASS)
+	if (compiledScene.enable_MAT_GLASS)
 		ss << " -D PARAM_ENABLE_MAT_GLASS";
-	if (compiledScene->enable_MAT_METAL)
+	if (compiledScene.enable_MAT_METAL)
 		ss << " -D PARAM_ENABLE_MAT_METAL";
-	if (compiledScene->enable_MAT_ALLOY)
+	if (compiledScene.enable_MAT_ALLOY)
 		ss << " -D PARAM_ENABLE_MAT_ALLOY";
 
 	if (texMapBuffer) {
 		ss << " -D PARAM_HAS_TEXTUREMAPS";
-		
-		if (compiledScene->sphereBumps.size() > 0)
+
+		if (compiledScene.sphereBumps.size() > 0)
 			ss << " -D PARAM_HAS_BUMPMAPS";
 	}
 
-	switch (gameLevel->toneMap->GetType()) {
+	switch (gameLevel.toneMap->GetType()) {
 		case TONEMAP_REINHARD02:
 			ss << " -D PARAM_TM_LINEAR_SCALE=1.0f";
 			break;
 		case TONEMAP_LINEAR: {
-			LinearToneMap *tm = (LinearToneMap *)gameLevel->toneMap;
+			LinearToneMap *tm = (LinearToneMap *)gameLevel.toneMap;
 			ss << " -D PARAM_TM_LINEAR_SCALE=" << tm->scale << "f";
 			break;
 		}
@@ -276,7 +361,7 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 		kernelPathTracing->setArg(argIndex++, *texMapBuffer);
 		kernelPathTracing->setArg(argIndex++, *texMapRGBBuffer);
 		kernelPathTracing->setArg(argIndex++, *texMapInstanceBuffer);
-		if (compiledScene->sphereBumps.size() > 0)
+		if (compiledScene.sphereBumps.size() > 0)
 			kernelPathTracing->setArg(argIndex++, *bumpMapInstanceBuffer);
 	}
 
@@ -304,20 +389,29 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level),
 	kernelApplyBoxFilterYR1->setArg(0, *tmpFrameBuffer);
 	kernelApplyBoxFilterYR1->setArg(1, *passFrameBuffer);
 
-	kernelBlendFrame = new cl::Kernel(program, "BlendFrame");
-	kernelBlendFrame->setArg(0, *passFrameBuffer);
-	kernelBlendFrame->setArg(1, *frameBuffer);
+	if (index == 0) {
+		kernelBlendFrame = new cl::Kernel(program, "BlendFrame");
+		kernelBlendFrame->setArg(0, *passFrameBuffer);
+		kernelBlendFrame->setArg(1, *frameBuffer);
 
-	kernelToneMapLinear = new cl::Kernel(program, "ToneMapLinear");
-	kernelToneMapLinear->setArg(0, *frameBuffer);
-	kernelToneMapLinear->setArg(1, *toneMapFrameBuffer);
+		kernelToneMapLinear = new cl::Kernel(program, "ToneMapLinear");
+		kernelToneMapLinear->setArg(0, *frameBuffer);
+		kernelToneMapLinear->setArg(1, *toneMapFrameBuffer);
 
-	kernelUpdatePixelBuffer = new cl::Kernel(program, "UpdatePixelBuffer");
-	kernelUpdatePixelBuffer->setArg(0, *toneMapFrameBuffer);
-	kernelUpdatePixelBuffer->setArg(1, *pboBuff);
+		kernelUpdatePixelBuffer = new cl::Kernel(program, "UpdatePixelBuffer");
+		kernelUpdatePixelBuffer->setArg(0, *toneMapFrameBuffer);
+		kernelUpdatePixelBuffer->setArg(1, *pboBuff);
+
+		timeSinceLastCameraEdit = WallClockTime();
+		timeSinceLastNoCameraEdit = timeSinceLastCameraEdit;
+	} else {
+		kernelBlendFrame = NULL;
+		kernelToneMapLinear = NULL;
+		kernelUpdatePixelBuffer = NULL;
+	}
 }
 
-OCLRenderer::~OCLRenderer() {
+OCLRendererThread::~OCLRendererThread() {
 	FreeOCLBuffer(&passFrameBuffer);
 	FreeOCLBuffer(&tmpFrameBuffer);
 	FreeOCLBuffer(&frameBuffer);
@@ -333,8 +427,10 @@ OCLRenderer::~OCLRenderer() {
 	FreeOCLBuffer(&texMapInstanceBuffer);
 	FreeOCLBuffer(&bumpMapInstanceBuffer);
 
-	delete pboBuff;
-	glDeleteBuffersARB(1, &pbo);
+	if (index == 0) {
+		delete pboBuff;
+		glDeleteBuffersARB(1, &pbo);
+	}
 
 	delete kernelUpdatePixelBuffer;
 	delete kernelToneMapLinear;
@@ -352,7 +448,7 @@ OCLRenderer::~OCLRenderer() {
 	delete ctx;
 }
 
-void OCLRenderer::AllocOCLBufferRO(cl::Buffer **buff, void *src, const size_t size, const string &desc) {
+void OCLRendererThread::AllocOCLBufferRO(cl::Buffer **buff, void *src, const size_t size, const string &desc) {
 	if (*buff) {
 		// Check the size of the already allocated buffer
 
@@ -363,14 +459,14 @@ void OCLRenderer::AllocOCLBufferRO(cl::Buffer **buff, void *src, const size_t si
 		}
 	}
 
-	SFERA_LOG("[OCLRenderer] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
+	SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
 	*buff = new cl::Buffer(*ctx,
 			CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
 			size, src);
 	usedDeviceMemory += (*buff)->getInfo<CL_MEM_SIZE>();
 }
 
-void OCLRenderer::AllocOCLBufferRW(cl::Buffer **buff, const size_t size, const string &desc) {
+void OCLRendererThread::AllocOCLBufferRW(cl::Buffer **buff, const size_t size, const string &desc) {
 	if (*buff) {
 		// Check the size of the already allocated buffer
 
@@ -380,12 +476,12 @@ void OCLRenderer::AllocOCLBufferRW(cl::Buffer **buff, const size_t size, const s
 		}
 	}
 
-	SFERA_LOG("[OCLRenderer] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
+	SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
 	*buff = new cl::Buffer(*ctx, CL_MEM_READ_WRITE, size);
 	usedDeviceMemory += (*buff)->getInfo<CL_MEM_SIZE>();
 }
 
-void OCLRenderer::FreeOCLBuffer(cl::Buffer **buff) {
+void OCLRendererThread::FreeOCLBuffer(cl::Buffer **buff) {
 	if (*buff) {
 		usedDeviceMemory -= (*buff)->getInfo<CL_MEM_SIZE>();
 		delete *buff;
@@ -393,114 +489,145 @@ void OCLRenderer::FreeOCLBuffer(cl::Buffer **buff) {
 	}
 }
 
-size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
-	//--------------------------------------------------------------------------
-	// Recompile the scene
-	//--------------------------------------------------------------------------
+void OCLRendererThread::Start() {
+	renderThread = new boost::thread(boost::bind(OCLRendererThread::OCLRenderThreadStaticImpl, this));
+}
 
-	{
-		boost::unique_lock<boost::mutex> lock(gameLevel->levelMutex);
-		compiledScene->Recompile(editActionList);
+void OCLRendererThread::Stop() {
+	if (renderThread) {
+		renderThread->interrupt();
+		renderThread->join();
+		delete renderThread;
+		renderThread = NULL;
 	}
+}
 
-	//--------------------------------------------------------------------------
-	// Upload the new Camera to the GPU
-	//--------------------------------------------------------------------------
+void OCLRendererThread::OCLRenderThreadStaticImpl(OCLRendererThread *renderThread) {
+	renderThread->OCLRenderThreadImpl();
+}
 
-	cmdQueue->enqueueWriteBuffer(*cameraBuffer, CL_FALSE, 0, sizeof(compiledscene::Camera), &compiledScene->camera);
+void OCLRendererThread::OCLRenderThreadImpl() {
+	try {
+		const GameConfig &gameConfig(*(renderer->gameLevel->gameConfig));
+		const unsigned int width = gameConfig.GetScreenWidth();
+		const unsigned int height = gameConfig.GetScreenHeight();
+		const unsigned int samplePerPass = gameConfig.GetRendererSamplePerPass();
+		const CompiledScene &compiledScene(*(renderer->compiledScene));
+		boost::barrier *barrier = renderer->barrier;
 
-	//--------------------------------------------------------------------------
-	// Check if I have to update the BVH buffer
-	//--------------------------------------------------------------------------
+		while (!boost::this_thread::interruption_requested()) {
+			barrier->wait();
 
-	size_t bvhBufferSize = compiledScene->accel->nNodes * sizeof(BVHAccelArrayNode);
-	if (!bvhBuffer) {
-		AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
-		// Upload the new BVH to the GPU
-		cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene->accel->bvhTree);
+			//------------------------------------------------------------------
+			// Upload the new Camera to the GPU
+			//------------------------------------------------------------------
 
-		kernelPathTracing->setArg(1, *bvhBuffer);
-	} else if (bvhBuffer->getInfo<CL_MEM_SIZE>() < bvhBufferSize) {
-		// Check if the buffer is of the right size
-		FreeOCLBuffer(&bvhBuffer);
-		AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
-		// Upload the new BVH to the GPU
-		cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene->accel->bvhTree);
+			cmdQueue->enqueueWriteBuffer(*cameraBuffer,
+					CL_FALSE, 0, sizeof(compiledscene::Camera), &compiledScene.camera);
 
-		kernelPathTracing->setArg(1, *bvhBuffer);
-	} else if (editActionList.Has(GEOMETRY_EDIT)) {
-		// Upload the new BVH to the GPU
-		cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene->accel->bvhTree);
+			//--------------------------------------------------------------------------
+			// Check if I have to update the BVH buffer
+			//--------------------------------------------------------------------------
+
+			size_t bvhBufferSize = compiledScene.accel->nNodes * sizeof(BVHAccelArrayNode);
+			if (!bvhBuffer) {
+				AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
+				// Upload the new BVH to the GPU
+				cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene.accel->bvhTree);
+
+				kernelPathTracing->setArg(1, *bvhBuffer);
+			} else if (bvhBuffer->getInfo<CL_MEM_SIZE>() < bvhBufferSize) {
+				// Check if the buffer is of the right size
+				FreeOCLBuffer(&bvhBuffer);
+				AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
+				// Upload the new BVH to the GPU
+				cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene.accel->bvhTree);
+
+				kernelPathTracing->setArg(1, *bvhBuffer);
+			} else if (renderer->editActionList->Has(GEOMETRY_EDIT)) {
+				// Upload the new BVH to the GPU
+				cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene.accel->bvhTree);
+			}
+
+			//------------------------------------------------------------------
+			// Render
+			//------------------------------------------------------------------
+
+			cmdQueue->enqueueNDRangeKernel(*kernelInitToneMapFB, cl::NullRange,
+					cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
+					cl::NDRange(WORKGROUP_SIZE));
+
+			for (unsigned int i = 0; i < samplePerPass; ++i) {
+				cmdQueue->enqueueNDRangeKernel(*kernelPathTracing, cl::NullRange,
+					cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
+					cl::NDRange(WORKGROUP_SIZE));
+			}
+
+			//------------------------------------------------------------------
+			// Apply a filter: approximated by applying a box filter
+			// multiple times
+			//------------------------------------------------------------------
+
+			switch (gameConfig.GetRendererFilterType()) {
+				case NO_FILTER:
+					break;
+				case BLUR_LIGHT: {
+					const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+					for (unsigned int i = 0; i < filterPassCount; ++i) {
+						cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurLightFilterXR1, cl::NullRange,
+								cl::NDRange(RoundUp<unsigned int>(height, WORKGROUP_SIZE)),
+								cl::NDRange(WORKGROUP_SIZE));
+
+						cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurLightFilterYR1, cl::NullRange,
+								cl::NDRange(RoundUp<unsigned int>(width, WORKGROUP_SIZE)),
+								cl::NDRange(WORKGROUP_SIZE));
+					}
+					break;
+				}
+				case BLUR_HEAVY: {
+					const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+					for (unsigned int i = 0; i < filterPassCount; ++i) {
+						cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurHeavyFilterXR1, cl::NullRange,
+								cl::NDRange(RoundUp<unsigned int>(height, WORKGROUP_SIZE)),
+								cl::NDRange(WORKGROUP_SIZE));
+
+						cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurHeavyFilterYR1, cl::NullRange,
+								cl::NDRange(RoundUp<unsigned int>(width, WORKGROUP_SIZE)),
+								cl::NDRange(WORKGROUP_SIZE));
+					}
+					break;
+				}
+				case BOX: {
+					const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
+					for (unsigned int i = 0; i < filterPassCount; ++i) {
+						cmdQueue->enqueueNDRangeKernel(*kernelApplyBoxFilterXR1, cl::NullRange,
+								cl::NDRange(RoundUp<unsigned int>(height, WORKGROUP_SIZE)),
+								cl::NDRange(WORKGROUP_SIZE));
+
+						cmdQueue->enqueueNDRangeKernel(*kernelApplyBoxFilterYR1, cl::NullRange,
+								cl::NDRange(RoundUp<unsigned int>(width, WORKGROUP_SIZE)),
+								cl::NDRange(WORKGROUP_SIZE));
+					}
+					break;
+				}
+				default:
+					assert (false);
+			}
+
+			//------------------------------------------------------------------
+
+			barrier->wait();
+		}
+	} catch (boost::thread_interrupted) {
+		SFERA_LOG("[OCLRendererThread::" << index << "] Render thread halted");
 	}
+}
 
-	//--------------------------------------------------------------------------
-	// Render
-	//--------------------------------------------------------------------------
-
-	const GameConfig &gameConfig(*(gameLevel->gameConfig));
+void OCLRendererThread::DrawFrame() {
+	const GameLevel &gameLevel(*(renderer->gameLevel));
+	const GameConfig &gameConfig(*(gameLevel.gameConfig));
 	const unsigned int width = gameConfig.GetScreenWidth();
 	const unsigned int height = gameConfig.GetScreenHeight();
-	const unsigned int samplePerPass = gameConfig.GetRendererSamplePerPass();
-
-	cmdQueue->enqueueNDRangeKernel(*kernelInitToneMapFB, cl::NullRange,
-			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
-			cl::NDRange(WORKGROUP_SIZE));
-
-	for (unsigned int i = 0; i < samplePerPass; ++i) {
-		cmdQueue->enqueueNDRangeKernel(*kernelPathTracing, cl::NullRange,
-			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
-			cl::NDRange(WORKGROUP_SIZE));
-	}
-
-	//--------------------------------------------------------------------------
-	// Apply a filter: approximated by applying a box filter multiple times
-	//--------------------------------------------------------------------------
-
-	switch (gameConfig.GetRendererFilterType()) {
-		case NO_FILTER:
-			break;
-		case BLUR_LIGHT: {
-			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
-			for (unsigned int i = 0; i < filterPassCount; ++i) {
-				cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurLightFilterXR1, cl::NullRange,
-						cl::NDRange(RoundUp<unsigned int>(height, WORKGROUP_SIZE)),
-						cl::NDRange(WORKGROUP_SIZE));
-
-				cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurLightFilterYR1, cl::NullRange,
-						cl::NDRange(RoundUp<unsigned int>(width, WORKGROUP_SIZE)),
-						cl::NDRange(WORKGROUP_SIZE));
-			}
-			break;
-		}
-		case BLUR_HEAVY: {
-			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
-			for (unsigned int i = 0; i < filterPassCount; ++i) {
-				cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurHeavyFilterXR1, cl::NullRange,
-						cl::NDRange(RoundUp<unsigned int>(height, WORKGROUP_SIZE)),
-						cl::NDRange(WORKGROUP_SIZE));
-
-				cmdQueue->enqueueNDRangeKernel(*kernelApplyBlurHeavyFilterYR1, cl::NullRange,
-						cl::NDRange(RoundUp<unsigned int>(width, WORKGROUP_SIZE)),
-						cl::NDRange(WORKGROUP_SIZE));
-			}
-			break;
-		}
-		case BOX: {
-			const unsigned int filterPassCount = gameConfig.GetRendererFilterIterations();
-			for (unsigned int i = 0; i < filterPassCount; ++i) {
-				cmdQueue->enqueueNDRangeKernel(*kernelApplyBoxFilterXR1, cl::NullRange,
-						cl::NDRange(RoundUp<unsigned int>(height, WORKGROUP_SIZE)),
-						cl::NDRange(WORKGROUP_SIZE));
-
-				cmdQueue->enqueueNDRangeKernel(*kernelApplyBoxFilterYR1, cl::NullRange,
-						cl::NDRange(RoundUp<unsigned int>(width, WORKGROUP_SIZE)),
-						cl::NDRange(WORKGROUP_SIZE));
-			}
-			break;
-		}
-		default:
-			assert (false);
-	}
 
 	//--------------------------------------------------------------------------
 	// Blend the new frame with the old one
@@ -508,7 +635,8 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 
 	const float ghostTimeLength = gameConfig.GetRendererGhostFactorTime();
 	float k;
-	if (gameLevel->camera->IsChangedSinceLastUpdate()) {
+	// TODO: this is not thread safe
+	if (gameLevel.camera->IsChangedSinceLastUpdate()) {
 		timeSinceLastCameraEdit = WallClockTime();
 
 		const double dt = Min<double>(WallClockTime() - timeSinceLastNoCameraEdit, ghostTimeLength);
@@ -532,9 +660,9 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	// Tone mapping
 	//--------------------------------------------------------------------------
 
-	switch (gameLevel->toneMap->GetType()) {
+	switch (gameLevel.toneMap->GetType()) {
 		case TONEMAP_REINHARD02:
-		case TONEMAP_LINEAR: 
+		case TONEMAP_LINEAR:
 			cmdQueue->enqueueNDRangeKernel(*kernelToneMapLinear, cl::NullRange,
 			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
 			cl::NDRange(WORKGROUP_SIZE));
@@ -563,8 +691,6 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pbo);
     glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-
-	return samplePerPass * width * height;
 }
 
 #endif

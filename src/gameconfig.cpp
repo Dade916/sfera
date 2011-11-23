@@ -46,6 +46,10 @@ const string GameConfig::RENDERER_FILTER_RADIUS = "renderer.filter.radius";
 const string GameConfig::RENDERER_FILTER_RADIUS_DEFAULT = "1";
 const string GameConfig::RENDERER_FILTER_ITERATIONS = "renderer.filter.iterations";
 const string GameConfig::RENDERER_FILTER_ITERATIONS_DEFAULT = "3";
+const string GameConfig::OPENCL_DEVICES_USEONLYGPUS = "opencl.devices.useonlygpus";
+const string GameConfig::OPENCL_DEVICES_USEONLYGPUS_DEFAULT = "true";
+const string GameConfig::OPENCL_DEVICES_SELECT = "opencl.devices.select";
+const string GameConfig::OPENCL_DEVICES_SELECT_DEFAULT = "";
 
 GameConfig::GameConfig(const string &fileName) {
 	InitValues();
@@ -91,6 +95,8 @@ void GameConfig::InitValues() {
 	cfg.SetString(RENDERER_FILTER_TYPE, RENDERER_FILTER_TYPE_DEFAULT);
 	cfg.SetString(RENDERER_FILTER_RADIUS, RENDERER_FILTER_RADIUS_DEFAULT);
 	cfg.SetString(RENDERER_FILTER_ITERATIONS, RENDERER_FILTER_ITERATIONS_DEFAULT);
+	cfg.SetString(OPENCL_DEVICES_USEONLYGPUS, OPENCL_DEVICES_USEONLYGPUS_DEFAULT);
+	cfg.SetString(OPENCL_DEVICES_SELECT, OPENCL_DEVICES_SELECT_DEFAULT);
 }
 
 void GameConfig::InitCachedValues() {
@@ -121,4 +127,7 @@ void GameConfig::InitCachedValues() {
 
 	rendererFilterRadius = (unsigned int)cfg.GetInt(RENDERER_FILTER_RADIUS, atoi(RENDERER_FILTER_RADIUS_DEFAULT.c_str()));
 	rendererFilterIterations = (unsigned int)cfg.GetInt(RENDERER_FILTER_ITERATIONS, atoi(RENDERER_FILTER_ITERATIONS_DEFAULT.c_str()));
+
+	openCLUseOnlyGPUs = (cfg.GetString(OPENCL_DEVICES_USEONLYGPUS, OPENCL_DEVICES_USEONLYGPUS_DEFAULT) == "true");
+	openCLDeviceSelect = cfg.GetString(OPENCL_DEVICES_SELECT, OPENCL_DEVICES_SELECT_DEFAULT);
 }

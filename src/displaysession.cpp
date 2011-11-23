@@ -166,10 +166,12 @@ void DisplaySession::RunLoop() {
 	bool quit = false;
 	double lastJumpTime = 0.0;
 	EditActionList editActionList;
+	editActionList.AddAction(CAMERA_EDIT);
+	editActionList.AddAction(GEOMETRY_EDIT);
+
 	do {
 		const double t1 = WallClockTime();
 
-		editActionList.Reset();
 		SDL_Event event;
 
 		while (SDL_PollEvent(&event)) {
@@ -283,9 +285,6 @@ void DisplaySession::RunLoop() {
 			}
 		}
 
-		editActionList.AddAction(CAMERA_EDIT);
-		editActionList.AddAction(GEOMETRY_EDIT);
-
 		totalSampleCount += renderer->DrawFrame(editActionList);
 
 		// Draw text
@@ -305,8 +304,8 @@ void DisplaySession::RunLoop() {
 
 		SDL_GL_SwapBuffers();
 
-		const double t2 = WallClockTime();
-		currentRefreshTime = t2 - t1;
+		const double now = WallClockTime();
+		currentRefreshTime = now - t1;
 
 		if (currentRefreshTime < refreshTime) {
 			const unsigned int sleep = (unsigned int)((refreshTime - currentRefreshTime) * 1000.0);
@@ -314,10 +313,11 @@ void DisplaySession::RunLoop() {
 		}
 
 		++frame;
-		if (frame == 60) {
+		const double dt = now - frameStartTime;
+		if (dt > 1.0) {
 			const double now = WallClockTime();
-			const double dt = now - frameStartTime;
-			const double frameSec = 60.0 / dt;
+			
+			const double frameSec = frame / dt;
 			const double sampleSec = totalSampleCount / dt;
 
 			stringstream ss;

@@ -43,6 +43,8 @@ typedef struct {
 
 }
 
+class OCLRendererThread;
+
 class OCLRenderer : public LevelRenderer {
 public:
 	OCLRenderer(const GameLevel *level);
@@ -50,10 +52,41 @@ public:
 
 	size_t DrawFrame(const EditActionList &editActionList);
 
+	friend class OCLRendererThread;
+
 protected:
+	vector<OCLRendererThread *> renderThread;
+	boost::barrier *barrier;
+
+	CompiledScene *compiledScene;
+	const EditActionList *editActionList;
+};
+
+class OCLRendererThread {
+public:
+	OCLRendererThread(const size_t threadIndex, OCLRenderer *renderer,
+			cl::Device device);
+	~OCLRendererThread();
+
+	void Start();
+	void Stop();
+
+	friend class OCLRenderer;
+
+protected:
+	void DrawFrame();
+
+private:
+	static void OCLRenderThreadStaticImpl(OCLRendererThread *renderThread);
+	void OCLRenderThreadImpl();
+
 	void AllocOCLBufferRO(cl::Buffer **buff, void *src, const size_t size, const string &desc);
 	void AllocOCLBufferRW(cl::Buffer **buff, const size_t size, const string &desc);
 	void FreeOCLBuffer(cl::Buffer **buff);
+
+	size_t index;
+	OCLRenderer *renderer;
+	boost::thread *renderThread;
 
 	cl::Device dev;
 	cl::Context *ctx;
@@ -61,7 +94,6 @@ protected:
 
 	cl::Kernel *kernelInit;
 	cl::Kernel *kernelInitToneMapFB;
-	cl::Kernel *kernelUpdatePixelBuffer;
 	cl::Kernel *kernelPathTracing;
 	cl::Kernel *kernelApplyBlurLightFilterXR1;
 	cl::Kernel *kernelApplyBlurLightFilterYR1;
@@ -69,13 +101,9 @@ protected:
 	cl::Kernel *kernelApplyBlurHeavyFilterYR1;
 	cl::Kernel *kernelApplyBoxFilterXR1;
 	cl::Kernel *kernelApplyBoxFilterYR1;
-	cl::Kernel *kernelBlendFrame;
-	cl::Kernel *kernelToneMapLinear;
 
 	cl::Buffer *passFrameBuffer;
 	cl::Buffer *tmpFrameBuffer;
-	cl::Buffer *frameBuffer;
-	cl::Buffer *toneMapFrameBuffer;
 
 	cl::Buffer *bvhBuffer;
 	cl::Buffer *gpuTaskBuffer;
@@ -88,12 +116,21 @@ protected:
 	cl::Buffer *texMapInstanceBuffer;
 	cl::Buffer *bumpMapInstanceBuffer;
 
-	GLuint pbo;
-	cl::BufferGL *pboBuff;
-
 	size_t usedDeviceMemory;
 
-	CompiledScene *compiledScene;
+	//--------------------------------------------------------------------------
+	// Used only by thread with index 0
+	//--------------------------------------------------------------------------
+
+	cl::Kernel *kernelBlendFrame;
+	cl::Kernel *kernelToneMapLinear;
+	cl::Kernel *kernelUpdatePixelBuffer;
+
+	cl::Buffer *frameBuffer;
+	cl::Buffer *toneMapFrameBuffer;
+
+	GLuint pbo;
+	cl::BufferGL *pboBuff;
 
 	double timeSinceLastCameraEdit, timeSinceLastNoCameraEdit;
 };
