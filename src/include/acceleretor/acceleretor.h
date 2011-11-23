@@ -37,7 +37,7 @@ public:
 
 	virtual void Init(const vector<const Sphere *> &spheres) = 0;
 
-	virtual bool Intersect(Ray *ray, unsigned int *primitiveIndex) const = 0;
+	virtual bool Intersect(Ray *ray, Sphere **hitSphere, unsigned int *primitiveIndex) const = 0;
 };
 
 #endif	/* _SFERA_ACCELERETOR_H */

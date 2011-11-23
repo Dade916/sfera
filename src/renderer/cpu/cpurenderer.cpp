@@ -71,10 +71,11 @@ BVHAccel *CPURenderer::BuildAcceleretor() {
 }
 
 Spectrum CPURenderer::SampleImage(
-		RandomGenerator &rnd, const Accelerator &accel,
+		RandomGenerator &rnd,
+		const Accelerator &accel, const PerspectiveCamera &camera,
 		const float screenX, const float screenY) {
 	Ray ray;
-	gameLevel->camera->GenerateRay(
+	camera.GenerateRay(
 		screenX, screenY,
 		gameLevel->gameConfig->GetScreenWidth(), gameLevel->gameConfig->GetScreenHeight(),
 		&ray, rnd.floatValue(), rnd.floatValue());
@@ -91,9 +92,9 @@ Spectrum CPURenderer::SampleImage(
 	const vector<GameSphere> &spheres(scene.spheres);
 	for(;;) {
 		// Check for intersection with objects
+		Sphere *hitSphere;
 		unsigned int sphereIndex;
-		if (accel.Intersect(&ray, &sphereIndex)) {
-			const Sphere *hitSphere;
+		if (accel.Intersect(&ray, &hitSphere, &sphereIndex)) {
 			const Material *hitMat;
 			const TexMapInstance *texMap;
 			const BumpMapInstance *bumpMap;
@@ -102,12 +103,10 @@ Spectrum CPURenderer::SampleImage(
 				// I'm hitting the puppet
 				const unsigned int puppetIndex = sphereIndex - spheres.size();
 				
-				hitSphere = &(gameLevel->player->puppet[puppetIndex]);
 				hitMat = gameLevel->player->puppetMaterial[puppetIndex];
 				texMap = NULL;
 				bumpMap = NULL;
 			} else {
-				hitSphere = &spheres[sphereIndex].sphere;
 				hitMat = scene.sphereMaterials[sphereIndex];
 				texMap = scene.sphereTexMaps[sphereIndex];
 				bumpMap = scene.sphereBumpMaps[sphereIndex];

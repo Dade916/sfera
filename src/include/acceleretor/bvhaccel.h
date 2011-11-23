@@ -49,7 +49,7 @@ public:
 
 	AcceleratorType GetType() const { return ACCEL_BVH; }
 
-	bool Intersect(Ray *ray, unsigned int *primitiveIndex) const;
+	bool Intersect(Ray *ray, Sphere **hitSphere, unsigned int *primitiveIndex) const;
 
 
 	unsigned int nNodes;

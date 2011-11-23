@@ -67,19 +67,32 @@ size_t MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	const unsigned int width = gameConfig.GetScreenWidth();
 	const unsigned int height = gameConfig.GetScreenHeight();
 
-	//--------------------------------------------------------------------------
-	// Build the Accelerator
-	//--------------------------------------------------------------------------
 
-	accel = BuildAcceleretor();
+	{
+		boost::unique_lock<boost::mutex> lock(gameLevel->levelMutex);
 
-	//--------------------------------------------------------------------------
+		//----------------------------------------------------------------------
+		// Build the Accelerator
+		//----------------------------------------------------------------------
+
+		accel = BuildAcceleretor();
+
+		//----------------------------------------------------------------------
+		// Copy the Camera
+		//----------------------------------------------------------------------
+
+		memcpy(&cameraCopy, gameLevel->camera, sizeof(PerspectiveCamera));
+	}
+
+	//----------------------------------------------------------------------
 	// Rendering
-	//--------------------------------------------------------------------------
+	//----------------------------------------------------------------------
 
 	barrier->wait();
 	// Other threads do the rendering
 	barrier->wait();
+
+	delete accel;
 
 	//--------------------------------------------------------------------------
 	// Merge all thread frames
@@ -110,8 +123,6 @@ size_t MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
 
 	ApplyToneMapping();
 	CopyFrame();
-
-	delete accel;
 
 	return gameConfig.GetRendererSamplePerPass() * width * height;
 }
@@ -168,7 +179,7 @@ void MultiCPURendererThread::MultiCPURenderThreadImpl(MultiCPURendererThread *re
 				for (unsigned int y = index; y < height; y += threadCount) {
 					for (unsigned int x = 0; x < width; ++x) {
 						Spectrum s = renderThread->renderer->SampleImage(
-								rnd, *(renderThread->renderer->accel),
+								rnd, *(renderThread->renderer->accel), renderThread->renderer->cameraCopy,
 								x + rnd.floatValue() - .5f, y + rnd.floatValue() - .5f) *
 								sampleScale;
 

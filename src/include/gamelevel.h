@@ -36,6 +36,8 @@ public:
 
 	void Refresh();
 
+	mutable boost::mutex levelMutex;
+
 	const GameConfig *gameConfig;
 
 	unsigned int maxPathDiffuseBounces;

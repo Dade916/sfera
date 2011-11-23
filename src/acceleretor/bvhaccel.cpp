@@ -220,7 +220,7 @@ unsigned int BVHAccel::BuildArray(BVHAccelTreeNode *node, unsigned int offset) {
 	return offset;
 }
 
-bool BVHAccel::Intersect(Ray *ray, unsigned int *primitiveIndex) const {
+bool BVHAccel::Intersect(Ray *ray, Sphere **hitSphere, unsigned int *primitiveIndex) const {
 	unsigned int currentNode = 0; // Root Node
 	unsigned int stopNode = bvhTree[0].skipIndex; // Non-existent
 	*primitiveIndex = 0xffffffffu;
@@ -231,6 +231,7 @@ bool BVHAccel::Intersect(Ray *ray, unsigned int *primitiveIndex) const {
 			if ((bvhTree[currentNode].primitiveIndex != 0xffffffffu) && (hitT < ray->maxt)){
 				ray->maxt = hitT;
 				*primitiveIndex = bvhTree[currentNode].primitiveIndex;
+				*hitSphere = &bvhTree[currentNode].bsphere;
 				// Continue testing for closer intersections
 			}
 

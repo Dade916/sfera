@@ -125,9 +125,9 @@ void GamePhysic::UpdateGameSphere(GameSphere &gameSphere, btRigidBody *dynamicRi
 }
 
 void GamePhysic::DoStep() {
-	dynamicsWorld->stepSimulation(1.f / gameLevel->gameConfig->GetPhysicRefreshRate(), 4);
+	boost::unique_lock<boost::mutex> lock(gameLevel->levelMutex);
 
-	// Update the position of all dynamic spheres
+	// Update the gravity of all dynamic spheres
 	vector<GameSphere> &gameSpheres(gameLevel->scene->spheres);
 	for (size_t i = 0; i < dynamicRigidBodies.size() - 1; ++i)
 		UpdateGameSphere(gameSpheres[dynamicRigidBodyIndices[i]], dynamicRigidBodies[i]);
@@ -138,7 +138,7 @@ void GamePhysic::DoStep() {
 	UpdateGameSphere(player.body, playerRigidBody);
 	const btVector3 &v = playerRigidBody->getGravity();
 	player.SetGravity(Vector(v.getX(), v.getY(), v.getZ()));
-	player.UpdateLocalCoordSystem();
+	gameLevel->Refresh();
 
 	// Apply user inputs
 	if (player.inputGoForward) {
@@ -169,6 +169,8 @@ void GamePhysic::DoStep() {
 			jump.y,
 			jump.z));
 	}
+
+	dynamicsWorld->stepSimulation(1.f / gameLevel->gameConfig->GetPhysicRefreshRate(), 4);
 }
 
 //------------------------------------------------------------------------------

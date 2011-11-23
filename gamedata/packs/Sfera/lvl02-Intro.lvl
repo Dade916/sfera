@@ -1,10 +1,11 @@
 # Player
-player.body.position=0.1 -4.0 1.0
+player.body.position=0.1 -2.0 -2.0
 player.body.radius=0.25
+#player.body.mass=0.3
 player.body.lineardamping=0.95
 player.body.angulardamping=0.5
 player.forwardspeed=1.25
-player.jumpspeed=0.4
+player.jumpspeed=1
 # Path
 path.epsilon=0.001
 path.maxdiffusebounces=2
@@ -17,7 +18,7 @@ film.tonemap.linear.scale=1.2
 #film.tonemap.reinhard02.postscale=1.2
 #film.tonemap.reinhard02.burn=3.75
 ################################################################################
-scene.gravity.constant=10.0
+scene.gravity.constant=5.0
 ################################################################################
 # Materials
 ################################################################################
@@ -57,6 +58,13 @@ scene.spheres.world1.bumpmap.file=textures/planet_Klendathu1200-bumpmap.png
 #scene.spheres.world1.bumpmap.file=textures/test-map01-bumpmap.jpg
 scene.spheres.world1.bumpmap.scale=5.0
 ################################################################################
+scene.spheres.world2.geometry=20.0 0.0 -6.0 4.0
+scene.spheres.world2.mass=50.0
+scene.spheres.world2.static=yes
+scene.spheres.world2.attractor=yes
+scene.spheres.world2.material=whitematte
+scene.spheres.world2.texmap.file=textures/planet_Muunilinst1200.png
+################################################################################
 scene.spheres.w1s01.geometry=0.0 0.0 0.8 0.8
 scene.spheres.w1s01.material=greenmetal
 scene.spheres.w1s02.geometry=-1.5 0.0 0.4 0.4
@@ -67,3 +75,27 @@ scene.spheres.w1s04.geometry=0.0 -1.5 0.4 0.4
 scene.spheres.w1s04.material=glass
 #scene.spheres.w1s05.geometry=0.0 -3.0 -1.0 0.4
 #scene.spheres.w1s05.material=light
+scene.spheres.w1tower01.geometry=6.0 0.0 -6.0 2.0
+scene.spheres.w1tower01.static=yes
+scene.spheres.w1tower01.attractor=yes
+scene.spheres.w1tower01.material=redmatte
+scene.spheres.w1tower02.geometry=7.0 0.0 -6.0 2.0
+scene.spheres.w1tower02.static=yes
+scene.spheres.w1tower03.attractor=yes
+scene.spheres.w1tower02.material=whitematte
+scene.spheres.w1tower03.geometry=8.5 0.0 -6.0 2.0
+scene.spheres.w1tower03.static=yes
+scene.spheres.w1tower03.attractor=yes
+scene.spheres.w1tower03.material=redmatte
+scene.spheres.w1tower04.geometry=10.0 0.0 -6.0 2.0
+scene.spheres.w1tower04.static=yes
+scene.spheres.w1tower04.attractor=yes
+scene.spheres.w1tower04.material=whitematte
+scene.spheres.w1tower05.geometry=11.5 0.0 -6.0 2.0
+scene.spheres.w1tower05.static=yes
+scene.spheres.w1tower05.attractor=yes
+scene.spheres.w1tower05.material=redmatte
+scene.spheres.w1tower06.geometry=13.0 0.0 -6.0 2.0
+scene.spheres.w1tower06.static=yes
+scene.spheres.w1tower06.attractor=yes
+scene.spheres.w1tower06.material=whitematte

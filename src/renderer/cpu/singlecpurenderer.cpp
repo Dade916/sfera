@@ -30,27 +30,39 @@ SingleCPURenderer::~SingleCPURenderer() {
 }
 
 size_t SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
-	//--------------------------------------------------------------------------
-	// Build the Accelerator
-	//--------------------------------------------------------------------------
-
-	BVHAccel *accel = BuildAcceleretor();
-
-	//--------------------------------------------------------------------------
-	// Render
-	//--------------------------------------------------------------------------
-
 	const GameConfig &gameConfig(*(gameLevel->gameConfig));
 	const unsigned int width = gameConfig.GetScreenWidth();
 	const unsigned int height = gameConfig.GetScreenHeight();
 	const unsigned int samplePerPass = gameConfig.GetRendererSamplePerPass();
 
-	// Render the frame
+	BVHAccel *accel;
+	PerspectiveCamera cameraCopy;
+
+	{
+		boost::unique_lock<boost::mutex> lock(gameLevel->levelMutex);
+
+		//----------------------------------------------------------------------
+		// Build the Accelerator
+		//----------------------------------------------------------------------
+
+		accel = BuildAcceleretor();
+
+		//----------------------------------------------------------------------
+		// Copy the Camera
+		//----------------------------------------------------------------------
+
+		memcpy(&cameraCopy, gameLevel->camera, sizeof(PerspectiveCamera));
+	}
+
+	//----------------------------------------------------------------------
+	// Render
+	//----------------------------------------------------------------------
+
 	const float sampleScale = 1.f / samplePerPass;
 	for (unsigned int i = 0; i < samplePerPass; ++i) {
 		for (unsigned int y = 0; y < height; ++y) {
 			for (unsigned int x = 0; x < width; ++x) {
-				Spectrum s = SampleImage(rnd, *accel,
+				Spectrum s = SampleImage(rnd, *accel, cameraCopy,
 						x + rnd.floatValue() - .5f, y + rnd.floatValue() - .5f) *
 						sampleScale;
 
@@ -61,6 +73,8 @@ size_t SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 			}
 		}
 	}
+
+	delete accel;
 
 	//--------------------------------------------------------------------------
 	// Apply a filter: approximated by applying a box filter multiple times
@@ -81,7 +95,6 @@ size_t SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
 	ApplyToneMapping();
 	CopyFrame();
 
-	delete accel;
 
 	return samplePerPass * width * height;
 }

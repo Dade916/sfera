@@ -283,7 +283,6 @@ void DisplaySession::RunLoop() {
 			}
 		}
 
-		currentLevel->Refresh();
 		editActionList.AddAction(CAMERA_EDIT);
 		editActionList.AddAction(GEOMETRY_EDIT);
 

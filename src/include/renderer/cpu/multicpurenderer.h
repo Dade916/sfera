@@ -46,6 +46,7 @@ private:
 	vector<FrameBuffer *> threadPassFrameBuffer;
 
 	Accelerator *accel;
+	PerspectiveCamera cameraCopy;
 };
 
 class MultiCPURendererThread {

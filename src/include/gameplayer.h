@@ -23,6 +23,9 @@
 
 #include <vector>
 
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/locks.hpp>
+
 #include "sfera.h"
 #include "utils/properties.h"
 #include "gamesphere.h"
@@ -53,7 +56,7 @@ public:
 	GameSphere body;
 
 	Vector gravity; // Physic engine writes, other read
-	Vector up,front, right; // up is normalized -gravity vector
+	Vector up, front, right; // up is normalized -gravity vector
 
 	Sphere puppet[GAMEPLAYER_PUPPET_SIZE];
 	MatteMaterial *puppetMaterial[GAMEPLAYER_PUPPET_SIZE];

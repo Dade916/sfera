@@ -398,7 +398,10 @@ size_t OCLRenderer::DrawFrame(const EditActionList &editActionList) {
 	// Recompile the scene
 	//--------------------------------------------------------------------------
 
-	compiledScene->Recompile(editActionList);
+	{
+		boost::unique_lock<boost::mutex> lock(gameLevel->levelMutex);
+		compiledScene->Recompile(editActionList);
+	}
 
 	//--------------------------------------------------------------------------
 	// Upload the new Camera to the GPU

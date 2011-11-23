@@ -38,7 +38,8 @@ public:
 protected:
 	BVHAccel *BuildAcceleretor();
 	Spectrum SampleImage(
-		RandomGenerator &rnd, const Accelerator &accel,
+		RandomGenerator &rnd,
+		const Accelerator &accel, const PerspectiveCamera &camera,
 		const float screenX, const float screenY);
 	void ApplyFilter();
 	void BlendFrame();

@@ -27,6 +27,7 @@
 
 class PerspectiveCamera {
 public:
+	PerspectiveCamera() { }
 	PerspectiveCamera(const Point &o, const Point &t, const Vector &u) :
 		orig(o), target(t), up(Normalize(u)), fieldOfView(45.f), clipHither(1e-3f), clipYon(1e30f),
 		lensRadius(0.f), focalDistance(10.f), changedSinceLastUpdate(true) {
