@@ -30,7 +30,7 @@ public:
 	PerspectiveCamera() { }
 	PerspectiveCamera(const Point &o, const Point &t, const Vector &u) :
 		orig(o), target(t), up(Normalize(u)), fieldOfView(45.f), clipHither(1e-3f), clipYon(1e30f),
-		lensRadius(0.f), focalDistance(10.f), changedSinceLastUpdate(true) {
+		lensRadius(0.f), focalDistance(10.f) {
 		const float nan = std::numeric_limits<float>::quiet_NaN();
 		lastUpdateOrig = Point(nan, nan, nan);
 		lastUpdateTarget = Point(nan, nan, nan);
@@ -87,7 +87,7 @@ public:
 	}
 
 	void Update(const unsigned int filmWidth, const unsigned int filmHeight);
-	bool IsChangedSinceLastUpdate() const { return changedSinceLastUpdate; }
+	bool IsChangedSinceLastUpdate();
 
 	void GenerateRay(
 		const float screenX, const float screenY,
@@ -120,8 +120,6 @@ private:
 	// Calculated values
 	Vector dir, x, y;
 	Transform RasterToCamera, CameraToWorld;
-
-	bool changedSinceLastUpdate;
 };
 
 #endif	/* _SFERA_SDL_CAMERA_H */

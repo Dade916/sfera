@@ -60,7 +60,10 @@ protected:
 
 	CompiledScene *compiledScene;
 	const EditActionList *editActionList;
+	float blendFactor;
 	unsigned int totSamplePerPass;
+
+	double timeSinceLastCameraEdit, timeSinceLastNoCameraEdit;
 };
 
 class OCLRendererThread {
@@ -138,8 +141,6 @@ private:
 
 	GLuint pbo;
 	cl::BufferGL *pboBuff;
-
-	double timeSinceLastCameraEdit, timeSinceLastNoCameraEdit;
 };
 
 #endif

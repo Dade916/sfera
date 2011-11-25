@@ -37,6 +37,9 @@
 OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level) {
 	compiledScene = new CompiledScene(level);
 
+	timeSinceLastCameraEdit = WallClockTime();
+	timeSinceLastNoCameraEdit = timeSinceLastCameraEdit;
+
 	//--------------------------------------------------------------------------
 	// OpenCL setup
 	//--------------------------------------------------------------------------
@@ -115,6 +118,8 @@ OCLRenderer::~OCLRenderer() {
 }
 
 size_t OCLRenderer::DrawFrame(const EditActionList &list) {
+	const GameConfig &gameConfig(*(gameLevel->gameConfig));
+
 	//--------------------------------------------------------------------------
 	// Recompile the scene
 	//--------------------------------------------------------------------------
@@ -122,6 +127,23 @@ size_t OCLRenderer::DrawFrame(const EditActionList &list) {
 	{
 		boost::unique_lock<boost::mutex> lock(gameLevel->levelMutex);
 		compiledScene->Recompile(list);
+
+		const float ghostTimeLength = gameConfig.GetRendererGhostFactorTime();
+		float k;
+		if (gameLevel->camera->IsChangedSinceLastUpdate()) {
+			timeSinceLastCameraEdit = WallClockTime();
+
+			const double dt = Min<double>(WallClockTime() - timeSinceLastNoCameraEdit, ghostTimeLength);
+			k = 1.f - dt / ghostTimeLength;
+		} else {
+			timeSinceLastNoCameraEdit = WallClockTime();
+
+			const double dt = Min<double>(WallClockTime() - timeSinceLastCameraEdit, ghostTimeLength);
+			k = dt / ghostTimeLength;
+		}
+
+		blendFactor = (1.f - k) * gameConfig.GetRendererGhostFactorCameraEdit() +
+			k * gameConfig.GetRendererGhostFactorNoCameraEdit();
 	}
 
 	//--------------------------------------------------------------------------
@@ -139,7 +161,6 @@ size_t OCLRenderer::DrawFrame(const EditActionList &list) {
 
 	renderThread[0]->DrawFrame();
 
-	const GameConfig &gameConfig(*(gameLevel->gameConfig));
 	return totSamplePerPass *
 			gameConfig.GetScreenWidth() *
 			gameConfig.GetScreenHeight();
@@ -416,9 +437,6 @@ OCLRendererThread::OCLRendererThread(const size_t threadIndex, OCLRenderer *rend
 		kernelUpdatePixelBuffer = new cl::Kernel(program, "UpdatePixelBuffer");
 		kernelUpdatePixelBuffer->setArg(0, *toneMapFrameBuffer);
 		kernelUpdatePixelBuffer->setArg(1, *pboBuff);
-
-		timeSinceLastCameraEdit = WallClockTime();
-		timeSinceLastNoCameraEdit = timeSinceLastCameraEdit;
 	} else {
 		kernelBlendFrame = NULL;
 		kernelToneMapLinear = NULL;
@@ -698,24 +716,7 @@ void OCLRendererThread::DrawFrame() {
 	// Blend the new frame with the old one
 	//--------------------------------------------------------------------------
 
-	const float ghostTimeLength = gameConfig.GetRendererGhostFactorTime();
-	float k;
-	// TODO: this is not thread safe
-	if (gameLevel.camera->IsChangedSinceLastUpdate()) {
-		timeSinceLastCameraEdit = WallClockTime();
-
-		const double dt = Min<double>(WallClockTime() - timeSinceLastNoCameraEdit, ghostTimeLength);
-		k = 1.f - dt / ghostTimeLength;
-	} else {
-		timeSinceLastNoCameraEdit = WallClockTime();
-
-		const double dt = Min<double>(WallClockTime() - timeSinceLastCameraEdit, ghostTimeLength);
-		k = dt / ghostTimeLength;
-	}
-
-	const float blendFactor = (1.f - k) * gameConfig.GetRendererGhostFactorCameraEdit() +
-		k * gameConfig.GetRendererGhostFactorNoCameraEdit();
-	kernelBlendFrame->setArg(2, blendFactor);
+	kernelBlendFrame->setArg(2, renderer->blendFactor);
 
 	cmdQueue->enqueueNDRangeKernel(*kernelBlendFrame, cl::NullRange,
 			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),

@@ -22,19 +22,23 @@
 #include "utils/mc.h"
 #include "sdl/camera.h"
 
-void PerspectiveCamera::Update(const unsigned int filmWidth, const unsigned int filmHeight) {
-	// Check if the camera parameters have changed since the last update
+bool PerspectiveCamera::IsChangedSinceLastUpdate() {
+	// Check if the camera parameters have changed since the
+	// last check (should be done under mutex)
+
 	if ((DistanceSquared(lastUpdateOrig, orig) < EPSILON * EPSILON) &&
 		(DistanceSquared(lastUpdateTarget, target) < EPSILON * EPSILON) &&
 		(Dot(lastUpdateUp, up) > .95f)) {
-		changedSinceLastUpdate = false;
+		return false;
 	} else {
 		lastUpdateOrig = orig;
 		lastUpdateTarget = target;
 		lastUpdateUp = up;
-		changedSinceLastUpdate = true;
+		return true;
 	}
+}
 
+void PerspectiveCamera::Update(const unsigned int filmWidth, const unsigned int filmHeight) {
 	// Used to move translate the camera
 	dir = target - orig;
 	dir = Normalize(dir);
