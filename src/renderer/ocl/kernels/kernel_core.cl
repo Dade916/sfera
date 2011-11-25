@@ -787,8 +787,7 @@ void Alloy_Sample_f(const __global AlloyParam *mat, const Vector *wo, Vector *wi
 //------------------------------------------------------------------------------
 
 __kernel void Init(
-		__global GPUTask *tasks,
-		__global Pixel *frameBuffer
+		__global GPUTask *tasks
 		) {
 	const size_t gid = get_global_id(0);
 	if (gid >= PARAM_SCREEN_WIDTH * PARAM_SCREEN_HEIGHT)
@@ -805,12 +804,6 @@ __kernel void Init(
 	task->seed.s1 = seed.s1;
 	task->seed.s2 = seed.s2;
 	task->seed.s3 = seed.s3;
-
-	// Initialize the frame buffer
-	__global Pixel *p = &frameBuffer[gid];
-	p->r = 0.f;
-	p->g = 0.f;
-	p->b = 0.f;
 }
 
 //------------------------------------------------------------------------------

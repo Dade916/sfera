@@ -93,9 +93,10 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level) {
 	// Create synchronization barrier
 	barrier = new boost::barrier(selectedDevices.size() + 1);
 
+	renderThread.resize(selectedDevices.size(), NULL);
 	for (size_t i = 0; i < selectedDevices.size(); ++i) {
 		OCLRendererThread *rt = new OCLRendererThread(i, this, selectedDevices[i]);
-		renderThread.push_back(rt);
+		renderThread[i] = rt;
 	}
 
 	for (size_t i = 0; i < renderThread.size(); ++i)
@@ -135,7 +136,8 @@ size_t OCLRenderer::DrawFrame(const EditActionList &list) {
 	renderThread[0]->DrawFrame();
 
 	const GameConfig &gameConfig(*(gameLevel->gameConfig));
-	return gameConfig.GetRendererSamplePerPass() *
+	return renderThread.size() *
+			gameConfig.GetRendererSamplePerPass() *
 			gameConfig.GetScreenWidth() *
 			gameConfig.GetScreenHeight();
 }
@@ -152,6 +154,11 @@ OCLRendererThread::OCLRendererThread(const size_t threadIndex, OCLRenderer *rend
 	const unsigned int height = gameLevel.gameConfig->GetScreenHeight();
 
 	const CompiledScene &compiledScene(*(renderer->compiledScene));
+
+	if (renderer->renderThread.size() > 1)
+		cpuFrameBuffer = new FrameBuffer(width, height);
+	else
+		cpuFrameBuffer = NULL;
 
 	//--------------------------------------------------------------------------
 	// OpenCL setup
@@ -340,13 +347,18 @@ OCLRendererThread::OCLRendererThread(const size_t threadIndex, OCLRenderer *rend
 
 	kernelInit = new cl::Kernel(program, "Init");
 	kernelInit->setArg(0, *gpuTaskBuffer);
-	kernelInit->setArg(1, *frameBuffer);
 	cmdQueue->enqueueNDRangeKernel(*kernelInit, cl::NullRange,
 			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
 			cl::NDRange(WORKGROUP_SIZE));
 
-	kernelInitToneMapFB = new cl::Kernel(program, "InitFB");
-	kernelInitToneMapFB->setArg(0, *passFrameBuffer);
+	kernelInitFrameBuffer = new cl::Kernel(program, "InitFB");
+	if (index == 0) {
+		kernelInitFrameBuffer->setArg(0, *frameBuffer);
+		cmdQueue->enqueueNDRangeKernel(*kernelInitFrameBuffer, cl::NullRange,
+			cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
+			cl::NDRange(WORKGROUP_SIZE));
+	}
+	kernelInitFrameBuffer->setArg(0, *passFrameBuffer);
 
 	kernelPathTracing = new cl::Kernel(program, "PathTracing");
 	unsigned int argIndex = 0;
@@ -442,10 +454,12 @@ OCLRendererThread::~OCLRendererThread() {
 	delete kernelApplyBlurLightFilterXR1;
 	delete kernelApplyBlurLightFilterYR1;
 	delete kernelPathTracing;
-	delete kernelInitToneMapFB;
+	delete kernelInitFrameBuffer;
 	delete kernelInit;
 	delete cmdQueue;
 	delete ctx;
+
+	delete cpuFrameBuffer;
 }
 
 void OCLRendererThread::AllocOCLBufferRO(cl::Buffer **buff, void *src, const size_t size, const string &desc) {
@@ -553,7 +567,7 @@ void OCLRendererThread::OCLRenderThreadImpl() {
 			// Render
 			//------------------------------------------------------------------
 
-			cmdQueue->enqueueNDRangeKernel(*kernelInitToneMapFB, cl::NullRange,
+			cmdQueue->enqueueNDRangeKernel(*kernelInitFrameBuffer, cl::NullRange,
 					cl::NDRange(RoundUp<unsigned int>(width * height, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
 
@@ -615,7 +629,20 @@ void OCLRendererThread::OCLRenderThreadImpl() {
 			}
 
 			//------------------------------------------------------------------
+			// Read back the framebuffer if required
+			//------------------------------------------------------------------
 
+			if (renderer->renderThread.size() > 1) {
+				// Multi-GPU case: read back the framebuffer, the merge is
+				// done on the CPU
+
+				cmdQueue->enqueueReadBuffer(*passFrameBuffer,
+					CL_FALSE, 0, sizeof(Pixel) * width * height, cpuFrameBuffer->GetPixels());
+			}
+
+			//------------------------------------------------------------------
+
+			cmdQueue->finish();
 			barrier->wait();
 		}
 	} catch (boost::thread_interrupted) {
@@ -628,6 +655,42 @@ void OCLRendererThread::DrawFrame() {
 	const GameConfig &gameConfig(*(gameLevel.gameConfig));
 	const unsigned int width = gameConfig.GetScreenWidth();
 	const unsigned int height = gameConfig.GetScreenHeight();
+
+	//--------------------------------------------------------------------------
+	// Merge all the framebuffers if required
+	//--------------------------------------------------------------------------
+
+	const size_t threadCount = renderer->renderThread.size();
+	if (threadCount > 1) {
+		vector<Pixel *> cpuFrameBuffers(threadCount);
+		for (size_t i = 0; i < threadCount; ++i)
+				cpuFrameBuffers[i] = renderer->renderThread[i]->cpuFrameBuffer->GetPixels();
+
+		const float invThreadCount = 1.f / threadCount;
+		Pixel *dst = cpuFrameBuffers[0];
+		for (size_t i = 0; i < width * height; ++i) {
+			float r = dst->r;
+			float g = dst->g;
+			float b = dst->b;
+
+			for (size_t j = 1; j < threadCount; ++j) {
+				r += cpuFrameBuffers[j]->r;
+				g += cpuFrameBuffers[j]->g;
+				b += cpuFrameBuffers[j]->b;
+
+				cpuFrameBuffers[j] += 1;
+			}
+
+			dst->r = r * invThreadCount;
+			dst->g = g * invThreadCount;
+			dst->b = b * invThreadCount;
+
+			++dst;
+		}
+
+		cmdQueue->enqueueWriteBuffer(*passFrameBuffer,
+					CL_FALSE, 0, sizeof(Pixel) * width * height, cpuFrameBuffers[0]);
+	}
 
 	//--------------------------------------------------------------------------
 	// Blend the new frame with the old one

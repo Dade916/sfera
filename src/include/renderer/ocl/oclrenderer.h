@@ -93,7 +93,7 @@ private:
 	cl::CommandQueue *cmdQueue;
 
 	cl::Kernel *kernelInit;
-	cl::Kernel *kernelInitToneMapFB;
+	cl::Kernel *kernelInitFrameBuffer;
 	cl::Kernel *kernelPathTracing;
 	cl::Kernel *kernelApplyBlurLightFilterXR1;
 	cl::Kernel *kernelApplyBlurLightFilterYR1;
@@ -117,6 +117,12 @@ private:
 	cl::Buffer *bumpMapInstanceBuffer;
 
 	size_t usedDeviceMemory;
+
+	//--------------------------------------------------------------------------
+	// Used only in Multi-GPUs case
+	//--------------------------------------------------------------------------
+
+	FrameBuffer *cpuFrameBuffer;
 
 	//--------------------------------------------------------------------------
 	// Used only by thread with index 0
