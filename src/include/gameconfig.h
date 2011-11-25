@@ -57,6 +57,7 @@ public:
 
 	bool GetOpenCLUseOnlyGPUs() const { return openCLUseOnlyGPUs; }
 	const string &GetOpenCLDeviceSelect() const { return openCLDeviceSelect; }
+	unsigned int GetOpenCLDeviceSamplePerPass(const size_t index) const { return openCLSamplePerPass[index]; }
 
 private:
 	// List of possible properties
@@ -114,6 +115,8 @@ private:
 
 	bool openCLUseOnlyGPUs;
 	string openCLDeviceSelect;
+
+	vector<unsigned int> openCLSamplePerPass;
 };
 
 #endif	/* _SFERA_GAMECONFIG_H */

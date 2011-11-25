@@ -93,6 +93,10 @@ OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level) {
 	// Create synchronization barrier
 	barrier = new boost::barrier(selectedDevices.size() + 1);
 
+	totSamplePerPass = 0;
+	for (size_t i = 0; i < selectedDevices.size(); ++i)
+		totSamplePerPass += gameLevel->gameConfig->GetOpenCLDeviceSamplePerPass(i);
+
 	renderThread.resize(selectedDevices.size(), NULL);
 	for (size_t i = 0; i < selectedDevices.size(); ++i) {
 		OCLRendererThread *rt = new OCLRendererThread(i, this, selectedDevices[i]);
@@ -136,8 +140,7 @@ size_t OCLRenderer::DrawFrame(const EditActionList &list) {
 	renderThread[0]->DrawFrame();
 
 	const GameConfig &gameConfig(*(gameLevel->gameConfig));
-	return renderThread.size() *
-			gameConfig.GetRendererSamplePerPass() *
+	return totSamplePerPass *
 			gameConfig.GetScreenWidth() *
 			gameConfig.GetScreenHeight();
 }
@@ -280,7 +283,7 @@ OCLRendererThread::OCLRendererThread(const size_t threadIndex, OCLRenderer *rend
 	ss << scientific <<
 			" -D PARAM_SCREEN_WIDTH=" << width <<
 			" -D PARAM_SCREEN_HEIGHT=" << height <<
-			" -D PARAM_SCREEN_SAMPLEPERPASS=" << gameLevel.gameConfig->GetRendererSamplePerPass() <<
+			" -D PARAM_SCREEN_SAMPLEPERPASS=" << renderer->totSamplePerPass <<
 			" -D PARAM_RAY_EPSILON=" << EPSILON << "f" <<
 			" -D PARAM_MAX_DIFFUSE_BOUNCE=" << gameLevel.maxPathDiffuseBounces <<
 			" -D PARAM_MAX_SPECULARGLOSSY_BOUNCE=" << gameLevel.maxPathSpecularGlossyBounces <<
@@ -525,7 +528,7 @@ void OCLRendererThread::OCLRenderThreadImpl() {
 		const GameConfig &gameConfig(*(renderer->gameLevel->gameConfig));
 		const unsigned int width = gameConfig.GetScreenWidth();
 		const unsigned int height = gameConfig.GetScreenHeight();
-		const unsigned int samplePerPass = gameConfig.GetRendererSamplePerPass();
+		const unsigned int samplePerPass = gameConfig.GetOpenCLDeviceSamplePerPass(index);
 		const CompiledScene &compiledScene(*(renderer->compiledScene));
 		boost::barrier *barrier = renderer->barrier;
 
@@ -666,7 +669,6 @@ void OCLRendererThread::DrawFrame() {
 		for (size_t i = 0; i < threadCount; ++i)
 				cpuFrameBuffers[i] = renderer->renderThread[i]->cpuFrameBuffer->GetPixels();
 
-		const float invThreadCount = 1.f / threadCount;
 		Pixel *dst = cpuFrameBuffers[0];
 		for (size_t i = 0; i < width * height; ++i) {
 			float r = dst->r;
@@ -681,9 +683,9 @@ void OCLRendererThread::DrawFrame() {
 				cpuFrameBuffers[j] += 1;
 			}
 
-			dst->r = r * invThreadCount;
-			dst->g = g * invThreadCount;
-			dst->b = b * invThreadCount;
+			dst->r = r;
+			dst->g = g;
+			dst->b = b;
 
 			++dst;
 		}

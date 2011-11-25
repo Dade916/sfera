@@ -130,4 +130,12 @@ void GameConfig::InitCachedValues() {
 
 	openCLUseOnlyGPUs = (cfg.GetString(OPENCL_DEVICES_USEONLYGPUS, OPENCL_DEVICES_USEONLYGPUS_DEFAULT) == "true");
 	openCLDeviceSelect = cfg.GetString(OPENCL_DEVICES_SELECT, OPENCL_DEVICES_SELECT_DEFAULT);
+
+	// Up to 64 devices
+	openCLSamplePerPass.resize(64, rendererSamplePerPass);
+	for (size_t i = 0; i < 64; ++i) {
+		stringstream ss;
+		ss << "opencl.devices." << i << ".sampleperpass";
+		openCLSamplePerPass[i] = (unsigned int)cfg.GetInt(ss.str(), rendererSamplePerPass);
+	}
 }

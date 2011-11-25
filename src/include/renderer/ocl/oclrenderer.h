@@ -60,6 +60,7 @@ protected:
 
 	CompiledScene *compiledScene;
 	const EditActionList *editActionList;
+	unsigned int totSamplePerPass;
 };
 
 class OCLRendererThread {
