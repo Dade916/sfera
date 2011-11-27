@@ -40,6 +40,7 @@
 //  PARAM_HAS_BUMPMAPS
 //  PARAM_GAMMA
 //  PARAM_TM_LINEAR_SCALE
+//  PARMA_MEM_TYPE
 
 //#pragma OPENCL EXTENSION cl_amd_printf : enable
 
@@ -424,7 +425,7 @@ void InfiniteLight_Le(__global Spectrum *infiniteLightMap, Spectrum *le, const V
 
 void GenerateCameraRay(
 		Seed *seed,
-		__global Camera *camera,
+		PARAM_MEM_TYPE Camera *camera,
 		const uint pixelIndex,
 		Ray *ray) {
 	const float scrSampleX = RndFloatValue(seed);
@@ -481,7 +482,7 @@ void GenerateCameraRay(
 // BVH intersect
 //------------------------------------------------------------------------------
 
-bool Sphere_IntersectP(__global BVHAccelArrayNode *bvhNode, const Ray *ray, float *hitT) {
+bool Sphere_IntersectP(PARAM_MEM_TYPE BVHAccelArrayNode *bvhNode, const Ray *ray, float *hitT) {
 	const Point center = bvhNode->bsphere.center;
 	const float rad = bvhNode->bsphere.rad;
 
@@ -514,9 +515,9 @@ bool Sphere_IntersectP(__global BVHAccelArrayNode *bvhNode, const Ray *ray, floa
 
 bool BVH_Intersect(
 		Ray *ray,
-		__global Sphere **hitSphere,
+		PARAM_MEM_TYPE Sphere **hitSphere,
 		uint *primitiveIndex,
-		__global BVHAccelArrayNode *bvhTree) {
+		PARAM_MEM_TYPE BVHAccelArrayNode *bvhTree) {
 	unsigned int currentNode = 0; // Root Node
 	unsigned int stopNode = bvhTree[0].skipIndex; // Non-existent
 	*primitiveIndex = 0xffffffffu;
@@ -543,7 +544,7 @@ bool BVH_Intersect(
 // Materials
 //------------------------------------------------------------------------------
 
-void Matte_Sample_f(const __global MatteParam *mat, const Vector *wo, Vector *wi,
+void Matte_Sample_f(const PARAM_MEM_TYPE MatteParam *mat, const Vector *wo, Vector *wi,
 		float *pdf, Spectrum *f, const Vector *shadeN,
 		Seed *seed,
 		bool *diffuseBounce) {
@@ -572,7 +573,7 @@ void Matte_Sample_f(const __global MatteParam *mat, const Vector *wo, Vector *wi
 	*diffuseBounce = true;
 }
 
-void Mirror_Sample_f(const __global MirrorParam *mat, const Vector *wo, Vector *wi,
+void Mirror_Sample_f(const PARAM_MEM_TYPE MirrorParam *mat, const Vector *wo, Vector *wi,
 		float *pdf, Spectrum *f, const Vector *shadeN,
 		bool *diffuseBounce) {
     const float k = 2.f * Dot(shadeN, wo);
@@ -589,7 +590,7 @@ void Mirror_Sample_f(const __global MirrorParam *mat, const Vector *wo, Vector *
 	*diffuseBounce = false;
 }
 
-void Glass_Sample_f(const __global GlassParam *mat,
+void Glass_Sample_f(const PARAM_MEM_TYPE GlassParam *mat,
     const Vector *wo, Vector *wi, float *pdf, Spectrum *f, const Vector *N, const Vector *shadeN,
     Seed *seed,
 	bool *diffuseBounce) {
@@ -709,7 +710,7 @@ void GlossyReflection(const Vector *wo, Vector *wi, const float exponent,
     wi->z = x * u.z + y * v.z + z * w.z;
 }
 
-void Metal_Sample_f(const __global MetalParam *mat, const Vector *wo, Vector *wi,
+void Metal_Sample_f(const PARAM_MEM_TYPE MetalParam *mat, const Vector *wo, Vector *wi,
 		float *pdf, Spectrum *f, const Vector *shadeN,
 		Seed *seed,
 		bool *diffuseBounce) {
@@ -727,7 +728,7 @@ void Metal_Sample_f(const __global MetalParam *mat, const Vector *wo, Vector *wi
 			*pdf = 0.f;
 }
 
-void Alloy_Sample_f(const __global AlloyParam *mat, const Vector *wo, Vector *wi,
+void Alloy_Sample_f(const PARAM_MEM_TYPE AlloyParam *mat, const Vector *wo, Vector *wi,
 		float *pdf, Spectrum *f, const Vector *shadeN,
 		Seed *seed,
 		bool *diffuseBounce) {
@@ -829,18 +830,18 @@ __kernel void InitFB(
 
 __kernel void PathTracing(
 		__global GPUTask *tasks,
-		__global BVHAccelArrayNode *bvhRoot,
-		__global Camera *camera,
+		PARAM_MEM_TYPE BVHAccelArrayNode *bvhRoot,
+		PARAM_MEM_TYPE Camera *camera,
 		__global Spectrum *infiniteLightMap,
 		__global Pixel *frameBuffer,
-		__global Material *mats,
+		PARAM_MEM_TYPE Material *mats,
 		__global uint *sphereMats
 #if defined(PARAM_HAS_TEXTUREMAPS)
-		, __global TexMap *texMaps
+		, PARAM_MEM_TYPE TexMap *texMaps
 		, __global Spectrum *texMapRGB
-		, __global TexMapInstance *sphereTexMaps
+		, PARAM_MEM_TYPE TexMapInstance *sphereTexMaps
 #if defined (PARAM_HAS_BUMPMAPS)
-		, __global BumpMapInstance *sphereBumpMaps
+		, PARAM_MEM_TYPE BumpMapInstance *sphereBumpMaps
 #endif
 #endif
 		) {
@@ -874,14 +875,14 @@ __kernel void PathTracing(
 	uint specularGlossyBounces = 0;
 
 	for(;;) {
-		__global Sphere *hitSphere;
+		PARAM_MEM_TYPE Sphere *hitSphere;
 		uint sphereIndex;
 		if (BVH_Intersect(&ray, &hitSphere, &sphereIndex, bvhRoot)) {
-			const __global Material *hitPointMat = &mats[sphereMats[sphereIndex]];
+			const PARAM_MEM_TYPE Material *hitPointMat = &mats[sphereMats[sphereIndex]];
 #if defined(PARAM_HAS_TEXTUREMAPS)
-			const __global TexMapInstance *hitTexMapInst = &sphereTexMaps[sphereIndex];
+			const PARAM_MEM_TYPE TexMapInstance *hitTexMapInst = &sphereTexMaps[sphereIndex];
 #if defined (PARAM_HAS_BUMPMAPS)
-			const __global BumpMapInstance *hitBumpMapInst = &sphereBumpMaps[sphereIndex];
+			const PARAM_MEM_TYPE BumpMapInstance *hitBumpMapInst = &sphereBumpMaps[sphereIndex];
 #endif
 #endif
 
@@ -904,7 +905,7 @@ __kernel void PathTracing(
 				const float u0 = SphericalPhi(&N) * INV_TWOPI * hitBumpMapInst->scaleU + hitBumpMapInst->shiftU;
 				const float v0 = SphericalTheta(&N) * INV_PI * hitBumpMapInst->scaleV + hitBumpMapInst->shiftV;
 
-				__global TexMap *tm = &texMaps[bumpMapIndex];
+				const PARAM_MEM_TYPE TexMap *tm = &texMaps[bumpMapIndex];
 				const unsigned int width = tm->width;
 				const unsigned int height = tm->height;
 
@@ -1021,7 +1022,7 @@ __kernel void PathTracing(
 				const float tu = SphericalPhi(&N) * INV_TWOPI * hitTexMapInst->scaleU + hitTexMapInst->shiftU;
 				const float tv = SphericalTheta(&N) * INV_PI * hitTexMapInst->scaleV + hitTexMapInst->shiftV;
 
-				__global TexMap *tm = &texMaps[texMapIndex];
+				PARAM_MEM_TYPE TexMap *tm = &texMaps[texMapIndex];
 				Spectrum texCol;
 				TexMap_GetColor(&texMapRGB[tm->rgbOffset], tm->width, tm->height, tu, tv, &texCol);
 
@@ -1122,6 +1123,9 @@ void ApplyBlurFilterYR1(
 		const float bF,
 		const float cF
 		) {
+	/*for (int i = 0; i < PARAM_SCREEN_HEIGHT; ++i)
+		*dst++ = *src++;*/
+
 	// Do left edge
 	Pixel a;
 	a.r = 0.f;
@@ -1144,13 +1148,15 @@ void ApplyBlurFilterYR1(
 	const float cK = cF / totF;
 
     for (unsigned int y = 1; y < PARAM_SCREEN_HEIGHT - 1; ++y) {
+		const unsigned index = y * PARAM_SCREEN_WIDTH;
+
 		a = b;
 		b = c;
-		c = src[(y + 1) * PARAM_SCREEN_WIDTH];
+		c = src[index + PARAM_SCREEN_WIDTH];
 
-		dst[y * PARAM_SCREEN_WIDTH].r = aK * a.r + bK * b.r + cK * c.r;
-		dst[y * PARAM_SCREEN_WIDTH].g = aK * a.g + bK * b.g + cK * c.g;
-		dst[y * PARAM_SCREEN_WIDTH].b = aK * a.b + bK * b.b + cK * c.b;
+		dst[index].r = aK * a.r + bK * b.r + cK * c.r;
+		dst[index].g = aK * a.g + bK * b.g + cK * c.g;
+		dst[index].b = aK * a.b + bK * b.b + cK * c.b;
     }
 
     // Do right edge

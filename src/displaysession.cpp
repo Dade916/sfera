@@ -85,6 +85,9 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 }
 
 DisplaySession::~DisplaySession() {
+	TTF_CloseFont(font);
+	TTF_Quit();
+	SDL_Quit();
 }
 
 void DisplaySession::RenderText(const string &text, const unsigned int x, const unsigned int y) const {
@@ -338,8 +341,4 @@ void DisplaySession::RunLoop() {
 	delete renderer;
 
 	physicThread.Stop();
-
-	TTF_CloseFont(font);
-	TTF_Quit();
-	SDL_Quit();
 }

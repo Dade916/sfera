@@ -58,6 +58,7 @@ public:
 	bool GetOpenCLUseOnlyGPUs() const { return openCLUseOnlyGPUs; }
 	const string &GetOpenCLDeviceSelect() const { return openCLDeviceSelect; }
 	unsigned int GetOpenCLDeviceSamplePerPass(const size_t index) const { return openCLSamplePerPass[index]; }
+	const string &GetOpenCLMemType() const { return openCLMemType; }
 
 private:
 	// List of possible properties
@@ -91,6 +92,8 @@ private:
 	const static string OPENCL_DEVICES_USEONLYGPUS_DEFAULT;
 	const static string OPENCL_DEVICES_SELECT;
 	const static string OPENCL_DEVICES_SELECT_DEFAULT;
+	const static string OPENCL_MEMTYPE;
+	const static string OPENCL_MEMTYPE_DEFAULT;
 
 	void InitValues();
 	void InitCachedValues();
@@ -115,6 +118,7 @@ private:
 
 	bool openCLUseOnlyGPUs;
 	string openCLDeviceSelect;
+	string openCLMemType;
 
 	vector<unsigned int> openCLSamplePerPass;
 };

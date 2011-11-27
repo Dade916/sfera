@@ -50,6 +50,8 @@ const string GameConfig::OPENCL_DEVICES_USEONLYGPUS = "opencl.devices.useonlygpu
 const string GameConfig::OPENCL_DEVICES_USEONLYGPUS_DEFAULT = "true";
 const string GameConfig::OPENCL_DEVICES_SELECT = "opencl.devices.select";
 const string GameConfig::OPENCL_DEVICES_SELECT_DEFAULT = "";
+const string GameConfig::OPENCL_MEMTYPE = "opencl.memtype";
+const string GameConfig::OPENCL_MEMTYPE_DEFAULT = "__constant";
 
 GameConfig::GameConfig(const string &fileName) {
 	InitValues();
@@ -97,6 +99,7 @@ void GameConfig::InitValues() {
 	cfg.SetString(RENDERER_FILTER_ITERATIONS, RENDERER_FILTER_ITERATIONS_DEFAULT);
 	cfg.SetString(OPENCL_DEVICES_USEONLYGPUS, OPENCL_DEVICES_USEONLYGPUS_DEFAULT);
 	cfg.SetString(OPENCL_DEVICES_SELECT, OPENCL_DEVICES_SELECT_DEFAULT);
+	cfg.SetString(OPENCL_MEMTYPE, OPENCL_MEMTYPE_DEFAULT);
 }
 
 void GameConfig::InitCachedValues() {
@@ -130,6 +133,7 @@ void GameConfig::InitCachedValues() {
 
 	openCLUseOnlyGPUs = (cfg.GetString(OPENCL_DEVICES_USEONLYGPUS, OPENCL_DEVICES_USEONLYGPUS_DEFAULT) == "true");
 	openCLDeviceSelect = cfg.GetString(OPENCL_DEVICES_SELECT, OPENCL_DEVICES_SELECT_DEFAULT);
+	openCLMemType = cfg.GetString(OPENCL_MEMTYPE, OPENCL_MEMTYPE_DEFAULT);
 
 	// Up to 64 devices
 	openCLSamplePerPass.resize(64, rendererSamplePerPass);

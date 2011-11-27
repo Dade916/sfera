@@ -254,7 +254,7 @@ OCLRendererThread::OCLRendererThread(const size_t threadIndex, OCLRenderer *rend
 		AllocOCLBufferRW(&toneMapFrameBuffer, sizeof(Pixel) * width * height, "ToneMap FrameBuffer");
 	}
 	AllocOCLBufferRW(&gpuTaskBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "GPUTask");
-	AllocOCLBufferRW(&cameraBuffer, sizeof(ocl_kernels::GPUTask) * width * height, "Camera");
+	AllocOCLBufferRO(&cameraBuffer, sizeof(compiledscene::Camera), "Camera");
 	AllocOCLBufferRO(&infiniteLightBuffer, (void *)(gameLevel.scene->infiniteLight->GetTexture()->GetTexMap()->GetPixels()),
 			sizeof(Spectrum) * gameLevel.scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() *
 			gameLevel.scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight(), "Inifinite Light");
@@ -315,7 +315,8 @@ OCLRendererThread::OCLRendererThread(const size_t threadIndex, OCLRenderer *rend
 			" -D PARAM_IL_GAIN_B=" << gameLevel.scene->infiniteLight->GetGain().b << "f" <<
 			" -D PARAM_IL_MAP_WIDTH=" << gameLevel.scene->infiniteLight->GetTexture()->GetTexMap()->GetWidth() <<
 			" -D PARAM_IL_MAP_HEIGHT=" << gameLevel.scene->infiniteLight->GetTexture()->GetTexMap()->GetHeight() <<
-			" -D PARAM_GAMMA=" << gameLevel.toneMap->GetGamma() << "f";
+			" -D PARAM_GAMMA=" << gameLevel.toneMap->GetGamma() << "f" <<
+			" -D PARAM_MEM_TYPE=" << gameLevel.gameConfig->GetOpenCLMemType();
 
 	if (compiledScene.enable_MAT_MATTE)
 		ss << " -D PARAM_ENABLE_MAT_MATTE";
@@ -483,6 +484,29 @@ OCLRendererThread::~OCLRendererThread() {
 	delete cpuFrameBuffer;
 }
 
+void OCLRendererThread::AllocOCLBufferRO(cl::Buffer **buff, const size_t size, const string &desc) {
+	if (*buff) {
+		// Check the size of the already allocated buffer
+
+		if (size == (*buff)->getInfo<CL_MEM_SIZE>()) {
+			// I can reuse the buffer
+			return;
+		} else
+			FreeOCLBuffer(buff);
+	}
+
+	if (size / 1024 < 10) {
+		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << size << "bytes");
+	} else {
+		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
+	}
+
+	*buff = new cl::Buffer(*ctx,
+			CL_MEM_READ_ONLY,
+			size);
+	usedDeviceMemory += (*buff)->getInfo<CL_MEM_SIZE>();
+}
+
 void OCLRendererThread::AllocOCLBufferRO(cl::Buffer **buff, void *src, const size_t size, const string &desc) {
 	if (*buff) {
 		// Check the size of the already allocated buffer
@@ -491,10 +515,16 @@ void OCLRendererThread::AllocOCLBufferRO(cl::Buffer **buff, void *src, const siz
 			// I can reuse the buffer; just update the content
 			cmdQueue->enqueueWriteBuffer(**buff, CL_FALSE, 0, size, src);
 			return;
-		}
+		} else
+			FreeOCLBuffer(buff);
 	}
 
-	SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
+	if (size / 1024 < 10) {
+		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << size << "bytes");
+	} else {
+		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
+	}
+
 	*buff = new cl::Buffer(*ctx,
 			CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
 			size, src);
@@ -508,10 +538,16 @@ void OCLRendererThread::AllocOCLBufferRW(cl::Buffer **buff, const size_t size, c
 		if (size == (*buff)->getInfo<CL_MEM_SIZE>()) {
 			// I can reuse the buffer
 			return;
-		}
+		} else
+			FreeOCLBuffer(buff);
 	}
 
-	SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
+	if (size / 1024 < 10) {
+		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << size << "bytes");
+	} else {
+		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
+	}
+
 	*buff = new cl::Buffer(*ctx, CL_MEM_READ_WRITE, size);
 	usedDeviceMemory += (*buff)->getInfo<CL_MEM_SIZE>();
 }
@@ -541,6 +577,19 @@ void OCLRendererThread::OCLRenderThreadStaticImpl(OCLRendererThread *renderThrea
 	renderThread->OCLRenderThreadImpl();
 }
 
+void OCLRendererThread::UpdateBVHBuffer() {
+	const CompiledScene &compiledScene(*(renderer->compiledScene));
+	size_t bvhBufferSize = compiledScene.accel->nNodes * sizeof(BVHAccelArrayNode);
+
+	if (!bvhBuffer || (bvhBuffer->getInfo<CL_MEM_SIZE>() < bvhBufferSize)) {
+		AllocOCLBufferRO(&bvhBuffer, compiledScene.accel->bvhTree, bvhBufferSize, "BVH");
+		kernelPathTracing->setArg(1, *bvhBuffer);
+	} else if (renderer->editActionList->Has(GEOMETRY_EDIT)) {
+		// Upload the new BVH to the GPU
+		cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene.accel->bvhTree);
+	}
+}
+
 void OCLRendererThread::OCLRenderThreadImpl() {
 	try {
 		const GameConfig &gameConfig(*(renderer->gameLevel->gameConfig));
@@ -564,25 +613,7 @@ void OCLRendererThread::OCLRenderThreadImpl() {
 			// Check if I have to update the BVH buffer
 			//--------------------------------------------------------------------------
 
-			size_t bvhBufferSize = compiledScene.accel->nNodes * sizeof(BVHAccelArrayNode);
-			if (!bvhBuffer) {
-				AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
-				// Upload the new BVH to the GPU
-				cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene.accel->bvhTree);
-
-				kernelPathTracing->setArg(1, *bvhBuffer);
-			} else if (bvhBuffer->getInfo<CL_MEM_SIZE>() < bvhBufferSize) {
-				// Check if the buffer is of the right size
-				FreeOCLBuffer(&bvhBuffer);
-				AllocOCLBufferRW(&bvhBuffer, bvhBufferSize, "BVH");
-				// Upload the new BVH to the GPU
-				cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene.accel->bvhTree);
-
-				kernelPathTracing->setArg(1, *bvhBuffer);
-			} else if (renderer->editActionList->Has(GEOMETRY_EDIT)) {
-				// Upload the new BVH to the GPU
-				cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene.accel->bvhTree);
-			}
+			UpdateBVHBuffer();
 
 			//------------------------------------------------------------------
 			// Render

@@ -84,9 +84,12 @@ private:
 	static void OCLRenderThreadStaticImpl(OCLRendererThread *renderThread);
 	void OCLRenderThreadImpl();
 
+	void AllocOCLBufferRO(cl::Buffer **buff, const size_t size, const string &desc);
 	void AllocOCLBufferRO(cl::Buffer **buff, void *src, const size_t size, const string &desc);
 	void AllocOCLBufferRW(cl::Buffer **buff, const size_t size, const string &desc);
 	void FreeOCLBuffer(cl::Buffer **buff);
+
+	void UpdateBVHBuffer();
 
 	size_t index;
 	OCLRenderer *renderer;
