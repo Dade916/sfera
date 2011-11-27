@@ -45,7 +45,7 @@ void Properties::LoadFile(const std::string &fileName) {
 		sprintf(buf, "Unable to open file %s", fileName.c_str());
 		throw std::runtime_error(buf);
 	}
-	
+
 	for (int lineNumber = 1;; ++lineNumber) {
 		file.getline(buf, 512);
 		if (file.eof())
@@ -55,6 +55,12 @@ void Properties::LoadFile(const std::string &fileName) {
 			continue;
 
 		std::string line = buf;
+		StringTrim(line);
+
+		// Ignore empty lines
+		if (line.length() == 0)
+			continue;
+
 		size_t idx = line.find('=');
 		if (idx == std::string::npos) {
 			sprintf(buf, "Syntax error at line %d", lineNumber);
