@@ -38,7 +38,7 @@ GamePhysic::GamePhysic(GameLevel *level) : gameLevel(level) {
 	dynamicsWorld->setGravity(btVector3(0.f, 0.f , -10.f));
 
 	// Add all spheres
-	const vector<GameSphere> &gameSpheres(gameLevel->scene->spheres);
+	vector<GameSphere> &gameSpheres(gameLevel->scene->spheres);
 	for (size_t s = 0; s < gameSpheres.size(); ++s)
 		AddRigidBody(gameSpheres[s], s);
 
@@ -60,7 +60,7 @@ GamePhysic::~GamePhysic() {
     delete broadphase;
 }
 
-void GamePhysic::AddRigidBody(const GameSphere &gameSphere, const size_t index) {
+void GamePhysic::AddRigidBody(GameSphere &gameSphere, const size_t index) {
 	btCollisionShape *shape = new btSphereShape(gameSphere.sphere.rad);
 	btVector3 inertia(0.f, 0.f, 0.f);
 	float mass = gameSphere.staticObject ? 0.f : gameSphere.mass;
@@ -88,6 +88,8 @@ void GamePhysic::AddRigidBody(const GameSphere &gameSphere, const size_t index) 
 
 	if (gameSphere.attractorObject)
 		gravitySphereIndices.push_back(index);
+
+	rigidBody->setUserPointer((void *)&gameSphere);
 }
 
 void GamePhysic::DeleteRigidBody(btRigidBody *rigidBody) {
@@ -172,6 +174,30 @@ void GamePhysic::DoStep() {
 	dynamicsWorld->stepSimulation(1.f / gameLevel->gameConfig->GetPhysicRefreshRate(), 4);
 
 	gameLevel->Refresh();
+
+	// Check if one of the pills was hit
+	int numManifolds = dispatcher->getNumManifolds();
+	for (int i = 0; i < numManifolds; i++) {
+		btPersistentManifold *contactManifold = dispatcher->getManifoldByIndexInternal(i);
+		btCollisionObject *objA = (btCollisionObject*)(contactManifold->getBody0());
+		btCollisionObject *objB = (btCollisionObject*)(contactManifold->getBody1());
+
+		int numContacts = contactManifold->getNumContacts();
+		if (numContacts > 0) {
+			GameSphere *sphereA = (GameSphere *)objA->getUserPointer();
+			GameSphere *sphereB = (GameSphere *)objB->getUserPointer();
+			if (sphereA->puppetObject)
+				Swap(sphereA, sphereB);
+
+			if (sphereA->pillObject && sphereB->puppetObject && !sphereA->isPillOff) {
+				// Disable the pill
+				sphereA->isPillOff = true;
+				++(gameLevel->offPillCount);
+				// Use the off material for this pill
+				gameLevel->scene->sphereMaterials[sphereA->index] = gameLevel->scene->pillOffMaterial;
+			}
+		}
+	}
 }
 
 //------------------------------------------------------------------------------

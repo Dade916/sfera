@@ -609,11 +609,25 @@ void OCLRendererThread::OCLRenderThreadImpl() {
 			cmdQueue->enqueueWriteBuffer(*cameraBuffer,
 					CL_FALSE, 0, sizeof(compiledscene::Camera), &compiledScene.camera);
 
-			//--------------------------------------------------------------------------
+			//------------------------------------------------------------------
 			// Check if I have to update the BVH buffer
-			//--------------------------------------------------------------------------
+			//------------------------------------------------------------------
 
 			UpdateBVHBuffer();
+
+			//------------------------------------------------------------------
+			// Check if I have to update the material related buffers
+			//------------------------------------------------------------------
+
+			if (renderer->editActionList->Has(MATERIALS_EDIT)) {
+				AllocOCLBufferRO(&matBuffer, (void *)(&compiledScene.mats[0]),
+						sizeof(compiledscene::Material) * compiledScene.mats.size(), "Materials");
+				AllocOCLBufferRO(&matIndexBuffer, (void *)(&compiledScene.sphereMats[0]),
+						sizeof(unsigned int) * compiledScene.sphereMats.size(), "Material Indices");
+
+				kernelPathTracing->setArg(5, *matBuffer);
+				kernelPathTracing->setArg(6, *matIndexBuffer);
+			}
 
 			//------------------------------------------------------------------
 			// Render

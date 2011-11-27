@@ -40,6 +40,7 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 	//--------------------------------------------------------------------------
 
 	scene = new Scene(lvlProp, texMapCache);
+	offPillCount = 0;
 
 	//--------------------------------------------------------------------------
 	// Read tone mapping information
@@ -64,12 +65,16 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 	//--------------------------------------------------------------------------
 
 	player = new GamePlayer(lvlProp);
+	// The body is always added as the last sfere to the scene
+	player->body.index = scene->spheres.size();
 
 	camera = new PerspectiveCamera(
 		Point(0.f, 0.f, 1.f),
 		Point(0.f, 0.f, 0.f),
 		Vector(0.f, 0.f, 1.f));
 	player->UpdateCamera(*camera, gameConfig->GetScreenWidth(), gameConfig->GetScreenHeight());
+
+	startTime = WallClockTime();
 }
 
 GameLevel::~GameLevel() {

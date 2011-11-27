@@ -46,7 +46,7 @@ public:
 
 private:
 	void UpdateGameSphere(GameSphere &gameSphere, btRigidBody *dynamicRigidBody);
-	void AddRigidBody(const GameSphere &gameSphere, const size_t index = 0);
+	void AddRigidBody(GameSphere &gameSphere, const size_t index = 0);
 	void DeleteRigidBody(btRigidBody *rigidBody);
 
 	btBroadphaseInterface *broadphase;

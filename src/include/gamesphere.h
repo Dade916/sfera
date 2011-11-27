@@ -26,17 +26,22 @@
 class GameSphere {
 public:
 	GameSphere() { }
-	GameSphere(const Point &c, const float r,
+	GameSphere(const size_t i,
+		const Point &c, const float r,
 		const float m, const float linearDamp, const float angularDamp,
-		const bool st, const bool at) :
-		sphere(c, r),
+		const bool st, const bool at, const bool pl, const bool pu) :
+		index(i), sphere(c, r),
 		mass(m), linearDamping(linearDamp), angularDamping(angularDamp),
-		staticObject(st), attractorObject(at) { }
+		staticObject(st), attractorObject(at), pillObject(pl), puppetObject(pu),
+		isPillOff(false) { }
 	~GameSphere() { }
 
+	size_t index;
 	Sphere sphere;
 	float mass, linearDamping, angularDamping;
-	bool staticObject, attractorObject;
+
+	bool staticObject, attractorObject, pillObject, puppetObject;
+	bool isPillOff;
 };
 
 #endif	/* _SFERA_SDL_GAMESPHERE_H */

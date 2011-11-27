@@ -48,6 +48,9 @@ public:
 
 	GamePlayer *player;
 	PerspectiveCamera *camera;
+
+	double startTime;
+	unsigned int offPillCount;
 };
 
 #endif	/* _SFERA_GAMELEVEL_H */

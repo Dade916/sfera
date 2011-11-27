@@ -24,6 +24,9 @@
 #include "physic/gamephysic.h"
 
 Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
+	pillOffMaterial = NULL;
+	pillCount = 0;
+
 	gravityConstant = scnProp.GetFloat("scene.gravity.constant", 10.f);
 
 	//--------------------------------------------------------------------------
@@ -65,6 +68,15 @@ Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
 			continue;
 
 		CreateMaterial("scene.materials." + matName, scnProp);
+
+		if ("yes" == scnProp.GetString("scene.materials." + matName + ".pilloffmaterial", "no")) {
+			// It is a pill off material
+
+			if (pillOffMaterial)
+				throw runtime_error("Multiple definition of pill off material");
+
+			pillOffMaterial = materials[materials.size() - 1];
+		}
 	}
 
 	//--------------------------------------------------------------------------
@@ -96,11 +108,15 @@ Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
 		const float angularDamping = scnProp.GetFloat(propRoot + ".angulardamping", PHYSIC_DEFAULT_LINEAR_DAMPING);
 		const bool staticObject = ("yes" == scnProp.GetString(propRoot + ".static", "no"));
 		const bool attractorObject = ("yes" == scnProp.GetString(propRoot + ".attractor", "no"));
+		const bool pillObject = ("yes" == scnProp.GetString(propRoot + ".pill", "no"));
 
 		sphereIndices[sphereName] = spheres.size();
-		spheres.push_back(GameSphere(Point(vf[0], vf[1], vf[2]), vf[3],
+		spheres.push_back(GameSphere(spheres.size(), Point(vf[0], vf[1], vf[2]), vf[3],
 				mass, linearDamping, angularDamping,
-				staticObject, attractorObject));
+				staticObject, attractorObject, pillObject, false));
+
+		if (pillObject)
+			++pillCount;
 
 		const double now = WallClockTime();
 		if (now - lastPrint > 2.0) {
@@ -143,6 +159,10 @@ Scene::Scene(const Properties &scnProp, TextureMapCache *texMapCache) {
 			sphereBumpMaps.push_back(NULL);
 	}
 	SFERA_LOG("Spheres count: " << spheres.size());
+	SFERA_LOG("Pills count: " << pillCount);
+
+	if (!pillOffMaterial)
+		throw runtime_error("Missing definition of pill off material");
 }
 
 Scene::~Scene() {

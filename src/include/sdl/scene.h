@@ -49,6 +49,8 @@ public:
 	vector<TexMapInstance *> sphereTexMaps; // One for each object
 	vector<BumpMapInstance *> sphereBumpMaps; // One for each object
 
+	unsigned int pillCount;
+	Material *pillOffMaterial;
 
 private:
 	void CreateMaterial(const string &propName, const Properties &prop);

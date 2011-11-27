@@ -164,13 +164,14 @@ void DisplaySession::RunLoop() {
 	const double refreshTime = 1.0 / gameConfig->GetScreenRefreshCap();
 	double currentRefreshTime = 0.0;
 	string topLabel = "";
-	string bottomLabel = "[Spheres 0/0][Time 00:00.00]";
+	string bottomLabel = "";
 
 	bool quit = false;
 	double lastJumpTime = 0.0;
 	EditActionList editActionList;
 	editActionList.AddAction(CAMERA_EDIT);
 	editActionList.AddAction(GEOMETRY_EDIT);
+	editActionList.AddAction(MATERIALS_EDIT);
 
 	do {
 		const double t1 = WallClockTime();
@@ -308,8 +309,13 @@ void DisplaySession::RunLoop() {
 		SDL_GL_SwapBuffers();
 
 		const double now = WallClockTime();
-		currentRefreshTime = now - t1;
+		// Update the bottom label
+		stringstream ss;
+		ss << "[Spheres " << currentLevel->offPillCount << "/" << currentLevel->scene->pillCount <<
+				"][Time " << fixed << setprecision(2) << now - currentLevel->startTime << "secs]";
+		bottomLabel = ss.str();
 
+		currentRefreshTime = now - t1;
 		if (currentRefreshTime < refreshTime) {
 			const unsigned int sleep = (unsigned int)((refreshTime - currentRefreshTime) * 1000.0);
 			boost::this_thread::sleep(boost::posix_time::millisec(sleep));
