@@ -227,7 +227,7 @@ void DisplaySession::RunLoop() {
 						currentLevel->player->viewDistance =  Max(
 								currentLevel->player->body.sphere.rad * 5.f,
 								Min(currentLevel->player->body.sphere.rad * 40.f,
-									startViewDistance + deltaY / 200.f));
+									startViewDistance + deltaY / 100.f));
 					}
 					break;
 				}

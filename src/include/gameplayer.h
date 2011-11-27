@@ -40,8 +40,8 @@ public:
 	~GamePlayer();
 
 	void UpdateLocalCoordSystem() {
-		right = Cross(front, up);
-		front = Cross(up, right);
+		right = Normalize(Cross(front, up));
+		front = Normalize(Cross(up, right));
 	}
 	void ApplyInputs();
 	void UpdatePuppet();

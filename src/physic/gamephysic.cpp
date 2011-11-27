@@ -138,7 +138,6 @@ void GamePhysic::DoStep() {
 	UpdateGameSphere(player.body, playerRigidBody);
 	const btVector3 &v = playerRigidBody->getGravity();
 	player.SetGravity(Vector(v.getX(), v.getY(), v.getZ()));
-	gameLevel->Refresh();
 
 	// Apply user inputs
 	if (player.inputGoForward) {
@@ -171,6 +170,8 @@ void GamePhysic::DoStep() {
 	}
 
 	dynamicsWorld->stepSimulation(1.f / gameLevel->gameConfig->GetPhysicRefreshRate(), 4);
+
+	gameLevel->Refresh();
 }
 
 //------------------------------------------------------------------------------
