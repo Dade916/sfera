@@ -20,6 +20,7 @@
 
 #include "gamelevel.h"
 #include "epsilon.h"
+#include "sdl/editaction.h"
 
 GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameConfig(cfg) {
 	SFERA_LOG("Reading level: " << levelFileName);
@@ -73,6 +74,8 @@ GameLevel::GameLevel(const GameConfig *cfg, const string &levelFileName) : gameC
 		Point(0.f, 0.f, 0.f),
 		Vector(0.f, 0.f, 1.f));
 	player->UpdateCamera(*camera, gameConfig->GetScreenWidth(), gameConfig->GetScreenHeight());
+
+	editActionList.AddAllAction();
 
 	startTime = WallClockTime();
 }

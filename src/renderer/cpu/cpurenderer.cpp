@@ -23,7 +23,7 @@
 
 #include "renderer/cpu/cpurenderer.h"
 
-CPURenderer::CPURenderer(const GameLevel *level) :
+CPURenderer::CPURenderer(GameLevel *level) :
 	LevelRenderer(level), timeSinceLastCameraEdit(WallClockTime()),
 		timeSinceLastNoCameraEdit(WallClockTime()) {
 	const unsigned int width = gameLevel->gameConfig->GetScreenWidth();

@@ -195,9 +195,13 @@ void GamePhysic::DoStep() {
 				++(gameLevel->offPillCount);
 				// Use the off material for this pill
 				gameLevel->scene->sphereMaterials[sphereA->index] = gameLevel->scene->pillOffMaterial;
+				gameLevel->editActionList.AddAction(MATERIALS_EDIT);
 			}
 		}
 	}
+
+	gameLevel->editActionList.AddAction(CAMERA_EDIT);
+	gameLevel->editActionList.AddAction(GEOMETRY_EDIT);
 }
 
 //------------------------------------------------------------------------------

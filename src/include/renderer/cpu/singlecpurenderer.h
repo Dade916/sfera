@@ -30,10 +30,10 @@
 
 class SingleCPURenderer : public CPURenderer {
 public:
-	SingleCPURenderer(const GameLevel *level);
+	SingleCPURenderer(GameLevel *level);
 	~SingleCPURenderer();
 
-	size_t DrawFrame(const EditActionList &editActionList);
+	size_t DrawFrame();
 
 private:
 	RandomGenerator rnd;

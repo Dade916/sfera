@@ -47,10 +47,10 @@ class OCLRendererThread;
 
 class OCLRenderer : public LevelRenderer {
 public:
-	OCLRenderer(const GameLevel *level);
+	OCLRenderer(GameLevel *level);
 	~OCLRenderer();
 
-	size_t DrawFrame(const EditActionList &editActionList);
+	size_t DrawFrame();
 
 	friend class OCLRendererThread;
 
@@ -59,7 +59,6 @@ protected:
 	boost::barrier *barrier;
 
 	CompiledScene *compiledScene;
-	const EditActionList *editActionList;
 	float blendFactor;
 	unsigned int totSamplePerPass;
 
@@ -90,6 +89,7 @@ private:
 	void FreeOCLBuffer(cl::Buffer **buff);
 
 	void UpdateBVHBuffer();
+	void UpdateMaterialsBuffer();
 
 	size_t index;
 	OCLRenderer *renderer;

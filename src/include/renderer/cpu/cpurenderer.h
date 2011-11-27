@@ -30,10 +30,8 @@
 
 class CPURenderer : public LevelRenderer {
 public:
-	CPURenderer(const GameLevel *level);
+	CPURenderer(GameLevel *level);
 	~CPURenderer();
-
-	virtual size_t DrawFrame(const EditActionList &editActionList) = 0;
 
 protected:
 	BVHAccel *BuildAcceleretor();

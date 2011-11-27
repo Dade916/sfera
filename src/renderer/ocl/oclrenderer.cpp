@@ -34,7 +34,7 @@
 // OCLRenderer
 //------------------------------------------------------------------------------
 
-OCLRenderer::OCLRenderer(const GameLevel *level) : LevelRenderer(level) {
+OCLRenderer::OCLRenderer(GameLevel *level) : LevelRenderer(level) {
 	compiledScene = new CompiledScene(level);
 
 	timeSinceLastCameraEdit = WallClockTime();
@@ -117,7 +117,7 @@ OCLRenderer::~OCLRenderer() {
 	}
 }
 
-size_t OCLRenderer::DrawFrame(const EditActionList &list) {
+size_t OCLRenderer::DrawFrame() {
 	const GameConfig &gameConfig(*(gameLevel->gameConfig));
 
 	//--------------------------------------------------------------------------
@@ -126,7 +126,8 @@ size_t OCLRenderer::DrawFrame(const EditActionList &list) {
 
 	{
 		boost::unique_lock<boost::mutex> lock(gameLevel->levelMutex);
-		compiledScene->Recompile(list);
+		compiledScene->Recompile(gameLevel->editActionList);
+		gameLevel->editActionList.Reset();
 
 		const float ghostTimeLength = gameConfig.GetRendererGhostFactorTime();
 		float k;
@@ -150,7 +151,6 @@ size_t OCLRenderer::DrawFrame(const EditActionList &list) {
 	// Render
 	//--------------------------------------------------------------------------
 
-	editActionList = &list;
 	barrier->wait();
 	// Other threads do the rendering
 	barrier->wait();
@@ -584,9 +584,22 @@ void OCLRendererThread::UpdateBVHBuffer() {
 	if (!bvhBuffer || (bvhBuffer->getInfo<CL_MEM_SIZE>() < bvhBufferSize)) {
 		AllocOCLBufferRO(&bvhBuffer, compiledScene.accel->bvhTree, bvhBufferSize, "BVH");
 		kernelPathTracing->setArg(1, *bvhBuffer);
-	} else if (renderer->editActionList->Has(GEOMETRY_EDIT)) {
+	} else if (compiledScene.editActionsUsed.Has(GEOMETRY_EDIT)) {
 		// Upload the new BVH to the GPU
 		cmdQueue->enqueueWriteBuffer(*bvhBuffer, CL_FALSE, 0, bvhBufferSize, compiledScene.accel->bvhTree);
+	}
+}
+
+void OCLRendererThread::UpdateMaterialsBuffer() {
+	const CompiledScene &compiledScene(*(renderer->compiledScene));
+	if (compiledScene.editActionsUsed.Has(MATERIALS_EDIT)) {
+		AllocOCLBufferRO(&matBuffer, (void *)(&compiledScene.mats[0]),
+				sizeof(compiledscene::Material) * compiledScene.mats.size(), "Materials");
+		AllocOCLBufferRO(&matIndexBuffer, (void *)(&compiledScene.sphereMats[0]),
+				sizeof(unsigned int) * compiledScene.sphereMats.size(), "Material Indices");
+
+		kernelPathTracing->setArg(5, *matBuffer);
+		kernelPathTracing->setArg(6, *matIndexBuffer);
 	}
 }
 
@@ -619,15 +632,7 @@ void OCLRendererThread::OCLRenderThreadImpl() {
 			// Check if I have to update the material related buffers
 			//------------------------------------------------------------------
 
-			if (renderer->editActionList->Has(MATERIALS_EDIT)) {
-				AllocOCLBufferRO(&matBuffer, (void *)(&compiledScene.mats[0]),
-						sizeof(compiledscene::Material) * compiledScene.mats.size(), "Materials");
-				AllocOCLBufferRO(&matIndexBuffer, (void *)(&compiledScene.sphereMats[0]),
-						sizeof(unsigned int) * compiledScene.sphereMats.size(), "Material Indices");
-
-				kernelPathTracing->setArg(5, *matBuffer);
-				kernelPathTracing->setArg(6, *matIndexBuffer);
-			}
+			UpdateMaterialsBuffer();
 
 			//------------------------------------------------------------------
 			// Render

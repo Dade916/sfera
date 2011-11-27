@@ -27,7 +27,7 @@
 // MultiCPURenderer
 //------------------------------------------------------------------------------
 
-MultiCPURenderer::MultiCPURenderer(const GameLevel *level) : CPURenderer(level) {
+MultiCPURenderer::MultiCPURenderer(GameLevel *level) : CPURenderer(level) {
 	const unsigned int width = gameLevel->gameConfig->GetScreenWidth();
 	const unsigned int height = gameLevel->gameConfig->GetScreenHeight();
 

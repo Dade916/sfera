@@ -22,16 +22,15 @@
 #define	_SFERA_LEVELRENDERER_H
 
 #include "gamelevel.h"
-#include "sdl/editaction.h"
 
 class LevelRenderer {
 public:
-	LevelRenderer(const GameLevel *level) : gameLevel(level) { }
+	LevelRenderer(GameLevel *level) : gameLevel(level) { }
 	~LevelRenderer() { }
 
-	virtual size_t DrawFrame(const EditActionList &editActionList) = 0;
+	virtual size_t DrawFrame() = 0;
 
-	const GameLevel *gameLevel;
+	GameLevel *gameLevel;
 };
 
 #endif	/* _SFERA_LEVELRENDERER_H */

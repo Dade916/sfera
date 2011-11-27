@@ -168,10 +168,6 @@ void DisplaySession::RunLoop() {
 
 	bool quit = false;
 	double lastJumpTime = 0.0;
-	EditActionList editActionList;
-	editActionList.AddAction(CAMERA_EDIT);
-	editActionList.AddAction(GEOMETRY_EDIT);
-	editActionList.AddAction(MATERIALS_EDIT);
 
 	do {
 		const double t1 = WallClockTime();
@@ -289,7 +285,7 @@ void DisplaySession::RunLoop() {
 			}
 		}
 
-		totalSampleCount += renderer->DrawFrame(editActionList);
+		totalSampleCount += renderer->DrawFrame();
 
 		// Draw text
 		glEnable(GL_BLEND);

@@ -22,14 +22,14 @@
 #include "renderer/cpu/singlecpurenderer.h"
 #include "acceleretor/bvhaccel.h"
 
-SingleCPURenderer::SingleCPURenderer(const GameLevel *level) : CPURenderer(level),
+SingleCPURenderer::SingleCPURenderer(GameLevel *level) : CPURenderer(level),
 		rnd(1) {
 }
 
 SingleCPURenderer::~SingleCPURenderer() {
 }
 
-size_t SingleCPURenderer::DrawFrame(const EditActionList &editActionList) {
+size_t SingleCPURenderer::DrawFrame() {
 	const GameConfig &gameConfig(*(gameLevel->gameConfig));
 	const unsigned int width = gameConfig.GetScreenWidth();
 	const unsigned int height = gameConfig.GetScreenHeight();

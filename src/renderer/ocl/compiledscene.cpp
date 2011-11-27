@@ -354,12 +354,20 @@ void CompiledScene::CompileTextureMaps() {
 }
 
 void CompiledScene::Recompile(const EditActionList &editActions) {
-	if (editActions.Has(CAMERA_EDIT))
+	editActionsUsed.Reset();
+
+	if (editActions.Has(CAMERA_EDIT)) {
+		editActionsUsed.AddAction(CAMERA_EDIT);
 		CompileCamera();
-	if (editActions.Has(GEOMETRY_EDIT))
+	}
+	if (editActions.Has(GEOMETRY_EDIT)) {
+		editActionsUsed.AddAction(GEOMETRY_EDIT);
 		CompileGeometry();
-	if (editActions.Has(MATERIALS_EDIT))
+	}
+	if (editActions.Has(MATERIALS_EDIT)) {
+		editActionsUsed.AddAction(MATERIALS_EDIT);
 		CompileMaterials();
+	}
 }
 
 #endif

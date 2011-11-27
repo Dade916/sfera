@@ -129,6 +129,8 @@ public:
 	vector<compiledscene::TexMapInstance> sphereTexs;
 	vector<compiledscene::BumpMapInstance> sphereBumps;
 
+	EditActionList editActionsUsed;
+
 private:
 	void CompileCamera();
 	void CompileGeometry();

@@ -27,6 +27,7 @@
 #include "sdl/scene.h"
 #include "sdl/camera.h"
 #include "sdl/texmap.h"
+#include "sdl/editaction.h"
 #include "pixel/tonemap.h"
 
 class GameLevel {
@@ -51,6 +52,8 @@ public:
 
 	double startTime;
 	unsigned int offPillCount;
+
+	EditActionList editActionList;
 };
 
 #endif	/* _SFERA_GAMELEVEL_H */
