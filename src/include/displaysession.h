@@ -23,6 +23,7 @@
 
 #include "sfera.h"
 #include "gameconfig.h"
+#include "gamesession.h"
 
 class DisplaySession {
 public:
@@ -35,6 +36,8 @@ public:
 
 private:
 	void RenderText(const string &text, const unsigned int x, const unsigned int y) const;
+
+	bool RunLevel(GameSession &gameSession);
 
 	SDL_Surface *screenSurface;
 	TTF_Font *font;

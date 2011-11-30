@@ -30,11 +30,22 @@ public:
 	GameSession(const GameConfig *cfg, const string &pack);
 	~GameSession();
 
-	void LoadLevel(const unsigned int level);
+	void Begin(const unsigned int startLevel = 1);
+	bool NextLevel();
+
+	unsigned int GetCurrentLevel() const { return currentLevelNumber; }
+	const string &GetCurrentLevelName() const { return levelNames[currentLevelNumber - 1]; }
 
 	const GameConfig *gameConfig;
 	const string packName;
+
 	GameLevel *currentLevel;
+
+private:
+	void LoadLevel(const unsigned int level);
+
+	vector<string> levelNames;
+	unsigned int currentLevelNumber;
 };
 
 #endif	/* _SFERA_GAMESESSION_H */

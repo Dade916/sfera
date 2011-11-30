@@ -142,9 +142,7 @@ void DisplaySession::RenderText(const string &text, const unsigned int x, const 
 	glDeleteTextures(1, (GLuint *)&texture);
 }
 
-void DisplaySession::RunLoop() {
-	GameSession gameSession(gameConfig, "Sfera");
-	gameSession.LoadLevel(1);
+bool DisplaySession::RunLevel(GameSession &gameSession) {
 	GameLevel *currentLevel = gameSession.currentLevel;
 
 	GamePhysic gamePhysic(currentLevel);
@@ -166,7 +164,9 @@ void DisplaySession::RunLoop() {
 			break;
 	}
 
+	//--------------------------------------------------------------------------
 	// Start the game
+	//--------------------------------------------------------------------------
 
 	physicThread.Start();
 
@@ -179,6 +179,7 @@ void DisplaySession::RunLoop() {
 	string bottomLabel = "";
 
 	bool quit = false;
+	bool levelDone = false;
 	double lastJumpTime = 0.0;
 
 	do {
@@ -308,7 +309,7 @@ void DisplaySession::RunLoop() {
 		glRecti(0, gameConfig->GetScreenHeight() - fontSize - 1,
 				gameConfig->GetScreenWidth() - 1, gameConfig->GetScreenHeight() - 1);
 
-		glBlendFunc(GL_ONE, GL_ONE);		
+		glBlendFunc(GL_ONE, GL_ONE);
 		glColor3f(1.0f, 1.0f, 1.0f);
 		RenderText(bottomLabel, 0, 0);
 		RenderText(topLabel, 0, gameConfig->GetScreenHeight() - fontSize - 1);
@@ -333,12 +334,12 @@ void DisplaySession::RunLoop() {
 		const double dt = now - frameStartTime;
 		if (dt > 1.0) {
 			const double now = WallClockTime();
-			
+
 			const double frameSec = frame / dt;
 			const double sampleSec = totalSampleCount / dt;
 
 			stringstream ss;
-			ss << "[Sample/sec: " << fixed << setprecision(2) << (sampleSec / 100000) << 
+			ss << "[Sample/sec: " << fixed << setprecision(2) << (sampleSec / 100000) <<
 					"M s/s][Frame/sec: " << frameSec <<	"/" << gameConfig->GetScreenRefreshCap() <<
 					"][Physic engine Hz: " << gamePhysic.GetRunningHz() <<
 					"/"<< gameConfig->GetPhysicRefreshRate() << "]";
@@ -348,11 +349,31 @@ void DisplaySession::RunLoop() {
 			frame = 0;
 			totalSampleCount = 0;
 		}
+
+		// Check If I have turned off all pills
+		if (currentLevel->offPillCount >= currentLevel->scene->pillCount) {
+			levelDone = true;
+			quit = true;
+		}
 	} while(!quit);
 
-	SFERA_LOG("Done.");
-
 	delete renderer;
-
 	physicThread.Stop();
+
+	return levelDone;
+}
+
+void DisplaySession::RunLoop() {
+	GameSession gameSession(gameConfig, "Sfera");
+	gameSession.Begin();
+
+	for(;;) {
+		if (RunLevel(gameSession)) {
+			if (!gameSession.NextLevel())
+				break;
+		} else
+			break;
+	}
+
+	SFERA_LOG("Done.");
 }

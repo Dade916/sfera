@@ -1123,9 +1123,6 @@ void ApplyBlurFilterYR1(
 		const float bF,
 		const float cF
 		) {
-	/*for (int i = 0; i < PARAM_SCREEN_HEIGHT; ++i)
-		*dst++ = *src++;*/
-
 	// Do left edge
 	Pixel a;
 	a.r = 0.f;
