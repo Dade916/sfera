@@ -28,6 +28,10 @@ typedef enum {
 	NO_FILTER, BLUR_LIGHT, BLUR_HEAVY, BOX
 } FilterType;
 
+typedef enum {
+	SINGLE_CPU, MULTI_CPU, OPENCL
+} RendererType;
+
 class GameConfig {
 public:
 	GameConfig(const string &fileName);
@@ -54,6 +58,7 @@ public:
 	FilterType GetRendererFilterType() const { return rendererFilterType; }
 	unsigned int GetRendererFilterRaidus() const { return rendererFilterRadius; }
 	unsigned int GetRendererFilterIterations() const { return rendererFilterIterations; }
+	RendererType GetRendererType() const { return rendererType; }
 
 	bool GetOpenCLUseOnlyGPUs() const { return openCLUseOnlyGPUs; }
 	const string &GetOpenCLDeviceSelect() const { return openCLDeviceSelect; }
@@ -88,6 +93,8 @@ private:
 	const static string RENDERER_FILTER_RADIUS_DEFAULT;
 	const static string RENDERER_FILTER_ITERATIONS;
 	const static string RENDERER_FILTER_ITERATIONS_DEFAULT;
+	const static string RENDERER_TYPE;
+	const static string RENDERER_TYPE_DEFAULT;
 	const static string OPENCL_DEVICES_USEONLYGPUS;
 	const static string OPENCL_DEVICES_USEONLYGPUS_DEFAULT;
 	const static string OPENCL_DEVICES_SELECT;
@@ -115,6 +122,7 @@ private:
 	FilterType rendererFilterType;
 	unsigned int rendererFilterRadius;
 	unsigned int rendererFilterIterations;
+	RendererType rendererType;
 
 	bool openCLUseOnlyGPUs;
 	string openCLDeviceSelect;

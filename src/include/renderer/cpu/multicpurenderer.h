@@ -34,7 +34,7 @@ public:
 	MultiCPURenderer(GameLevel *level);
 	~MultiCPURenderer();
 
-	size_t DrawFrame(const EditActionList &editActionList);
+	size_t DrawFrame();
 
 	friend class MultiCPURendererThread;
 

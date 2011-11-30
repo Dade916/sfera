@@ -46,6 +46,12 @@ const string GameConfig::RENDERER_FILTER_RADIUS = "renderer.filter.radius";
 const string GameConfig::RENDERER_FILTER_RADIUS_DEFAULT = "1";
 const string GameConfig::RENDERER_FILTER_ITERATIONS = "renderer.filter.iterations";
 const string GameConfig::RENDERER_FILTER_ITERATIONS_DEFAULT = "3";
+const string GameConfig::RENDERER_TYPE = "renderer.type";
+#if !defined(SFERA_DISABLE_OPENCL)
+const string GameConfig::RENDERER_TYPE_DEFAULT = "OPENCL";
+#else
+const string GameConfig::RENDERER_TYPE_DEFAULT = "MULTICPU";
+#endif
 const string GameConfig::OPENCL_DEVICES_USEONLYGPUS = "opencl.devices.useonlygpus";
 const string GameConfig::OPENCL_DEVICES_USEONLYGPUS_DEFAULT = "true";
 const string GameConfig::OPENCL_DEVICES_SELECT = "opencl.devices.select";
@@ -97,6 +103,7 @@ void GameConfig::InitValues() {
 	cfg.SetString(RENDERER_FILTER_TYPE, RENDERER_FILTER_TYPE_DEFAULT);
 	cfg.SetString(RENDERER_FILTER_RADIUS, RENDERER_FILTER_RADIUS_DEFAULT);
 	cfg.SetString(RENDERER_FILTER_ITERATIONS, RENDERER_FILTER_ITERATIONS_DEFAULT);
+	cfg.SetString(RENDERER_TYPE, RENDERER_TYPE_DEFAULT);
 	cfg.SetString(OPENCL_DEVICES_USEONLYGPUS, OPENCL_DEVICES_USEONLYGPUS_DEFAULT);
 	cfg.SetString(OPENCL_DEVICES_SELECT, OPENCL_DEVICES_SELECT_DEFAULT);
 	cfg.SetString(OPENCL_MEMTYPE, OPENCL_MEMTYPE_DEFAULT);
@@ -116,7 +123,7 @@ void GameConfig::InitCachedValues() {
 	rendererGhostFactorNoCameraEdit = cfg.GetFloat(RENDERER_GHOSTFACTOR_NOCAMERAEDIT, atof(RENDERER_GHOSTFACTOR_NOCAMERAEDIT_DEFAULT.c_str()));
 	rendererGhostFactorTime = cfg.GetFloat(RENDERER_GHOSTFACTOR_TIME, atof(RENDERER_GHOSTFACTOR_TIME_DEFAULT.c_str()));
 
-	string filterType = cfg.GetString(RENDERER_FILTER_TYPE, RENDERER_FILTER_RADIUS_DEFAULT);
+	string filterType = cfg.GetString(RENDERER_FILTER_TYPE, RENDERER_FILTER_TYPE_DEFAULT);
 	if (filterType == "NO_FILTER")
 		rendererFilterType = NO_FILTER;
 	else if (filterType == "BLUR_LIGHT")
@@ -130,6 +137,18 @@ void GameConfig::InitCachedValues() {
 
 	rendererFilterRadius = (unsigned int)cfg.GetInt(RENDERER_FILTER_RADIUS, atoi(RENDERER_FILTER_RADIUS_DEFAULT.c_str()));
 	rendererFilterIterations = (unsigned int)cfg.GetInt(RENDERER_FILTER_ITERATIONS, atoi(RENDERER_FILTER_ITERATIONS_DEFAULT.c_str()));
+
+	string rendType = cfg.GetString(RENDERER_TYPE, RENDERER_TYPE_DEFAULT);
+	if (rendType == "SINGLE_CPU")
+		rendererType = SINGLE_CPU;
+	else if (rendType == "MULTI_CPU")
+		rendererType = MULTI_CPU;
+#if !defined(SFERA_DISABLE_OPENCL)
+	else if (rendType == "OPENCL")
+		rendererType = OPENCL;
+#endif
+	else
+		throw runtime_error("Unknown rendrer type: " + rendType);
 
 	openCLUseOnlyGPUs = (cfg.GetString(OPENCL_DEVICES_USEONLYGPUS, OPENCL_DEVICES_USEONLYGPUS_DEFAULT) == "true");
 	openCLDeviceSelect = cfg.GetString(OPENCL_DEVICES_SELECT, OPENCL_DEVICES_SELECT_DEFAULT);

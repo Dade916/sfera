@@ -150,9 +150,21 @@ void DisplaySession::RunLoop() {
 	GamePhysic gamePhysic(currentLevel);
 	PhysicThread physicThread(&gamePhysic);
 
-	//SingleCPURenderer *renderer = new SingleCPURenderer(currentLevel);
-	//MultiCPURenderer *renderer = new MultiCPURenderer(currentLevel);
-	OCLRenderer *renderer = new OCLRenderer(currentLevel);
+	LevelRenderer *renderer;
+	switch (gameConfig->GetRendererType()) {
+		case SINGLE_CPU:
+			renderer = new SingleCPURenderer(currentLevel);
+			break;
+		case MULTI_CPU:
+			renderer = new MultiCPURenderer(currentLevel);
+			break;
+		case OPENCL:
+			renderer = new OCLRenderer(currentLevel);
+			break;
+		default:
+			throw runtime_error("Unknown rendrer type: " + gameConfig->GetRendererType());
+			break;
+	}
 
 	// Start the game
 

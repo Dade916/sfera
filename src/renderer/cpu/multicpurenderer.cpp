@@ -61,7 +61,7 @@ MultiCPURenderer::~MultiCPURenderer() {
 		delete threadPassFrameBuffer[i];
 }
 
-size_t MultiCPURenderer::DrawFrame(const EditActionList &editActionList) {
+size_t MultiCPURenderer::DrawFrame() {
 	const GameConfig &gameConfig(*(gameLevel->gameConfig));
 	const unsigned int width = gameConfig.GetScreenWidth();
 	const unsigned int height = gameConfig.GetScreenHeight();
