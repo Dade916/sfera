@@ -30,5 +30,5 @@ GameSession::~GameSession() {
 }
 
 void GameSession::LoadLevel(const unsigned int level) {
-	currentLevel = new GameLevel(gameConfig, "gamedata/packs/" + packName + "/lvl01-Intro.lvl");
+	currentLevel = new GameLevel(gameConfig, "gamedata/packs/" + packName + "/lvl02-Gravity.lvl");
 }

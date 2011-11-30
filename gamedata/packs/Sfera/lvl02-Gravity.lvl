@@ -1,0 +1,92 @@
+# Player
+player.body.position=0.1 -4.0 1.0
+player.body.radius=0.25
+player.body.lineardamping=0.95
+player.body.angulardamping=0.5
+player.forwardspeed=1.25
+player.jumpspeed=1.0
+# Path
+path.epsilon=0.001
+path.maxdiffusebounces=2
+path.maxspecularglossybounces=4
+# Tone mapping
+film.tonemap.type=LINEAR
+film.tonemap.linear.scale=1.2
+#film.tonemap.reinhard02.type=REINHARD02
+#film.tonemap.reinhard02.prescale=1.0
+#film.tonemap.reinhard02.postscale=1.2
+#film.tonemap.reinhard02.burn=3.75
+################################################################################
+scene.gravity.constant=4.0
+################################################################################
+# Materials
+################################################################################
+scene.materials.whitematte.type=MATTE
+scene.materials.whitematte.kd=0.75 0.75 0.75
+scene.materials.redlight.type=MATTE
+scene.materials.redlight.kd=0.75 0.75 0.75
+scene.materials.redlight.emission=5.0 0.0 0.0
+scene.materials.whitelight.type=MATTE
+scene.materials.whitelight.kd=0.75 0.75 0.75
+scene.materials.whitelight.emission=5.0 5.0 5.0
+scene.materials.whitelight.pilloffmaterial=yes
+scene.materials.whitemetal.type=METAL
+scene.materials.whitemetal.kr=0.75 0.75 0.75
+scene.materials.whitemetal.exp=500.0
+scene.materials.glass.type=GLASS
+scene.materials.glass.kr=0.35 0.75 0.75
+scene.materials.glass.kt=0.35 0.75 0.75
+scene.materials.glass.ior=1.0 1.4
+# Infinite light source
+scene.infinitelight.file=textures/hdr/Brooklyn_Bridge_Planks.exr
+scene.infinitelight.gain=1.0 1.0 1.0
+scene.infinitelight.shift=0.0 0.0
+################################################################################
+# Spheres
+################################################################################
+scene.spheres.world1.geometry=0.0 0.0 -3.0 3.0
+scene.spheres.world1.mass=100.0
+scene.spheres.world1.static=yes
+scene.spheres.world1.attractor=yes
+scene.spheres.world1.material=whitematte
+scene.spheres.world1.bumpmap.scale=5.0
+scene.spheres.world1.texmap.file=textures/planet_Muunilinst1200.png
+scene.spheres.world1.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.pill01.geometry=0.0 0.0 0.3 0.2
+scene.spheres.pill01.material=redlight
+scene.spheres.pill01.static=yes
+scene.spheres.pill01.pill=yes
+scene.spheres.world2.geometry=8.0 0.0 -1.0 4.0
+scene.spheres.world2.mass=100.0
+scene.spheres.world2.static=yes
+scene.spheres.world2.attractor=yes
+scene.spheres.world2.material=whitematte
+scene.spheres.world2.texmap.file=textures/planet_Klendathu1200.png
+scene.spheres.world2.bumpmap.file=textures/planet_Klendathu1200-bumpmap.png
+scene.spheres.world2.bumpmap.scale=5.0
+scene.spheres.pill02.geometry=8.0 0.0 3.3 0.2
+scene.spheres.pill02.material=redlight
+scene.spheres.pill02.static=yes
+scene.spheres.pill02.pill=yes
+scene.spheres.world3.geometry=8.0 2.0 10.0 2.5
+scene.spheres.world3.mass=100.0
+scene.spheres.world3.static=yes
+scene.spheres.world3.attractor=yes
+scene.spheres.world3.material=whitemetal
+scene.spheres.world3.bumpmap.file=textures/planet_Klendathu1200-bumpmap.png
+scene.spheres.world3.bumpmap.scale=5.0
+scene.spheres.pill03.geometry=8.0 2.0 12.8 0.2
+scene.spheres.pill03.material=redlight
+scene.spheres.pill03.static=yes
+scene.spheres.pill03.pill=yes
+scene.spheres.world4.geometry=1.0 5.0 10.0 2.5
+scene.spheres.world4.mass=100.0
+scene.spheres.world4.static=yes
+scene.spheres.world4.attractor=yes
+scene.spheres.world4.material=glass
+scene.spheres.world4.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.world4.bumpmap.scale=5.0
+scene.spheres.pill04.geometry=1.0 5.0 12.8 0.2
+scene.spheres.pill04.material=redlight
+scene.spheres.pill04.static=yes
+scene.spheres.pill04.pill=yes
