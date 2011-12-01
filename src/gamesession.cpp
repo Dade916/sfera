@@ -28,7 +28,8 @@
 using namespace boost::filesystem;
 
 GameSession::GameSession(const GameConfig *cfg, const string &pack) :
-	gameConfig(cfg), packName(pack), currentLevel(NULL), currentLevelNumber(0) {
+	gameConfig(cfg), packName(pack), currentLevel(NULL), currentLevelNumber(0),
+	totalLevelsTime(0.0) {
 	// Build the list of levels
 	string packDir("gamedata/packs/" + pack);
 	SFERA_LOG("Looking for levels inside pack: " << packDir);

@@ -30,18 +30,28 @@ public:
 	DisplaySession(const GameConfig *cfg);
 	~DisplaySession();
 
-	void RunLoop();
+	void RunGame();
 
 	const GameConfig *gameConfig;
 
 private:
-	void RenderText(const string &text, const unsigned int x, const unsigned int y) const;
+	SDL_Surface *CreateText(TTF_Font *textFont, const string &text) const;
+	void FreeText(SDL_Surface *textSurf) const;
+	void RenderText(SDL_Surface *textSurf,
+		const unsigned int x, const unsigned int y) const;
+
+	void RenderText(TTF_Font *textFont, const string &text,
+			const unsigned int x, const unsigned int y) const;
+
+	void RenderMessage(const vector<string> &text) const;
+	void RenderMessage(const string &text) const;
+
+	void DrawLevelLabels(const string &bottomLabel, const string &topLabel) const;
 
 	bool RunLevel(GameSession &gameSession);
 
 	SDL_Surface *screenSurface;
-	TTF_Font *font;
-	int fontSize;
+	TTF_Font *fontText, *fontMsg;
 
 	float startViewTheta, startViewPhi, startViewDistance;
 	int mouseStartX, mouseStartY;

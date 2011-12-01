@@ -35,6 +35,8 @@ public:
 
 	unsigned int GetCurrentLevel() const { return currentLevelNumber; }
 	const string &GetCurrentLevelName() const { return levelNames[currentLevelNumber - 1]; }
+	double GetTotalLevelsTime() const { return totalLevelsTime; }
+	void AddLevelTime(const double t) { totalLevelsTime += t; };
 
 	const GameConfig *gameConfig;
 	const string packName;
@@ -46,6 +48,8 @@ private:
 
 	vector<string> levelNames;
 	unsigned int currentLevelNumber;
+
+	double totalLevelsTime;
 };
 
 #endif	/* _SFERA_GAMESESSION_H */

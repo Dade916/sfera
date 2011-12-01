@@ -156,7 +156,7 @@ int main(int argc, char *argv[]) {
 		config->LogParameters();
 
 		DisplaySession displaySession(config);
-		displaySession.RunLoop();
+		displaySession.RunGame();
 
 		delete config;
 #if !defined(SFERA_DISABLE_OPENCL)

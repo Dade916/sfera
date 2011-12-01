@@ -45,14 +45,16 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 	if (TTF_Init() < 0)
 		throw runtime_error("Unable to initialize SDL TrueType library");
 
-	font = TTF_OpenFont(gameConfig->GetScreenFontName().c_str(), gameConfig->GetScreenFontSize());
-	if (!font)
+	// Normal text font
+	fontText = TTF_OpenFont(gameConfig->GetScreenFontName().c_str(), gameConfig->GetScreenFontSize());
+	if (!fontText)
 		throw runtime_error("Unable to open " + gameConfig->GetScreenFontName() + " font file");
 
-	SDL_Color white = { 255, 255, 255 };
-	SDL_Surface *fontSizeTest = TTF_RenderText_Blended(font, "Test 123", white);
-	fontSize = fontSizeTest->h;
-	SDL_FreeSurface(fontSizeTest);
+	// Big text font
+
+	fontMsg = TTF_OpenFont(gameConfig->GetScreenFontName().c_str(), 3 * gameConfig->GetScreenFontSize());
+	if (!fontMsg)
+		throw runtime_error("Unable to open " + gameConfig->GetScreenFontName() + " big font file");
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
@@ -85,22 +87,50 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 }
 
 DisplaySession::~DisplaySession() {
-	TTF_CloseFont(font);
+	TTF_CloseFont(fontText);
+	TTF_CloseFont(fontMsg);
 	TTF_Quit();
 	SDL_Quit();
 }
 
-void DisplaySession::RenderText(const string &text, const unsigned int x, const unsigned int y) const {
+//------------------------------------------------------------------------------
+// Text related methods
+//------------------------------------------------------------------------------
+
+SDL_Surface *DisplaySession::CreateText(TTF_Font *textFont, const string &text) const {
 	if (text.length() == 0)
-		return;
+		return NULL;
 
 	static SDL_Color white = { 255, 255, 255 };
-	SDL_Surface *initial = TTF_RenderText_Blended(font, text.c_str(), white);
+	return TTF_RenderText_Solid(textFont, text.c_str(), white);
+}
+
+void DisplaySession::FreeText(SDL_Surface *textSurf) const {
+	SDL_FreeSurface(textSurf);
+}
+
+void DisplaySession::RenderText(SDL_Surface *initial,
+		const unsigned int x, const unsigned int y) const {
+	if (!initial)
+		return;
 
 	const int w = RoundUpPow2(initial->w);
 	const int h = RoundUpPow2(initial->h);
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+    const Uint32 rmask = 0xff000000;
+    const Uint32 gmask = 0x00ff0000;
+    const Uint32 bmask = 0x0000ff00;
+    const Uint32 amask = 0x000000ff;
+#else
+    const Uint32 rmask = 0x000000ff;
+    const Uint32 gmask = 0x0000ff00;
+    const Uint32 bmask = 0x00ff0000;
+    const Uint32 amask = 0xff000000;
+#endif
+
 	SDL_Surface *intermediary = SDL_CreateRGBSurface(0, w, h, 32,
-			0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+			rmask, gmask, bmask, amask);
 
 	SDL_Rect dest;
 	dest.x = 0;
@@ -137,9 +167,99 @@ void DisplaySession::RenderText(const string &text, const unsigned int x, const 
 	glEnd();
 	glFinish();
 
-	SDL_FreeSurface(initial);
 	SDL_FreeSurface(intermediary);
 	glDeleteTextures(1, (GLuint *)&texture);
+}
+
+void DisplaySession::RenderText(TTF_Font *textFont, const string &text,
+			const unsigned int x, const unsigned int y) const {
+	SDL_Surface *surf = CreateText(textFont, text);
+	RenderText(surf,x , y);
+	FreeText(surf);
+}
+
+//------------------------------------------------------------------------------
+// Message related methods
+//------------------------------------------------------------------------------
+
+void DisplaySession::RenderMessage(const string &text) const {
+	SDL_Surface *surf = CreateText(fontMsg, text);
+	const unsigned int x = (gameConfig->GetScreenWidth() - surf->w) / 2;
+	const unsigned int y = (gameConfig->GetScreenHeight() - surf->h) / 2;
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glColor4f(0.f, 0.f, 0.f, 1.f);
+	RenderText(fontMsg, text , x + 2, y);
+	glColor4f(1.0f, 1.f, 1.f, 1.f);
+	RenderText(fontMsg, text , x, y + 2);
+	glDisable(GL_BLEND);
+
+	FreeText(surf);
+}
+
+void DisplaySession::RenderMessage(const vector<string> &texts) const {
+	const size_t size = texts.size();
+	if (size == 0)
+		return;
+
+	vector<SDL_Surface *> surfs(texts.size());
+	for (size_t i = 0; i < size; ++i)
+		surfs[i] = CreateText(fontMsg, texts[i]);
+
+	// The space between lines (i.e. 4 pixels)
+	unsigned int totHeight = (size - 1) * 4;
+	for (size_t i = 0; i < size; ++i)
+		totHeight += surfs[i]->h;
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	unsigned int y = (gameConfig->GetScreenHeight() - totHeight) / 2;
+	for (size_t i = 0; i < size; ++i) {
+		size_t index = size - 1 - i;
+		const unsigned int x = (gameConfig->GetScreenWidth() - surfs[index]->w) / 2;
+
+		glColor4f(0.f, 0.f, 0.f, 1.f);
+		RenderText(fontMsg, texts[index] , x + 2, y);
+		glColor4f(1.0f, 1.f, 1.f, 1.f);
+		RenderText(fontMsg, texts[index] , x, y + 2);
+
+		y += surfs[index]->h + 4;
+	}
+	glDisable(GL_BLEND);
+
+	for (size_t i = 0; i < size; ++i)
+		FreeText(surfs[i]);
+}
+
+//------------------------------------------------------------------------------
+// Run related methods
+//------------------------------------------------------------------------------
+
+void DisplaySession::DrawLevelLabels(const string &bottomLabel, const string &topLabel) const {
+
+	SDL_Surface *bottomLabelSurf = CreateText(fontText, bottomLabel);
+	SDL_Surface *topLabelSurf = CreateText(fontText, topLabel);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glColor4f(0.f, 0.f, 0.f, 0.5f);
+	if (bottomLabelSurf)
+		glRecti(0, 0,
+				gameConfig->GetScreenWidth() - 1, bottomLabelSurf->h);
+	if (topLabelSurf)
+		glRecti(0, gameConfig->GetScreenHeight() - topLabelSurf->h - 1,
+				gameConfig->GetScreenWidth() - 1, gameConfig->GetScreenHeight() - 1);
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.f);
+	if (bottomLabelSurf)
+		RenderText(bottomLabelSurf, 0, 0);
+	if (topLabelSurf)
+		RenderText(topLabelSurf, 0, gameConfig->GetScreenHeight() - topLabelSurf->h - 1);
+	glDisable(GL_BLEND);
+
+	FreeText(bottomLabelSurf);
+	FreeText(topLabelSurf);
 }
 
 bool DisplaySession::RunLevel(GameSession &gameSession) {
@@ -300,25 +420,20 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 
 		totalSampleCount += renderer->DrawFrame();
 
+		//----------------------------------------------------------------------
 		// Draw text
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glColor4f(0.f, 0.f, 0.f, 0.5f);
-		glRecti(0, 0,
-				gameConfig->GetScreenWidth() - 1, fontSize);
-		glRecti(0, gameConfig->GetScreenHeight() - fontSize - 1,
-				gameConfig->GetScreenWidth() - 1, gameConfig->GetScreenHeight() - 1);
+		//----------------------------------------------------------------------
 
-		glBlendFunc(GL_ONE, GL_ONE);
-		glColor3f(1.0f, 1.0f, 1.0f);
-		RenderText(bottomLabel, 0, 0);
-		RenderText(topLabel, 0, gameConfig->GetScreenHeight() - fontSize - 1);
-		glDisable(GL_BLEND);
+		DrawLevelLabels(bottomLabel, topLabel);
 
 		SDL_GL_SwapBuffers();
 
-		const double now = WallClockTime();
+		//----------------------------------------------------------------------
 		// Update the bottom label
+		//----------------------------------------------------------------------
+
+		const double now = WallClockTime();
+
 		stringstream ss;
 		ss << "[Spheres " << currentLevel->offPillCount << "/" << currentLevel->scene->pillCount <<
 				"][Time " << fixed << setprecision(2) << now - currentLevel->startTime << "secs]";
@@ -350,29 +465,106 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 			totalSampleCount = 0;
 		}
 
+		//----------------------------------------------------------------------
 		// Check If I have turned off all pills
+		//----------------------------------------------------------------------
+
 		if (currentLevel->offPillCount >= currentLevel->scene->pillCount) {
+			// Done, show the points and exit
 			levelDone = true;
 			quit = true;
 		}
 	} while(!quit);
 
-	delete renderer;
+	// Freeze the world
 	physicThread.Stop();
+
+	//--------------------------------------------------------------------------
+	// Show the end of level result
+	//--------------------------------------------------------------------------
+
+	stringstream ss;
+	if (levelDone) {
+		// Well done
+		const double secs = WallClockTime() - currentLevel->startTime;
+		ss << "Well done: " << fixed << setprecision(2) << secs << " secs";
+		gameSession.AddLevelTime(secs);
+	} else {
+		// Game over
+		ss << "Game Over";
+	}
+	const string msg = ss.str();
+
+	// Wait for a key/mouse event
+	for (bool endWait = false; !endWait;) {
+		renderer->DrawFrame();
+
+		RenderMessage(msg);
+
+		SDL_GL_SwapBuffers();
+
+		SDL_Event event;
+		while (SDL_PollEvent(&event)) {
+			switch (event.type) {
+				case SDL_MOUSEBUTTONDOWN:
+				case SDL_KEYDOWN:
+					endWait = true;
+					break;
+			}
+		}
+
+		boost::this_thread::sleep(boost::posix_time::millisec(100));
+	}
+
+	delete renderer;
 
 	return levelDone;
 }
 
-void DisplaySession::RunLoop() {
+void DisplaySession::RunGame() {
 	GameSession gameSession(gameConfig, "Sfera");
-	gameSession.Begin(2);
+	gameSession.Begin(1);
 
 	for(;;) {
 		if (RunLevel(gameSession)) {
 			if (!gameSession.NextLevel())
 				break;
-		} else
+		} else {
+			// Show the final score
+			vector<string> msg(2);
+
+			stringstream ss;
+			ss << "Level " << gameSession.GetCurrentLevel() - 1;
+			msg[0] = ss.str();
+			ss.str("");
+			ss << "Total time " << fixed << setprecision(2) << gameSession.GetTotalLevelsTime() << " secs";
+			msg[1] = ss.str();
+
+			// Wait for a key/mouse event
+			for (bool endWait = false; !endWait;) {
+				glColor3f(0.25f, 0.25f, 0.25f);
+				glRecti(0, 0,
+						gameConfig->GetScreenWidth() - 1, gameConfig->GetScreenHeight() - 1);
+
+				RenderMessage(msg);
+
+				SDL_GL_SwapBuffers();
+
+				SDL_Event event;
+				while (SDL_PollEvent(&event)) {
+					switch (event.type) {
+						case SDL_MOUSEBUTTONDOWN:
+						case SDL_KEYDOWN:
+							endWait = true;
+							break;
+					}
+				}
+
+				boost::this_thread::sleep(boost::posix_time::millisec(100));
+			}
+
 			break;
+		}
 	}
 
 	SFERA_LOG("Done.");
