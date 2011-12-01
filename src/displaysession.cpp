@@ -426,24 +426,34 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 
 		DrawLevelLabels(bottomLabel, topLabel);
 
+		if (WallClockTime() - currentLevel->startTime < 3.0) {
+			stringstream ss;
+			ss << "Level " << gameSession.GetCurrentLevel();
+			RenderMessage(ss.str());
+		}
+
 		SDL_GL_SwapBuffers();
 
 		//----------------------------------------------------------------------
-		// Update the bottom label
+		// Sleep if we are going too fast
+		//----------------------------------------------------------------------
+
+		currentRefreshTime = WallClockTime() - t1;
+		if (currentRefreshTime < refreshTime) {
+			const unsigned int sleep = (unsigned int)((refreshTime - currentRefreshTime) * 1000.0);
+			boost::this_thread::sleep(boost::posix_time::millisec(sleep));
+		}
+
+		//----------------------------------------------------------------------
+		// Update the bottom and top label
 		//----------------------------------------------------------------------
 
 		const double now = WallClockTime();
 
 		stringstream ss;
-		ss << "[Spheres " << currentLevel->offPillCount << "/" << currentLevel->scene->pillCount <<
+		ss << "[Lights " << currentLevel->offPillCount << "/" << currentLevel->scene->pillCount <<
 				"][Time " << fixed << setprecision(2) << now - currentLevel->startTime << "secs]";
 		bottomLabel = ss.str();
-
-		currentRefreshTime = now - t1;
-		if (currentRefreshTime < refreshTime) {
-			const unsigned int sleep = (unsigned int)((refreshTime - currentRefreshTime) * 1000.0);
-			boost::this_thread::sleep(boost::posix_time::millisec(sleep));
-		}
 
 		++frame;
 		const double dt = now - frameStartTime;
