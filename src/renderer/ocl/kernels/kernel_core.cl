@@ -632,7 +632,7 @@ void Glass_Sample_f(const PARAM_MEM_TYPE GlassParam *mat,
         transDir.z = -nnt * wo->z - nkk.z;
         Normalize(&transDir);
 
-        const float c = 1.f - (into ? -ddn : Dot(&transDir, N));
+        const float c = min(1.f, 1.f - (into ? -ddn : Dot(&transDir, N)));
 
         const float R0 = mat->R0;
         const float Re = R0 + (1.f - R0) * c * c * c * c * c;
@@ -1050,6 +1050,10 @@ __kernel void PathTracing(
 			break;
 		}
 	}
+
+	/*if ((radiance.r < 0.f) || (radiance.g < 0.f) || (radiance.b < 0.f) ||
+			isnan(radiance.r) || isnan(radiance.g) || isnan(radiance.b))
+		printf(\"Error radiance: [%f, %f, %f]\\n\", radiance.r, radiance.g, radiance.b);*/
 
 	__global Pixel *p = &frameBuffer[pixelIndex];
 	p->r += radiance.r * (1.f / PARAM_SCREEN_SAMPLEPERPASS);

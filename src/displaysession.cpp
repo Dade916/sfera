@@ -365,7 +365,7 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 
 void DisplaySession::RunLoop() {
 	GameSession gameSession(gameConfig, "Sfera");
-	gameSession.Begin();
+	gameSession.Begin(2);
 
 	for(;;) {
 		if (RunLevel(gameSession)) {
