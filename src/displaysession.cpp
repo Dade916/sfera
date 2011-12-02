@@ -183,19 +183,26 @@ void DisplaySession::RenderText(TTF_Font *textFont, const string &text,
 //------------------------------------------------------------------------------
 
 void DisplaySession::RenderMessage(const string &text) const {
-	SDL_Surface *surf = CreateText(fontMsg, text);
-	const unsigned int x = (gameConfig->GetScreenWidth() - surf->w) / 2;
-	const unsigned int y = (gameConfig->GetScreenHeight() - surf->h) / 2;
+	// Check if it is a multi-line message
+	if (text.find("\n") != string::npos) {
+		vector<std::string> msgs;
+		boost::split(msgs, text, boost::is_any_of("\n"));
+		RenderMessage(msgs);
+	} else {
+		SDL_Surface *surf = CreateText(fontMsg, text);
+		const unsigned int x = (gameConfig->GetScreenWidth() - surf->w) / 2;
+		const unsigned int y = (gameConfig->GetScreenHeight() - surf->h) / 2;
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glColor4f(0.f, 0.f, 0.f, 1.f);
-	RenderText(fontMsg, text , x + 2, y);
-	glColor4f(1.0f, 1.f, 1.f, 1.f);
-	RenderText(fontMsg, text , x, y + 2);
-	glDisable(GL_BLEND);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glColor4f(0.f, 0.f, 0.f, 1.f);
+		RenderText(fontMsg, text , x + 2, y);
+		glColor4f(1.0f, 1.f, 1.f, 1.f);
+		RenderText(fontMsg, text , x, y + 2);
+		glDisable(GL_BLEND);
 
-	FreeText(surf);
+		FreeText(surf);
+	}
 }
 
 void DisplaySession::RenderMessage(const vector<string> &texts) const {
@@ -428,7 +435,7 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 
 		if (WallClockTime() - currentLevel->startTime < 3.0) {
 			stringstream ss;
-			ss << "Level " << gameSession.GetCurrentLevel();
+			ss << "Level " << gameSession.GetCurrentLevel() << "\n" << gameSession.GetCurrentLevelName();
 			RenderMessage(ss.str());
 		}
 

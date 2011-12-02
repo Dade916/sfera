@@ -54,9 +54,9 @@ GameSession::GameSession(const GameConfig *cfg, const string &pack) :
 			SFERA_LOG("  " << levelName);
 
 			// Check if it is the definition of the level
-			if (levelName.substr(0, 6) == ss.str()) {
+			if (boost::starts_with(levelName, ss.str()) && boost::ends_with(levelName, ".lvl")) {
 				SFERA_LOG("    Used for level: " << level);
-				levelNames.push_back(levelName.substr(6));
+				levelNames.push_back(levelName.substr(6, levelName.length() - 6 - 4));
 
 				// Look for the next level
 				++level;
@@ -93,7 +93,8 @@ bool GameSession::NextLevel() {
 
 void GameSession::LoadLevel(const unsigned int level) {
 	stringstream ss;
-	ss << "gamedata/packs/" + packName + "/lvl" << std::setw(2) << std::setfill('0') << level << "-" + levelNames[level - 1];
+	ss << "gamedata/packs/" + packName + "/lvl" << std::setw(2) << std::setfill('0') <<
+			level << "-" + levelNames[level - 1] << ".lvl";
 
 	currentLevel = new GameLevel(gameConfig, ss.str());
 }

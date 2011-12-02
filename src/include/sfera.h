@@ -27,6 +27,8 @@
 #include <iostream>
 #include <cstddef>
 
+#include <boost/algorithm/string.hpp>
+
 #include <FreeImage.h>
 
 #include <GL/glew.h>
