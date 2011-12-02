@@ -48,6 +48,8 @@ private:
 
 	void DrawLevelLabels(const string &bottomLabel, const string &topLabel) const;
 
+	bool RunIntro();
+	void RunGameSession(const string &pack);
 	bool RunLevel(GameSession &gameSession);
 
 	SDL_Surface *screenSurface;

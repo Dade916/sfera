@@ -195,7 +195,7 @@ void DisplaySession::RenderMessage(const string &text) const {
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glColor4f(0.f, 0.f, 0.f, 1.f);
+		glColor4f(0.25f, 0.25f, 0.25f, 1.f);
 		RenderText(fontMsg, text , x + 2, y);
 		glColor4f(1.0f, 1.f, 1.f, 1.f);
 		RenderText(fontMsg, text , x, y + 2);
@@ -226,7 +226,7 @@ void DisplaySession::RenderMessage(const vector<string> &texts) const {
 		size_t index = size - 1 - i;
 		const unsigned int x = (gameConfig->GetScreenWidth() - surfs[index]->w) / 2;
 
-		glColor4f(0.f, 0.f, 0.f, 1.f);
+		glColor4f(0.25f, 0.25f, 0.25f, 1.f);
 		RenderText(fontMsg, texts[index] , x + 2, y);
 		glColor4f(1.0f, 1.f, 1.f, 1.f);
 		RenderText(fontMsg, texts[index] , x, y + 2);
@@ -523,8 +523,8 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
-				case SDL_MOUSEBUTTONDOWN:
-				case SDL_KEYDOWN:
+				case SDL_MOUSEBUTTONUP:
+				case SDL_KEYUP:
 					endWait = true;
 					break;
 			}
@@ -538,8 +538,57 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 	return levelDone;
 }
 
-void DisplaySession::RunGame() {
-	GameSession gameSession(gameConfig, "Sfera");
+bool DisplaySession::RunIntro() {
+	const string introMsg = "Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSION_MINOR "\nWritten by\nDavid \"Dade\" Bucciarelli";
+
+	bool quit = false;
+	for(;;) {
+		// Wait for a key/mouse event
+		for (bool endWait = false; !endWait;) {
+			glColor3f(0.0f, 0.0f, 0.0f);
+			glRecti(0, 0,
+					gameConfig->GetScreenWidth() - 1, gameConfig->GetScreenHeight() - 1);
+
+			RenderMessage(introMsg);
+
+			SDL_GL_SwapBuffers();
+
+			SDL_Event event;
+			while (SDL_PollEvent(&event)) {
+				switch (event.type) {
+					case SDL_KEYUP: {
+						switch (event.key.keysym.sym) {
+							case SDLK_ESCAPE:
+								quit = true;
+								endWait = true;
+								break;
+							default:
+								endWait = true;
+								break;
+						}
+						break;
+					}
+					case SDL_QUIT:
+						quit = true;
+						endWait = true;
+						break;
+					case SDL_MOUSEBUTTONUP:
+						endWait = true;
+						break;
+				}
+			}
+
+			boost::this_thread::sleep(boost::posix_time::millisec(100));
+		}
+
+		break;
+	}
+
+	return quit;
+}
+
+void DisplaySession::RunGameSession(const string &pack) {
+	GameSession gameSession(gameConfig, pack);
 	gameSession.Begin(1);
 
 	for(;;) {
@@ -548,18 +597,14 @@ void DisplaySession::RunGame() {
 				break;
 		} else {
 			// Show the final score
-			vector<string> msg(2);
-
 			stringstream ss;
-			ss << "Level " << gameSession.GetCurrentLevel() - 1;
-			msg[0] = ss.str();
-			ss.str("");
-			ss << "Total time " << fixed << setprecision(2) << gameSession.GetTotalLevelsTime() << " secs";
-			msg[1] = ss.str();
+			ss << "Level " << gameSession.GetCurrentLevel() - 1 <<
+					"\nTotal time " << fixed << setprecision(2) << gameSession.GetTotalLevelsTime() << " secs";
+			const string msg = ss.str();
 
 			// Wait for a key/mouse event
 			for (bool endWait = false; !endWait;) {
-				glColor3f(0.25f, 0.25f, 0.25f);
+				glColor3f(0.f, 0.f, 0.f);
 				glRecti(0, 0,
 						gameConfig->GetScreenWidth() - 1, gameConfig->GetScreenHeight() - 1);
 
@@ -570,8 +615,8 @@ void DisplaySession::RunGame() {
 				SDL_Event event;
 				while (SDL_PollEvent(&event)) {
 					switch (event.type) {
-						case SDL_MOUSEBUTTONDOWN:
-						case SDL_KEYDOWN:
+						case SDL_MOUSEBUTTONUP:
+						case SDL_KEYUP:
 							endWait = true;
 							break;
 					}
@@ -583,6 +628,23 @@ void DisplaySession::RunGame() {
 			break;
 		}
 	}
+
+	SFERA_LOG("Game Session is over");
+}
+
+void DisplaySession::RunGame() {
+	bool quit = false;
+
+	do {
+		if (RunIntro()) {
+			// I have to quit
+			quit = true;
+		}
+
+		if (!quit) {
+			RunGameSession("Sfera");
+		}
+	} while (!quit);
 
 	SFERA_LOG("Done.");
 }
