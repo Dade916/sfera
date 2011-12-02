@@ -1,0 +1,113 @@
+# Player
+player.body.position=0.0 -5.0 1.0
+player.body.radius=0.25
+player.body.lineardamping=0.95
+player.body.angulardamping=0.5
+player.forwardspeed=1.25
+player.jumpspeed=1.4
+# Path
+path.epsilon=0.001
+path.maxdiffusebounces=2
+path.maxspecularglossybounces=4
+# Tone mapping
+film.tonemap.type=LINEAR
+film.tonemap.linear.scale=1.0
+################################################################################
+scene.gravity.constant=5.0
+################################################################################
+# Materials
+################################################################################
+scene.materials.worldmat.type=MIRROR
+scene.materials.worldmat.kr=0.75 0.75 0.75
+scene.materials.redmatte.type=MATTE
+scene.materials.redmatte.kd=0.75 0.0 0.0
+scene.materials.pillmat.type=MATTE
+scene.materials.pillmat.kd=0.75 0.75 0.75
+scene.materials.pillmat.emission=2.0 0.0 0.0
+scene.materials.whitelight.type=MATTE
+scene.materials.whitelight.kd=0.75 0.75 0.75
+scene.materials.whitelight.emission=5.0 5.0 5.0
+scene.materials.whitelight.pilloffmaterial=yes
+scene.materials.whitemetal.type=METAL
+scene.materials.whitemetal.kr=0.75 0.75 0.75
+scene.materials.whitemetal.exp=50.0
+# Infinite light source
+scene.infinitelight.file=textures/hdr/Ridgecrest_Road_Ref.exr
+scene.infinitelight.gain=1.0 1.0 1.0
+scene.infinitelight.shift=0.0 0.0
+################################################################################
+# Spheres
+################################################################################
+scene.spheres.world1.geometry=0.0 0.0 -50.0 50.0
+scene.spheres.world1.mass=10000.0
+scene.spheres.world1.static=yes
+scene.spheres.world1.attractor=yes
+scene.spheres.world1.material=worldmat
+scene.spheres.world1.texmap.file=textures/check.png
+scene.spheres.world1.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.world1.texmap.scale=10.0 50.0
+scene.spheres.world1.texmap.shift=0.0 0.0
+################################################################################
+scene.spheres.w1s01.geometry=-1.0 -1.0 3.0 0.75
+scene.spheres.w1s01.material=whitemetal
+scene.spheres.w1s01.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.w1s01.static=yes
+scene.spheres.w1s02.geometry=-1.0 0.0 3.0 0.75
+scene.spheres.w1s02.material=whitemetal
+scene.spheres.w1s02.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.w1s02.static=yes
+scene.spheres.w1s03.geometry=-1.0 1.0 3.0 0.75
+scene.spheres.w1s03.material=whitemetal
+scene.spheres.w1s03.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.w1s03.static=yes
+scene.spheres.w1s11.geometry=0.0 -1.0 3.0 0.75
+scene.spheres.w1s11.material=whitemetal
+scene.spheres.w1s11.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.w1s11.static=yes
+scene.spheres.w1s12.geometry=0.0 0.0 3.0 0.75
+scene.spheres.w1s12.material=whitemetal
+scene.spheres.w1s12.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.w1s12.static=yes
+scene.spheres.w1s13.geometry=0.0 1.0 3.0 0.75
+scene.spheres.w1s13.material=whitemetal
+scene.spheres.w1s13.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.w1s13.static=yes
+scene.spheres.w1s21.geometry=1.0 -1.0 3.0 0.75
+scene.spheres.w1s21.material=whitemetal
+scene.spheres.w1s21.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.w1s21.static=yes
+scene.spheres.w1s22.geometry=1.0 0.0 3.0 0.75
+scene.spheres.w1s22.material=whitemetal
+scene.spheres.w1s22.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.w1s22.static=yes
+scene.spheres.w1s23.geometry=1.0 1.0 3.0 0.75
+scene.spheres.w1s23.material=whitemetal
+scene.spheres.w1s23.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.w1s23.static=yes
+scene.spheres.w1s0.geometry=0.0 0.0 0.25 0.75
+scene.spheres.w1s0.material=whitemetal
+scene.spheres.w1s0.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.w1s0.static=yes
+scene.spheres.w1s1.geometry=0.0 0.0 1.0 0.75
+scene.spheres.w1s1.material=whitemetal
+scene.spheres.w1s1.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.w1s1.static=yes
+scene.spheres.w1s2.geometry=0.0 0.0 2.0 0.75
+scene.spheres.w1s2.material=whitemetal
+scene.spheres.w1s2.bumpmap.file=textures/planet_Muunilinst1200-bumpmap.png
+scene.spheres.w1s2.static=yes
+scene.spheres.bigpill.geometry=0.0 0.0 5.0 0.25
+scene.spheres.bigpill.material=pillmat
+scene.spheres.bigpill.pill=yes
+scene.spheres.pill01.geometry=10.0 0.0 1.0 0.5
+scene.spheres.pill01.material=pillmat
+scene.spheres.pill01.pill=yes
+scene.spheres.pill02.geometry=-10.0 0.0 1.0 0.5
+scene.spheres.pill02.material=pillmat
+scene.spheres.pill02.pill=yes
+scene.spheres.pill03.geometry=0.0 10.0 1.0 0.5
+scene.spheres.pill03.material=pillmat
+scene.spheres.pill03.pill=yes
+scene.spheres.pill04.geometry=0.0 -10.0 1.0 0.5
+scene.spheres.pill04.material=pillmat
+scene.spheres.pill04.pill=yes

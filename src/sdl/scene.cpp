@@ -204,9 +204,9 @@ void Scene::CreateMaterial(const string &propName, const Properties &prop) {
 
 		mat = new MetalMaterial(col, exp);
 	} else if (matType == "ALLOY") {
-		const vector<float> vf = Properties::GetParameters(prop, propName + ".kr", 3, "1.0 1.0 1.0");
+		const vector<float> vf = Properties::GetParameters(prop, propName + ".kd", 3, "1.0 1.0 1.0");
 		const Spectrum Kd(vf[0], vf[1], vf[2]);
-		const vector<float> vf1 = Properties::GetParameters(prop, propName + ".kt", 3, "1.0 1.0 1.0");
+		const vector<float> vf1 = Properties::GetParameters(prop, propName + ".kr", 3, "1.0 1.0 1.0");
 		const Spectrum Kr(vf1[0], vf1[1], vf1[2]);
 		const float exp = prop.GetFloat(propName + ".exp", 10.f);
 		const float schlick = prop.GetFloat(propName + ".schlick", .8f);

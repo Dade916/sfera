@@ -589,7 +589,7 @@ bool DisplaySession::RunIntro() {
 
 void DisplaySession::RunGameSession(const string &pack) {
 	GameSession gameSession(gameConfig, pack);
-	gameSession.Begin(1);
+	gameSession.Begin(3);
 
 	for(;;) {
 		if (RunLevel(gameSession)) {

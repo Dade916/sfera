@@ -12,10 +12,6 @@ path.maxspecularglossybounces=4
 # Tone mapping
 film.tonemap.type=LINEAR
 film.tonemap.linear.scale=1.2
-#film.tonemap.reinhard02.type=REINHARD02
-#film.tonemap.reinhard02.prescale=1.0
-#film.tonemap.reinhard02.postscale=1.2
-#film.tonemap.reinhard02.burn=3.75
 ################################################################################
 scene.gravity.constant=4.0
 ################################################################################
