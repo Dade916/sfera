@@ -94,6 +94,7 @@ set(Sfera_SRCS
 	sdl/texmap.cpp
 	sfera.cpp
 	utils/oclutils.cpp
+	utils/rendertext.cpp
 	utils/properties.cpp
 	)
 

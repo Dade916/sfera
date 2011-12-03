@@ -18,39 +18,42 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_DISPLAYSESSION_H
-#define	_SFERA_DISPLAYSESSION_H
+#ifndef _SFERA_RENDERTEXT_H
+#define	_SFERA_RENDERTEXT_H
 
 #include "sfera.h"
 #include "gameconfig.h"
-#include "gamesession.h"
-#include "utils/rendertext.h"
 
-class DisplaySession {
+class RenderText {
 public:
-	DisplaySession(const GameConfig *cfg);
-	~DisplaySession();
+	RenderText(const GameConfig *cfg, TTF_Font *small, TTF_Font *medium, TTF_Font *big);
+	~RenderText() { }
 
-	void RunGame();
+	// Single line text
+	SDL_Surface *Create(const string &text) const;
+	void Free(SDL_Surface *textSurf) const;
+	void Draw(SDL_Surface *textSurf,
+		const unsigned int x, const unsigned int y, const bool shadow = false) const;
+	// An utility method
+	void Draw(const string &text,
+			const unsigned int x, const unsigned int y,
+			const bool shadow = false) const {
+		SDL_Surface *surf = Create(text);
+		Draw(surf,x ,y, shadow);
+		Free(surf);
+	}
 
-	const GameConfig *gameConfig;
+	// Multi-line text
+	void Draw(const string &text, const bool shadow = false) const;
 
 private:
-	void DrawLevelLabels(const string &bottomLabel, const string &topLabel) const;
+	void Draw(const vector<string> &text, const bool shadow = false) const;
+	void Print(SDL_Surface *textSurf,
+		const unsigned int x, const unsigned int y) const;
 
-	bool RunIntro();
-	void RunGameSession(const string &pack);
-	bool RunLevel(GameSession &gameSession);
-
-	SDL_Surface *screenSurface;
-
+	const GameConfig *gameConfig;
 	TTF_Font *fontSmall, *fontMedium, *fontBig;
-	RenderText *renderText;
-
-	float startViewTheta, startViewPhi, startViewDistance;
-	int mouseStartX, mouseStartY;
-	bool leftMouseDown, rightMouseDown;
 };
 
-#endif	/* _SFERA_DISPLAYSESSION_H */
+#endif	/* _SFERA_RENDERTEXT_H */
 
