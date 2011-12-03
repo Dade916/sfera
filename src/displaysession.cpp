@@ -513,6 +513,7 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 	const string msg = ss.str();
 
 	// Wait for a key/mouse event
+	const double startTime = WallClockTime();
 	for (bool endWait = false; !endWait;) {
 		renderer->DrawFrame();
 
@@ -523,9 +524,11 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
-				case SDL_MOUSEBUTTONUP:
-				case SDL_KEYUP:
-					endWait = true;
+				case SDL_MOUSEBUTTONDOWN:
+				case SDL_KEYDOWN:
+					// Wait at least 1sec
+					if (WallClockTime() - startTime > 1.0)
+						endWait = true;
 					break;
 			}
 		}
@@ -556,7 +559,7 @@ bool DisplaySession::RunIntro() {
 			SDL_Event event;
 			while (SDL_PollEvent(&event)) {
 				switch (event.type) {
-					case SDL_KEYUP: {
+					case SDL_KEYDOWN: {
 						switch (event.key.keysym.sym) {
 							case SDLK_ESCAPE:
 								quit = true;
@@ -572,7 +575,7 @@ bool DisplaySession::RunIntro() {
 						quit = true;
 						endWait = true;
 						break;
-					case SDL_MOUSEBUTTONUP:
+					case SDL_MOUSEBUTTONDOWN:
 						endWait = true;
 						break;
 				}
@@ -589,7 +592,7 @@ bool DisplaySession::RunIntro() {
 
 void DisplaySession::RunGameSession(const string &pack) {
 	GameSession gameSession(gameConfig, pack);
-	gameSession.Begin(3);
+	gameSession.Begin();
 
 	for(;;) {
 		if (RunLevel(gameSession)) {
@@ -603,6 +606,7 @@ void DisplaySession::RunGameSession(const string &pack) {
 			const string msg = ss.str();
 
 			// Wait for a key/mouse event
+			const double startTime = WallClockTime();
 			for (bool endWait = false; !endWait;) {
 				glColor3f(0.f, 0.f, 0.f);
 				glRecti(0, 0,
@@ -615,9 +619,11 @@ void DisplaySession::RunGameSession(const string &pack) {
 				SDL_Event event;
 				while (SDL_PollEvent(&event)) {
 					switch (event.type) {
-						case SDL_MOUSEBUTTONUP:
-						case SDL_KEYUP:
-							endWait = true;
+						case SDL_MOUSEBUTTONDOWN:
+						case SDL_KEYDOWN:
+							// Wait at least 1sec
+							if (WallClockTime() - startTime > 1.0)
+								endWait = true;
 							break;
 					}
 				}
