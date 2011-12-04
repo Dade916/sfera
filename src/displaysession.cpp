@@ -26,6 +26,7 @@
 #include "renderer/ocl/oclrenderer.h"
 #include "physic/gamephysic.h"
 #include "sdl/editaction.h"
+#include "utils/packlist.h"
 
 static const string SFERA_LABEL = "Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSION_MINOR " (Written by David \"Dade\" Bucciarelli)";
 
@@ -451,7 +452,7 @@ bool DisplaySession::RunIntro() {
 
 void DisplaySession::RunGameSession(const string &pack) {
 	GameSession gameSession(gameConfig, pack);
-	gameSession.Begin(4);
+	gameSession.Begin();
 
 	for(;;) {
 		if (RunLevel(gameSession)) {
@@ -497,6 +498,120 @@ void DisplaySession::RunGameSession(const string &pack) {
 	SFERA_LOG("Game Session is over");
 }
 
+bool DisplaySession::RunPackSelection(string *pack) {
+	const unsigned int interline = 4;
+
+	vector<SDL_Surface *> header;
+	header.push_back(renderText->Create("[font=medium] Select a level pack:"));
+	header.push_back(renderText->Create("[font=medium] "));
+	const unsigned int headerSize = header[0]->h + header[1]->h + interline;
+
+	// Add the list of packs
+	PackList packList;
+	vector<SDL_Surface *> options;
+	size_t selected = 0;
+	unsigned int optionsSize = interline * packList.names.size() - 1;
+	for (size_t i = 0; i < packList.names.size(); ++i) {
+		if ("Sfera" == packList.names[i])
+			selected = i;
+
+		options.push_back(renderText->Create("[font=medium]" + packList.names[i]));
+		optionsSize += options[i]->h;
+	}
+
+	vector<SDL_Surface *> footer;
+	footer.push_back(renderText->Create("[font=medium] "));
+	footer.push_back(renderText->Create("[font=small](Press the space bar to select)"));
+
+	bool quit = false;
+	const unsigned int width = gameConfig->GetScreenWidth();
+	const unsigned int height = gameConfig->GetScreenHeight();
+	for(;;) {
+		// Wait for a key/mouse event
+		for (bool endWait = false; !endWait;) {
+			// Background
+			glColor3f(0.0f, 0.0f, 0.0f);
+			glRecti(0, 0, width, height);
+
+			// Selection box
+			glColor3f(0.0f, 0.0f, 1.0f);
+			unsigned int offset = (height - options[selected]->h) / 2;
+			glRecti((width - options[selected]->w) / 2 - 1, offset - 1,
+					(width - options[selected]->w) / 2 + options[selected]->w + 1, offset + options[selected]->h + 1);
+
+			// Draw the menu
+			glColor3f(1.0f, 1.0f, 1.0f);
+			for (size_t i = 0; i < selected; ++i)
+				offset += options[selected]->h + interline;
+			offset += headerSize;
+
+			// Draw header
+			for (size_t i = 0; i < header.size(); ++i) {
+				renderText->Draw(header[i],
+						(width - header[i]->w) / 2, offset,
+						true);
+
+				offset -= options[i]->h + interline;
+			}
+
+			// Draw options
+			for (size_t i = 0; i < options.size(); ++i) {
+				renderText->Draw(options[i],
+						(width - options[i]->w) / 2, offset,
+						false);
+
+				offset -= options[i]->h + interline;
+			}
+
+			// Draw footer
+			for (size_t i = 0; i < footer.size(); ++i) {
+				renderText->Draw(footer[i],
+						(width - footer[i]->w) / 2, offset,
+						true);
+
+				offset -= footer[i]->h + interline;
+			}
+
+			SDL_GL_SwapBuffers();
+
+			SDL_Event event;
+			while (SDL_PollEvent(&event)) {
+				switch (event.type) {
+					case SDL_KEYDOWN: {
+						switch (event.key.keysym.sym) {
+							case SDLK_ESCAPE:
+								quit = true;
+								endWait = true;
+								break;
+							case SDLK_UP:
+								selected = Max<size_t>(0, selected - 1);
+								break;
+							case SDLK_DOWN:
+								selected = Min<size_t>(options.size() - 1, selected + 1);
+								break;
+							default:
+								endWait = true;
+								break;
+						}
+						break;
+					}
+					case SDL_QUIT:
+						quit = true;
+						endWait = true;
+						break;
+				}
+			}
+
+			boost::this_thread::sleep(boost::posix_time::millisec(100));
+		}
+
+		break;
+	}
+
+	*pack = packList.names[selected];
+	return quit;
+}
+
 void DisplaySession::RunGame() {
 	bool quit = false;
 
@@ -507,8 +622,14 @@ void DisplaySession::RunGame() {
 		}
 
 		if (!quit) {
-			RunGameSession("Sfera");
-			//RunGameSession("Benchmark");
+			string pack;
+			if (RunPackSelection(&pack)) {
+				// I have to quit
+				quit = true;
+			}
+
+			if (!quit)
+				RunGameSession(pack);
 		}
 	} while (!quit);
 

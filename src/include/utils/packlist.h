@@ -18,40 +18,18 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_DISPLAYSESSION_H
-#define	_SFERA_DISPLAYSESSION_H
+#ifndef _SFERA_PACKLIST_H
+#define	_SFERA_PACKLIST_H
 
 #include "sfera.h"
-#include "gameconfig.h"
-#include "gamesession.h"
-#include "utils/rendertext.h"
 
-class DisplaySession {
+class PackList {
 public:
-	DisplaySession(const GameConfig *cfg);
-	~DisplaySession();
+	PackList();
+	~PackList() { }
 
-	void RunGame();
-
-	const GameConfig *gameConfig;
-
-private:
-	void DrawLevelLabels(const string &bottomLabel, const string &topLabel) const;
-
-	bool RunIntro();
-	bool RunPackSelection(string *pack);
-	void RunGameSession(const string &pack);
-	bool RunLevel(GameSession &gameSession);
-
-	SDL_Surface *screenSurface;
-
-	TTF_Font *fontSmall, *fontMedium, *fontBig;
-	RenderText *renderText;
-
-	float startViewTheta, startViewPhi, startViewDistance;
-	int mouseStartX, mouseStartY;
-	bool leftMouseDown, rightMouseDown;
+	vector<string> names;
 };
 
-#endif	/* _SFERA_DISPLAYSESSION_H */
+#endif	/* _SFERA_PACKLIST_H */
 

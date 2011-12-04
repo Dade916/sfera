@@ -101,7 +101,7 @@ SDL_Surface *RenderText::Create(const string &text) const {
 	else if (boost::starts_with(text, "[font=medium]"))
 		return TTF_RenderText_Solid(fontMedium, text.c_str() + 13, white);
 	else if (boost::starts_with(text, "[font=small]"))
-		return TTF_RenderText_Solid(fontSmall, text.c_str() + 11, white);
+		return TTF_RenderText_Solid(fontSmall, text.c_str() + 12, white);
 	else
 		return TTF_RenderText_Solid(fontSmall, text.c_str(), white);
 }
@@ -113,16 +113,20 @@ void RenderText::Free(SDL_Surface *textSurf) const {
 void RenderText::Draw(SDL_Surface *textSurf,
 			const unsigned int x, const unsigned int y,
 		const bool shadow) const {
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	if (shadow) {
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glColor4f(0.25f, 0.25f, 0.25f, 1.f);
 		Print(textSurf, x + 2, y);
 		glColor4f(1.0f, 1.f, 1.f, 1.f);
 		Print(textSurf, x, y + 2);
-		glDisable(GL_BLEND);
-	} else
+	} else {
+		glColor4f(1.0f, 1.f, 1.f, 1.f);
 		Print(textSurf, x , y);
+	}
+
+	glDisable(GL_BLEND);
 }
 
 void RenderText::Draw(const string &text, const bool shadow) const {

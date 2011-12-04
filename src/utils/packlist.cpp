@@ -18,40 +18,41 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_DISPLAYSESSION_H
-#define	_SFERA_DISPLAYSESSION_H
+#include <boost/filesystem.hpp>
 
-#include "sfera.h"
-#include "gameconfig.h"
-#include "gamesession.h"
-#include "utils/rendertext.h"
+using namespace boost::filesystem;
 
-class DisplaySession {
-public:
-	DisplaySession(const GameConfig *cfg);
-	~DisplaySession();
+#include "utils/packlist.h"
 
-	void RunGame();
+PackList::PackList() {
+	// Build the list of packs
+	string dir("gamedata/packs");
+	SFERA_LOG("Looking for packs in: " << dir);
+	try {
+		path dirPath(dir);
 
-	const GameConfig *gameConfig;
+		if (!exists(dirPath))
+			throw runtime_error(dir + " directory doesn't exist");
+		if (!is_directory(dirPath))
+			throw runtime_error(dir + " is not a directory");
 
-private:
-	void DrawLevelLabels(const string &bottomLabel, const string &topLabel) const;
+        vector<path> packDirs;
+        copy(directory_iterator(dirPath), directory_iterator(), back_inserter(packDirs));
+        sort(packDirs.begin(), packDirs.end());
 
-	bool RunIntro();
-	bool RunPackSelection(string *pack);
-	void RunGameSession(const string &pack);
-	bool RunLevel(GameSession &gameSession);
+		for (vector<path>::const_iterator it(packDirs.begin()); it != packDirs.end(); ++it) {
+			string packName = it->filename();
+			SFERA_LOG("  " << packName);
 
-	SDL_Surface *screenSurface;
-
-	TTF_Font *fontSmall, *fontMedium, *fontBig;
-	RenderText *renderText;
-
-	float startViewTheta, startViewPhi, startViewDistance;
-	int mouseStartX, mouseStartY;
-	bool leftMouseDown, rightMouseDown;
-};
-
-#endif	/* _SFERA_DISPLAYSESSION_H */
-
+			// Check if it is the definition of a pack
+			if (is_directory(dir + "/" + packName)) {
+				SFERA_LOG("    ACCEPTED");
+				names.push_back(packName);
+			} else {
+				SFERA_LOG("    REJECTED");
+			}
+		}
+	} catch (const filesystem_error &ex) {
+		SFERA_LOG("Error reading the packs in: " << dir << endl << "Error: "<< ex.what());
+	}
+}

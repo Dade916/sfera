@@ -1,6 +1,9 @@
 Sfera
 =====
 
+Sfera is a game, mostly written using OpenCL and OpenGL, using real-time path
+tracing rendering. It includes a Bullet Physics based engine.
+
 Authors
 =======
 
@@ -13,6 +16,7 @@ A special thanks goes to:
 
 - http://www.bulletphysics.org for the physic engine;
 - FreeImage open source image library. See http://freeimage.sourceforge.net for details;
+- Simple DirectMedia Layer for cross-platform multimedia library. See http://www.libsdl.org for details;
 - http://www.hdrlabs.com/sibl/archive.html for HDR maps;
 - http://freebitmaps.blogspot.com for planet texture maps;
 
