@@ -125,6 +125,8 @@ size_t OCLRenderer::DrawFrame() {
 	//--------------------------------------------------------------------------
 
 	{
+		//const double t1 = WallClockTime();
+
 		boost::unique_lock<boost::mutex> lock(gameLevel->levelMutex);
 		compiledScene->Recompile(gameLevel->editActionList);
 		gameLevel->editActionList.Reset();
@@ -145,6 +147,8 @@ size_t OCLRenderer::DrawFrame() {
 
 		blendFactor = (1.f - k) * gameConfig.GetRendererGhostFactorCameraEdit() +
 			k * gameConfig.GetRendererGhostFactorNoCameraEdit();
+
+		//SFERA_LOG("Mutex time: " << ((WallClockTime() - t1) * 1000.0));
 	}
 
 	//--------------------------------------------------------------------------
@@ -484,6 +488,16 @@ OCLRendererThread::~OCLRendererThread() {
 	delete cpuFrameBuffer;
 }
 
+void OCLRendererThread::PrintMemUsage(const size_t size, const string &desc) const {
+	if (size / 1024 < 10) {
+		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << size << "bytes");
+	} else if (size / (1024 * 1024) < 10) {
+		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
+	} else {
+		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << (size / (1024 * 1024)) << "Mbytes");
+	}
+}
+
 void OCLRendererThread::AllocOCLBufferRO(cl::Buffer **buff, const size_t size, const string &desc) {
 	if (*buff) {
 		// Check the size of the already allocated buffer
@@ -495,11 +509,7 @@ void OCLRendererThread::AllocOCLBufferRO(cl::Buffer **buff, const size_t size, c
 			FreeOCLBuffer(buff);
 	}
 
-	if (size / 1024 < 10) {
-		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << size << "bytes");
-	} else {
-		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
-	}
+	PrintMemUsage(size, desc);
 
 	*buff = new cl::Buffer(*ctx,
 			CL_MEM_READ_ONLY,
@@ -519,11 +529,7 @@ void OCLRendererThread::AllocOCLBufferRO(cl::Buffer **buff, void *src, const siz
 			FreeOCLBuffer(buff);
 	}
 
-	if (size / 1024 < 10) {
-		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << size << "bytes");
-	} else {
-		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
-	}
+	PrintMemUsage(size, desc);
 
 	*buff = new cl::Buffer(*ctx,
 			CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
@@ -542,11 +548,7 @@ void OCLRendererThread::AllocOCLBufferRW(cl::Buffer **buff, const size_t size, c
 			FreeOCLBuffer(buff);
 	}
 
-	if (size / 1024 < 10) {
-		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << size << "bytes");
-	} else {
-		SFERA_LOG("[OCLRenderer::" << index << "] " << desc << " buffer size: " << (size / 1024) << "Kbytes");
-	}
+	PrintMemUsage(size, desc);
 
 	*buff = new cl::Buffer(*ctx, CL_MEM_READ_WRITE, size);
 	usedDeviceMemory += (*buff)->getInfo<CL_MEM_SIZE>();

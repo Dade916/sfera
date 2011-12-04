@@ -83,6 +83,7 @@ private:
 	static void OCLRenderThreadStaticImpl(OCLRendererThread *renderThread);
 	void OCLRenderThreadImpl();
 
+	void PrintMemUsage(const size_t size, const string &desc) const;
 	void AllocOCLBufferRO(cl::Buffer **buff, const size_t size, const string &desc);
 	void AllocOCLBufferRO(cl::Buffer **buff, void *src, const size_t size, const string &desc);
 	void AllocOCLBufferRW(cl::Buffer **buff, const size_t size, const string &desc);

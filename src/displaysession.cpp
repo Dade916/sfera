@@ -507,7 +507,8 @@ void DisplaySession::RunGame() {
 		}
 
 		if (!quit) {
-			RunGameSession("Sfera");
+			//RunGameSession("Sfera");
+			RunGameSession("Benchmark");
 		}
 	} while (!quit);
 
