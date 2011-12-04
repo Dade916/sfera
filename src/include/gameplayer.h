@@ -39,10 +39,7 @@ public:
 	GamePlayer(const Properties &prop);
 	~GamePlayer();
 
-	void UpdateLocalCoordSystem() {
-		right = Normalize(Cross(front, up));
-		front = Normalize(Cross(up, right));
-	}
+	void UpdateLocalCoordSystem();
 	void ApplyInputs();
 	void UpdatePuppet();
 	void UpdateCamera(PerspectiveCamera &camera,

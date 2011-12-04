@@ -451,7 +451,7 @@ bool DisplaySession::RunIntro() {
 
 void DisplaySession::RunGameSession(const string &pack) {
 	GameSession gameSession(gameConfig, pack);
-	gameSession.Begin();
+	gameSession.Begin(4);
 
 	for(;;) {
 		if (RunLevel(gameSession)) {
@@ -507,8 +507,8 @@ void DisplaySession::RunGame() {
 		}
 
 		if (!quit) {
-			//RunGameSession("Sfera");
-			RunGameSession("Benchmark");
+			RunGameSession("Sfera");
+			//RunGameSession("Benchmark");
 		}
 	} while (!quit);
 

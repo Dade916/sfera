@@ -67,6 +67,14 @@ GamePlayer::GamePlayer(const Properties &prop)  {
 GamePlayer::~GamePlayer() {
 }
 
+void GamePlayer::UpdateLocalCoordSystem() {
+	if (AbsDot(front, up) > 1.f - EPSILON)
+		CoordinateSystem(up, &front, &right);
+
+	right = Normalize(Cross(front, up));
+	front = Normalize(Cross(up, right));
+}
+
 void GamePlayer::UpdateCamera(PerspectiveCamera &camera,
 		const unsigned int filmWidth, const unsigned int filmHeight) const {
 	camera.target = body.sphere.center;

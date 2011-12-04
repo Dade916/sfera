@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 
-$maxDepth = 4.0;
+# Benchmark pack
+#$maxDepth = 4.0;
+# Sfera pack
+$maxDepth = 2.0;
 $nameIndex = 0;
 
 sub PrintSphere {
