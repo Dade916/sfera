@@ -18,9 +18,8 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "sfera.h"
 #include "sdl/editaction.h"
-
-
 #include "renderer/cpu/cpurenderer.h"
 
 CPURenderer::CPURenderer(GameLevel *level) :

@@ -18,6 +18,7 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "sfera.h"
 #include "sdl/editaction.h"
 #include "acceleretor/bvhaccel.h"
 #include "renderer/cpu/singlecpurenderer.h"

@@ -58,6 +58,24 @@
 #endif
 #endif
 
+#if defined(__linux__) || defined(__APPLE__) || defined(__CYGWIN__)
+#include <stddef.h>
+#include <sys/time.h>
+#endif
+
+inline double WallClockTime() {
+#if defined(__linux__) || defined(__APPLE__) || defined(__CYGWIN__)
+	struct timeval t;
+	gettimeofday(&t, NULL);
+
+	return t.tv_sec + t.tv_usec / 1000000.0;
+#elif defined (WIN32)
+	return SDL_GetTicks() / 1000.0;
+#else
+#error "Unsupported Platform !!!"
+#endif
+}
+
 using namespace std;
 
 #include "geometry/vector.h"

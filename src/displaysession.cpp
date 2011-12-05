@@ -49,13 +49,13 @@ DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
 	// Text fonts
 	fontSmall = TTF_OpenFont(gameConfig->GetScreenFontName().c_str(), gameConfig->GetScreenFontSize());
 	if (!fontSmall)
-		throw runtime_error("Unable to open " + gameConfig->GetScreenFontName() + " small font file");
+		throw runtime_error("Unable to open " + gameConfig->GetScreenFontName() + " small font file. Error: " + TTF_GetError());
 	fontMedium = TTF_OpenFont(gameConfig->GetScreenFontName().c_str(), 2 * gameConfig->GetScreenFontSize());
 	if (!fontMedium)
-		throw runtime_error("Unable to open " + gameConfig->GetScreenFontName() + " medium font file");
+		throw runtime_error("Unable to open " + gameConfig->GetScreenFontName() + " medium font file. Error: " + TTF_GetError());
 	fontBig = TTF_OpenFont(gameConfig->GetScreenFontName().c_str(), 3 * gameConfig->GetScreenFontSize());
 	if (!fontBig)
-		throw runtime_error("Unable to open " + gameConfig->GetScreenFontName() + " big font file");
+		throw runtime_error("Unable to open " + gameConfig->GetScreenFontName() + " big font file. Error: " + TTF_GetError());
 
 	renderText = new RenderText(gameConfig, fontSmall, fontMedium, fontBig);
 

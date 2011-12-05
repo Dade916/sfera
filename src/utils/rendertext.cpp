@@ -75,13 +75,13 @@ void RenderText::Print(SDL_Surface *initial,
 	const int y1 = y + h;
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 1.0f);
-	glVertex2f(x0, y0);
+	glVertex2i(x0, y0);
 	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(x1, y0);
+	glVertex2i(x1, y0);
 	glTexCoord2f(1.0f, 0.0f);
-	glVertex2f(x1, y1);
+	glVertex2i(x1, y1);
 	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(x0, y1);
+	glVertex2i(x0, y1);
 	glEnd();
 	glFinish();
 

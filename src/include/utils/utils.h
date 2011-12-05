@@ -58,15 +58,6 @@ using std::isinf;
 
 #include <sstream>
 
-#if defined(__linux__) || defined(__APPLE__) || defined(__CYGWIN__)
-#include <stddef.h>
-#include <sys/time.h>
-#elif defined (WIN32)
-#include <windows.h>
-#else
-#error "Unsupported Platform !!!"
-#endif
-
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
 #endif
@@ -82,19 +73,6 @@ using std::isinf;
 #ifndef INV_TWOPI
 #define INV_TWOPI  0.15915494309189533577f
 #endif
-
-inline double WallClockTime() {
-#if defined(__linux__) || defined(__APPLE__) || defined(__CYGWIN__)
-	struct timeval t;
-	gettimeofday(&t, NULL);
-
-	return t.tv_sec + t.tv_usec / 1000000.0;
-#elif defined (WIN32)
-	return GetTickCount() / 1000.0;
-#else
-#error "Unsupported Platform !!!"
-#endif
-}
 
 template<class T> inline T Clamp(T val, T low, T high) {
 	return val > low ? (val < high ? val : high) : low;

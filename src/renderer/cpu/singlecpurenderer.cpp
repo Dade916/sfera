@@ -18,9 +18,10 @@
  *                                                                         *
  ***************************************************************************/
 
+#include "sfera.h"
 #include "sdl/editaction.h"
-#include "renderer/cpu/singlecpurenderer.h"
 #include "acceleretor/bvhaccel.h"
+#include "renderer/cpu/singlecpurenderer.h"
 
 SingleCPURenderer::SingleCPURenderer(GameLevel *level) : CPURenderer(level),
 		rnd(1) {

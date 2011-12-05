@@ -20,6 +20,11 @@
 
 #if !defined(SFERA_DISABLE_OPENCL)
 
+#if defined(WIN32)
+#include <windows.h>
+#endif
+
+#include "sfera.h"
 #include "sdl/editaction.h"
 #include "renderer/ocl/oclrenderer.h"
 #include "renderer/ocl/kernels/kernels.h"
