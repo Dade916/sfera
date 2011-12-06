@@ -26,9 +26,9 @@ bool PerspectiveCamera::IsChangedSinceLastUpdate() {
 	// Check if the camera parameters have changed since the
 	// last check (should be done under mutex)
 
-	if ((DistanceSquared(lastUpdateOrig, orig) < EPSILON * EPSILON) &&
-		(DistanceSquared(lastUpdateTarget, target) < EPSILON * EPSILON) &&
-		(Dot(lastUpdateUp, up) > .95f)) {
+	if ((DistanceSquared(lastUpdateOrig, orig) < EPSILON) &&
+		(DistanceSquared(lastUpdateTarget, target) < EPSILON) &&
+		(Dot(lastUpdateUp, up) > .9f)) {
 		return false;
 	} else {
 		lastUpdateOrig = orig;

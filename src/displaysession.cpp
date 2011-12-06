@@ -458,41 +458,40 @@ void DisplaySession::RunGameSession(const string &pack) {
 		if (RunLevel(gameSession)) {
 			if (!gameSession.NextLevel())
 				break;
-		} else {
-			// Show the final score
-			stringstream ss;
-			ss << "[font=big]Level " << gameSession.GetCurrentLevel() - 1 <<
-					"\n[font=big]Total time " << fixed << setprecision(2) << gameSession.GetTotalLevelsTime() << " secs";
-			const string msg = ss.str();
-
-			// Wait for a key/mouse event
-			const double startTime = WallClockTime();
-			for (bool endWait = false; !endWait;) {
-				glColor3f(0.f, 0.f, 0.f);
-				glRecti(0, 0,
-						gameConfig->GetScreenWidth() - 1, gameConfig->GetScreenHeight() - 1);
-
-				renderText->Draw(msg, true);
-
-				SDL_GL_SwapBuffers();
-
-				SDL_Event event;
-				while (SDL_PollEvent(&event)) {
-					switch (event.type) {
-						case SDL_MOUSEBUTTONDOWN:
-						case SDL_KEYDOWN:
-							// Wait at least 1sec
-							if (WallClockTime() - startTime > 1.0)
-								endWait = true;
-							break;
-					}
-				}
-
-				boost::this_thread::sleep(boost::posix_time::millisec(100));
-			}
-
+		} else
 			break;
+	}
+
+	// Show the final score
+	stringstream ss;
+	ss << "[font=big]Level " << gameSession.GetCurrentLevel() - 1 <<
+			"\n[font=big]Total time " << fixed << setprecision(2) << gameSession.GetTotalLevelsTime() << " secs";
+	const string msg = ss.str();
+
+	// Wait for a key/mouse event
+	const double startTime = WallClockTime();
+	for (bool endWait = false; !endWait;) {
+		glColor3f(0.f, 0.f, 0.f);
+		glRecti(0, 0,
+				gameConfig->GetScreenWidth() - 1, gameConfig->GetScreenHeight() - 1);
+
+		renderText->Draw(msg, true);
+
+		SDL_GL_SwapBuffers();
+
+		SDL_Event event;
+		while (SDL_PollEvent(&event)) {
+			switch (event.type) {
+				case SDL_MOUSEBUTTONDOWN:
+				case SDL_KEYDOWN:
+					// Wait at least 1sec
+					if (WallClockTime() - startTime > 1.0)
+						endWait = true;
+					break;
+			}
 		}
+
+		boost::this_thread::sleep(boost::posix_time::millisec(100));
 	}
 
 	SFERA_LOG("Game Session is over");
@@ -521,7 +520,7 @@ bool DisplaySession::RunPackSelection(string *pack) {
 
 	vector<SDL_Surface *> footer;
 	footer.push_back(renderText->Create("[font=medium] "));
-	footer.push_back(renderText->Create("[font=small](Press the space bar to select)"));
+	footer.push_back(renderText->Create("[font=small](Up/Down to scroll, press the space bar to select)"));
 
 	bool quit = false;
 	const unsigned int width = gameConfig->GetScreenWidth();
