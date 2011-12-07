@@ -31,13 +31,6 @@
 static const string SFERA_LABEL = "Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSION_MINOR " (Written by David \"Dade\" Bucciarelli)";
 
 DisplaySession::DisplaySession(const GameConfig *cfg) : gameConfig(cfg) {
-	leftMouseDown = false;
-	rightMouseDown = false;
-	mouseStartX = 0;
-	mouseStartY = 0;
-	startViewTheta = 0.f;
-	startViewPhi = 0.f;
-
 	const unsigned int width = gameConfig->GetScreenWidth();
 	const unsigned int height = gameConfig->GetScreenHeight();
 
@@ -167,6 +160,14 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 	bool quit = false;
 	bool levelDone = false;
 	double lastJumpTime = 0.0;
+	float startTheta = 0.f;
+	float startPhi = 0.f;
+	float startViewDistance = 0.f;
+	int mouseStartX = 0;
+	int mouseStartY = 0;
+	bool leftMouseDown = false;
+	bool rightMouseDown = false;
+	bool fKeyDown = false;
 
 	do {
 		const double t1 = WallClockTime();
@@ -181,8 +182,13 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 							leftMouseDown = true;
 							mouseStartX = event.button.x;
 							mouseStartY = event.button.y;
-							startViewTheta = currentLevel->player->viewTheta;
-							startViewPhi = currentLevel->player->viewPhi;
+							if (currentLevel->player->targetPuppet) {
+								startTheta = currentLevel->player->viewTheta;
+								startPhi = currentLevel->player->viewPhi;
+							} else {
+								startTheta = currentLevel->player->targetTheta;
+								startPhi = currentLevel->player->targetPhi;
+							}
 							break;
 						}
 						case SDL_BUTTON_RIGHT: {
@@ -213,8 +219,13 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 						const int deltaX = event.motion.x - mouseStartX;
 						const int deltaY = event.motion.y - mouseStartY;
 
-						currentLevel->player->viewTheta =  startViewTheta - deltaY / 200.f;
-						currentLevel->player->viewPhi = startViewPhi - deltaX / 200.f;
+						if (currentLevel->player->targetPuppet) {
+							currentLevel->player->viewTheta =  startTheta - deltaY / 200.f;
+							currentLevel->player->viewPhi = startPhi - deltaX / 200.f;
+						} else {
+							currentLevel->player->targetTheta =  startTheta + deltaY / 200.f;
+							currentLevel->player->targetPhi = startPhi + deltaX / 200.f;
+						}
 					}
 
 					if (rightMouseDown) {
@@ -240,6 +251,12 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 							break;
 						case SDLK_s:
 							currentLevel->player->inputSlowDown = true;
+							break;
+						case SDLK_f:
+							fKeyDown = true;
+							currentLevel->player->targetPuppet = false;
+							currentLevel->player->targetTheta = currentLevel->player->viewTheta;
+							currentLevel->player->targetPhi = currentLevel->player->viewPhi;
 							break;
 						case SDLK_SPACE: {
 							const double now = WallClockTime();
@@ -267,6 +284,10 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 							break;
 						case SDLK_s:
 							currentLevel->player->inputSlowDown = false;
+							break;
+						case SDLK_f:
+							fKeyDown = false;
+							currentLevel->player->targetPuppet = true;
 							break;
 						case SDLK_ESCAPE:
 							quit = true;
@@ -588,8 +609,10 @@ bool DisplaySession::RunPackSelection(string *pack) {
 							case SDLK_DOWN:
 								selected = Min<size_t>(options.size() - 1, selected + 1);
 								break;
-							default:
+							case SDLK_SPACE:
 								endWait = true;
+								break;
+							default:
 								break;
 						}
 						break;

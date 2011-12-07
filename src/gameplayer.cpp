@@ -43,6 +43,9 @@ GamePlayer::GamePlayer(const Properties &prop)  {
 	viewPhi = M_PI / 8.f;
 	viewTheta = -M_PI / 2.f;
 	viewDistance = body.sphere.rad * 20.f;
+	targetPhi = -viewPhi;
+	targetTheta = -viewTheta;
+	targetPuppet = true;
 
 	inputGoForward = false;
 	inputTurnLeft = false;
@@ -81,8 +84,17 @@ void GamePlayer::UpdateCamera(PerspectiveCamera &camera,
 
 	const Vector dir = SphericalDirection(sinf(viewTheta), cosf(viewTheta), viewPhi, front, right, up);
 	if (AbsDot(dir, camera.up) < 1.f - EPSILON) {
+		// Look at puppet
 		camera.orig = camera.target + viewDistance * dir;
 		camera.up = up;
+
+		if (!targetPuppet) {
+			// Look around
+			const Vector tdir = SphericalDirection(sinf(targetTheta), cosf(targetTheta), targetPhi, front, right, up);
+
+			if (AbsDot(tdir, camera.up) < 1.f - EPSILON)
+				camera.target = camera.orig - viewDistance * tdir;
+		}
 
 		camera.Update(filmWidth, filmHeight);
 	}

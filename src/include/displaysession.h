@@ -47,10 +47,6 @@ private:
 
 	TTF_Font *fontSmall, *fontMedium, *fontBig;
 	RenderText *renderText;
-
-	float startViewTheta, startViewPhi, startViewDistance;
-	int mouseStartX, mouseStartY;
-	bool leftMouseDown, rightMouseDown;
 };
 
 #endif	/* _SFERA_DISPLAYSESSION_H */

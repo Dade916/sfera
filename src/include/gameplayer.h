@@ -59,7 +59,8 @@ public:
 	MatteMaterial *puppetMaterial[GAMEPLAYER_PUPPET_SIZE];
 
 	// Camera position
-	float viewPhi, viewTheta, viewDistance; // User input write, other read
+	float targetPhi, targetTheta, viewPhi, viewTheta, viewDistance; // User input write, other read
+	bool targetPuppet;
 
 	// Control
 	bool inputGoForward, inputTurnLeft, inputTurnRight, inputSlowDown;

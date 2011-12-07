@@ -1079,9 +1079,6 @@ void ApplyBlurFilterXR1(
 		) {
 	// Do left edge
 	Pixel a;
-	a.r = 0.f;
-	a.g = 0.f;
-	a.b = 0.f;
 	Pixel b = src[0];
 	Pixel c = src[1];
 
@@ -1103,6 +1100,7 @@ void ApplyBlurFilterXR1(
 		b = c;
 		c = src[x + 1];
 
+		// AMD OpenCL have some problem to run this code
 		dst[x].r = aK * a.r + bK * b.r + cK * c.r;
 		dst[x].g = aK * a.g + bK * b.g + cK * c.g;
 		dst[x].b = aK * a.b + bK * b.b + cK * c.b;
@@ -1129,9 +1127,6 @@ void ApplyBlurFilterYR1(
 		) {
 	// Do left edge
 	Pixel a;
-	a.r = 0.f;
-	a.g = 0.f;
-	a.b = 0.f;
 	Pixel b = src[0];
 	Pixel c = src[PARAM_SCREEN_WIDTH];
 
@@ -1155,6 +1150,7 @@ void ApplyBlurFilterYR1(
 		b = c;
 		c = src[index + PARAM_SCREEN_WIDTH];
 
+		// AMD OpenCL have some problem to run this code
 		dst[index].r = aK * a.r + bK * b.r + cK * c.r;
 		dst[index].g = aK * a.g + bK * b.g + cK * c.g;
 		dst[index].b = aK * a.b + bK * b.b + cK * c.b;
