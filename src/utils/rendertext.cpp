@@ -28,7 +28,7 @@ RenderText::RenderText(const GameConfig *cfg, TTF_Font *small,	TTF_Font *medium,
 }
 
 void RenderText::Print(SDL_Surface *initial,
-		const unsigned int x, const unsigned int y) const {
+		const int x, const int y) const {
 	if (!initial)
 		return;
 
@@ -73,6 +73,7 @@ void RenderText::Print(SDL_Surface *initial,
 	const int y0 = y;
 	const int x1 = x + w;
 	const int y1 = y + h;
+
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 1.0f);
 	glVertex2i(x0, y0);
@@ -111,7 +112,7 @@ void RenderText::Free(SDL_Surface *textSurf) const {
 }
 
 void RenderText::Draw(SDL_Surface *textSurf,
-			const unsigned int x, const unsigned int y,
+			const int x, const int y,
 		const bool shadow) const {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -137,8 +138,8 @@ void RenderText::Draw(const string &text, const bool shadow) const {
 		Draw(msgs, shadow);
 	} else {
 		SDL_Surface *surf = Create(text);
-		const unsigned int x = (gameConfig->GetScreenWidth() - surf->w) / 2;
-		const unsigned int y = (gameConfig->GetScreenHeight() - surf->h) / 2;
+		const int x = (int(gameConfig->GetScreenWidth()) - surf->w) / 2;
+		const int y = (int(gameConfig->GetScreenHeight()) - surf->h) / 2;
 
 		Draw(surf , x, y, shadow);
 
@@ -156,16 +157,16 @@ void RenderText::Draw(const vector<string> &texts, const bool shadow) const {
 		surfs[i] = Create(texts[i]);
 
 	// The space between lines (i.e. 4 pixels)
-	unsigned int totHeight = (size - 1) * 4;
+	int totHeight = (size - 1) * 4;
 	for (size_t i = 0; i < size; ++i)
 		totHeight += surfs[i]->h;
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	unsigned int y = (gameConfig->GetScreenHeight() - totHeight) / 2;
+	int y = (int(gameConfig->GetScreenHeight()) - totHeight) / 2;
 	for (size_t i = 0; i < size; ++i) {
 		size_t index = size - 1 - i;
-		const unsigned int x = (gameConfig->GetScreenWidth() - surfs[index]->w) / 2;
+		const int x = (int(gameConfig->GetScreenWidth()) - surfs[index]->w) / 2;
 
 		Draw(surfs[index] , x, y, shadow);
 

@@ -519,18 +519,18 @@ void DisplaySession::RunGameSession(const string &pack) {
 }
 
 bool DisplaySession::RunPackSelection(string *pack) {
-	const unsigned int interline = 4;
+	const int interline = 4;
 
 	vector<SDL_Surface *> header;
 	header.push_back(renderText->Create("[font=medium] Select a level pack:"));
 	header.push_back(renderText->Create("[font=medium] "));
-	const unsigned int headerSize = header[0]->h + header[1]->h + interline;
+	const int headerSize = header[0]->h + header[1]->h + interline;
 
 	// Add the list of packs
 	PackList packList;
 	vector<SDL_Surface *> options;
 	size_t selected = 0;
-	unsigned int optionsSize = interline * packList.names.size() - 1;
+	int optionsSize = interline * packList.names.size() - 1;
 	for (size_t i = 0; i < packList.names.size(); ++i) {
 		if ("Sfera" == packList.names[i])
 			selected = i;
@@ -544,8 +544,8 @@ bool DisplaySession::RunPackSelection(string *pack) {
 	footer.push_back(renderText->Create("[font=small](Up/Down to scroll, press the space bar to select)"));
 
 	bool quit = false;
-	const unsigned int width = gameConfig->GetScreenWidth();
-	const unsigned int height = gameConfig->GetScreenHeight();
+	const int width = gameConfig->GetScreenWidth();
+	const int height = gameConfig->GetScreenHeight();
 	for(;;) {
 		// Wait for a key/mouse event
 		for (bool endWait = false; !endWait;) {
@@ -555,7 +555,7 @@ bool DisplaySession::RunPackSelection(string *pack) {
 
 			// Selection box
 			glColor3f(0.0f, 0.0f, 1.0f);
-			unsigned int offset = (height - options[selected]->h) / 2;
+			int offset = (height - options[selected]->h) / 2;
 			glRecti((width - options[selected]->w) / 2 - 1, offset - 1,
 					(width - options[selected]->w) / 2 + options[selected]->w + 1, offset + options[selected]->h + 1);
 

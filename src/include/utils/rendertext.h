@@ -33,10 +33,10 @@ public:
 	SDL_Surface *Create(const string &text) const;
 	void Free(SDL_Surface *textSurf) const;
 	void Draw(SDL_Surface *textSurf,
-		const unsigned int x, const unsigned int y, const bool shadow = false) const;
+		const int x, const int y, const bool shadow = false) const;
 	// An utility method
 	void Draw(const string &text,
-			const unsigned int x, const unsigned int y,
+			const int x, const int y,
 			const bool shadow = false) const {
 		SDL_Surface *surf = Create(text);
 		Draw(surf,x ,y, shadow);
@@ -49,7 +49,7 @@ public:
 private:
 	void Draw(const vector<string> &text, const bool shadow = false) const;
 	void Print(SDL_Surface *textSurf,
-		const unsigned int x, const unsigned int y) const;
+		const int x, const int y) const;
 
 	const GameConfig *gameConfig;
 	TTF_Font *fontSmall, *fontMedium, *fontBig;
