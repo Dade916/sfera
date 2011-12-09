@@ -1,3 +1,3 @@
 @echo off
-Sfera.exe -o gamedata\cfg\high.cfg
+Sfera.exe -o gamedata\cfgs\high.cfg
 pause

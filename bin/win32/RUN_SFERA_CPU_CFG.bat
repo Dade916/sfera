@@ -1,3 +1,3 @@
 @echo off
-Sfera.exe -o gamedata\cfg\cpu.cfg
+Sfera.exe -o gamedata\cfgs\cpu.cfg
 pause

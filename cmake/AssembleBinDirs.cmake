@@ -62,6 +62,7 @@ ELSE (WIN32)
 		COMMAND cp -r gamedata ${SFERA_BIN_WIN32_NOOPENCL_DIR}
 		COMMAND cp bin/win32/Sfera-noopencl.exe ${SFERA_BIN_WIN32_NOOPENCL_DIR}/Sfera.exe
 		COMMAND cp bin/win32/*.dll bin/win32/*.bat ${SFERA_BIN_WIN32_NOOPENCL_DIR}
+		COMMAND cp gamedata/cfgs/cpu.cfg ${SFERA_BIN_WIN32_NOOPENCL_DIR}/gamedata/cfgs/default.cfg
 		COMMAND cp AUTHORS.txt COPYING.txt README.txt ${SFERA_BIN_WIN32_NOOPENCL_DIR}
 		COMMENT "Building ${SFERA_BIN_WIN32_NOOPENCL_DIR}")
 

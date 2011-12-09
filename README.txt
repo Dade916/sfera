@@ -30,7 +30,8 @@ Puppet controls
     * 'w' to move forward;
     * 's' to stop;
     * 'a' to turn left;
-    * 'd' to turn right.
+    * 'd' to turn right;
+    * space bar to jump.
 
 Camera controls
 
