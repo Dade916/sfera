@@ -17,6 +17,7 @@
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  *                                                                         *
  ***************************************************************************/
+
 // List of symbols defined at compile time:
 //  PARAM_SCREEN_WIDTH
 //  PARAM_SCREEN_HEIGHT

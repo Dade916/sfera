@@ -1,3 +1,4 @@
+#if !defined ( SFERA_DISABLE_OPENCL ) 
 #include "renderer/ocl/kernels/kernels.h"
 string KernelSource_kernel_core = 
 "/***************************************************************************\n"
@@ -19,6 +20,7 @@ string KernelSource_kernel_core =
 " *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *\n"
 " *                                                                         *\n"
 " ***************************************************************************/\n"
+"\n"
 "// List of symbols defined at compile time:\n"
 "//  PARAM_SCREEN_WIDTH\n"
 "//  PARAM_SCREEN_HEIGHT\n"
@@ -1341,3 +1343,4 @@ string KernelSource_kernel_core =
 "	pbo[gid] = r | (g << 8) | (b << 16);\n"
 "}\n"
 ;
+#endif

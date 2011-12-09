@@ -135,9 +135,11 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 		case MULTI_CPU:
 			renderer = new MultiCPURenderer(currentLevel);
 			break;
+#if !defined(SFERA_DISABLE_OPENCL)
 		case OPENCL:
 			renderer = new OCLRenderer(currentLevel);
 			break;
+#endif
 		default:
 			throw runtime_error("Unknown rendrer type: " + gameConfig->GetRendererType());
 			break;

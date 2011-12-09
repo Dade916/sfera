@@ -32,3 +32,5 @@ ADD_DEFINITIONS(-DGLEW_BUILD)
 
 set(BULLET_SEARCH_PATH         "C:/Users/David/Dati/OpenCL/Sfera-64bit/bullet-2.78/src")
 set(BULLET_LIBRARYDIR          "C:/Users/David/Dati/OpenCL/Sfera-64bit/bullet-bin/lib/Release")
+
+# TODO: Incomplete

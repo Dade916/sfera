@@ -30,3 +30,4 @@ set(OPENCL_LIBRARYDIR         "${OPENCL_SEARCH_PATH}/lib/x86")
 set(GLEW_SEARCH_PATH          "C:/Users/David/Dati/OpenCL/Sfera-32bit/glew-1.6.0")
 ADD_DEFINITIONS(-DGLEW_BUILD)
 
+# TODO: Incomplete
