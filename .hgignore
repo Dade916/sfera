@@ -1,4 +1,4 @@
-^bin/*
+^bin/Sfera
 ^nbproject/*
 ^Makefile-Sfera.mk
 ^.dep.inc
