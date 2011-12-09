@@ -41,8 +41,6 @@ IF (NOT Sfera_NO_DEFAULT_CONFIG)
 	IF (WIN32)
 
       MESSAGE(STATUS "Using default WIN32 Configuration settings")
-				
-	  set(BUILD_LUXMARK TRUE) # This will require QT
 			
 	  set(ENV{QTDIR} "c:/qt/")
 		

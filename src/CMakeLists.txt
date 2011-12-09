@@ -45,7 +45,7 @@ FOREACH(kernel ${KERNELS})
 			COMMAND echo "#if !defined(SFERA_DISABLE_OPENCL)" > ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
 			COMMAND echo "#include \"renderer/ocl/kernels/kernels.h\"" >> ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
 			COMMAND echo string KernelSource_${kernel} = >> ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
-			COMMAND for /F \"tokens=*\" %%a in (${CMAKE_CURRENT_SOURCE_DIR}\\pathocl\\kernels\\${kernel_lowercase}.cl) do echo \"%%a\\n\" >> ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
+			COMMAND for /F \"tokens=*\" %%a in (${CMAKE_CURRENT_SOURCE_DIR}\\renderer\\ocl\\kernels\\${kernel_lowercase}.cl) do echo \"%%a\\n\" >> ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
 			COMMAND echo ";" >> ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
 			COMMAND echo "#endif" >> ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cpp
 			MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/renderer/ocl/kernels/${kernel_lowercase}.cl
