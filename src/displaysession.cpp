@@ -475,7 +475,7 @@ bool DisplaySession::RunIntro() {
 
 void DisplaySession::RunGameSession(const string &pack) {
 	GameSession gameSession(gameConfig, pack);
-	gameSession.Begin(2);
+	gameSession.Begin();
 
 	for(;;) {
 		if (RunLevel(gameSession)) {
@@ -521,29 +521,26 @@ void DisplaySession::RunGameSession(const string &pack) {
 }
 
 bool DisplaySession::RunPackSelection(string *pack) {
-	const int interline = 4;
-
-	vector<SDL_Surface *> header;
-	header.push_back(renderText->Create("[font=medium] Select a level pack:"));
-	header.push_back(renderText->Create("[font=medium] "));
-	const int headerSize = header[0]->h + header[1]->h + interline;
-
-	// Add the list of packs
+	// Build the list of packs
 	PackList packList;
-	vector<SDL_Surface *> options;
-	size_t selected = 0;
-	int optionsSize = interline * packList.names.size() - 1;
+	stringstream ss;
+	int selected = 0;
 	for (size_t i = 0; i < packList.names.size(); ++i) {
 		if ("Sfera" == packList.names[i])
 			selected = i;
 
-		options.push_back(renderText->Create("[font=medium]" + packList.names[i]));
-		optionsSize += options[i]->h;
+		ss << "[font=medium]" << packList.names[i];
+		if (i < packList.names.size() - 1)
+			ss << "\n";
 	}
 
-	vector<SDL_Surface *> footer;
-	footer.push_back(renderText->Create("[font=medium] "));
-	footer.push_back(renderText->Create("[font=small](Up/Down to scroll, press the space bar to select)"));
+	// Build the Menu
+	RenderTextMenu rtm(renderText,
+			"[font=medium] Select a level pack:\n"
+			"[font=medium] ",
+			ss.str(),
+			"[font=medium] \n"
+			"[font=small](Up/Down to scroll, press the space bar to select)");
 
 	bool quit = false;
 	const int width = gameConfig->GetScreenWidth();
@@ -555,44 +552,9 @@ bool DisplaySession::RunPackSelection(string *pack) {
 			glColor3f(0.0f, 0.0f, 0.0f);
 			glRecti(0, 0, width, height);
 
-			// Selection box
-			glColor3f(0.0f, 0.0f, 1.0f);
-			int offset = (height - options[selected]->h) / 2;
-			glRecti((width - options[selected]->w) / 2 - 1, offset - 1,
-					(width - options[selected]->w) / 2 + options[selected]->w + 1, offset + options[selected]->h + 1);
-
-			// Draw the menu
-			glColor3f(1.0f, 1.0f, 1.0f);
-			for (size_t i = 0; i < selected; ++i)
-				offset += options[selected]->h + interline;
-			offset += headerSize;
-
-			// Draw header
-			for (size_t i = 0; i < header.size(); ++i) {
-				renderText->Draw(header[i],
-						(width - header[i]->w) / 2, offset,
-						true);
-
-				offset -= options[i]->h + interline;
-			}
-
-			// Draw options
-			for (size_t i = 0; i < options.size(); ++i) {
-				renderText->Draw(options[i],
-						(width - options[i]->w) / 2, offset,
-						false);
-
-				offset -= options[i]->h + interline;
-			}
-
-			// Draw footer
-			for (size_t i = 0; i < footer.size(); ++i) {
-				renderText->Draw(footer[i],
-						(width - footer[i]->w) / 2, offset,
-						true);
-
-				offset -= footer[i]->h + interline;
-			}
+			// Menu
+			rtm.SetSelectedOption(selected);
+			rtm.Draw(width, height);
 
 			SDL_GL_SwapBuffers();
 
@@ -606,10 +568,10 @@ bool DisplaySession::RunPackSelection(string *pack) {
 								endWait = true;
 								break;
 							case SDLK_UP:
-								selected = Max<size_t>(0, selected - 1);
+								selected = Max<int>(0, selected - 1);
 								break;
 							case SDLK_DOWN:
-								selected = Min<size_t>(options.size() - 1, selected + 1);
+								selected = Min<int>(packList.names.size() - 1, selected + 1);
 								break;
 							case SDLK_SPACE:
 								endWait = true;

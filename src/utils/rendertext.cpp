@@ -177,3 +177,96 @@ void RenderText::Draw(const vector<string> &texts, const bool shadow) const {
 	for (size_t i = 0; i < size; ++i)
 		Free(surfs[i]);
 }
+
+//------------------------------------------------------------------------------
+// Text menu related methods
+//------------------------------------------------------------------------------
+
+RenderTextMenu::RenderTextMenu(RenderText *rt,
+			const string &hdr, const string &opts, const string &ftr,
+			const int interln) {
+	renderText = rt;
+	interline = interln;
+	selectedOption = 0;
+
+	// The menu header
+
+	vector<std::string> headerMsgs;
+	boost::split(headerMsgs, hdr, boost::is_any_of("\n"));
+
+	headerSize = 0;
+	for (size_t i = 0; i < headerMsgs.size(); ++i) {
+		header.push_back(renderText->Create(headerMsgs[i]));
+		headerSize += header[i]->h;
+	}
+	headerSize += interline * (header.size() - 1);
+
+	// The menu options
+
+	vector<std::string> optionsMsgs;
+	boost::split(optionsMsgs, opts, boost::is_any_of("\n"));
+	optionsSize = 0;
+	for (size_t i = 0; i < optionsMsgs.size(); ++i) {
+		options.push_back(renderText->Create(optionsMsgs[i]));
+		optionsSize += options[i]->h;
+	}
+	optionsSize += interline * (options.size() - 1);
+
+	// The menu footer
+
+	vector<std::string> footerMsgs;
+	boost::split(footerMsgs, ftr, boost::is_any_of("\n"));
+
+	for (size_t i = 0; i < footerMsgs.size(); ++i)
+		footer.push_back(renderText->Create(footerMsgs[i]));
+}
+
+RenderTextMenu::~RenderTextMenu() {
+	for (size_t i = 0; i < header.size(); ++i)
+		renderText->Free(header[i]);
+	for (size_t i = 0; i < options.size(); ++i)
+		renderText->Free(options[i]);
+	for (size_t i = 0; i < footer.size(); ++i)
+		renderText->Free(footer[i]);
+}
+
+void RenderTextMenu::Draw(const int width, const int height) const {
+	// Selection box
+	int offset = (height - options[selectedOption]->h) / 2;
+	glColor3f(0.0f, 0.0f, 1.0f);
+	glRecti((width - options[selectedOption]->w) / 2 - 1, offset - 1,
+			(width - options[selectedOption]->w) / 2 + options[selectedOption]->w + 1, offset + options[selectedOption]->h + 1);
+
+	// Draw the menu
+	glColor3f(1.0f, 1.0f, 1.0f);
+	for (size_t i = 0; i < size_t(selectedOption); ++i)
+		offset += options[selectedOption]->h + interline;
+	offset += headerSize;
+
+	// Draw header
+	for (size_t i = 0; i < header.size(); ++i) {
+		renderText->Draw(header[i],
+				(width - header[i]->w) / 2, offset,
+				true);
+
+		offset -= options[i]->h + interline;
+	}
+
+	// Draw options
+	for (size_t i = 0; i < options.size(); ++i) {
+		renderText->Draw(options[i],
+				(width - options[i]->w) / 2, offset,
+				false);
+
+		offset -= options[i]->h + interline;
+	}
+
+	// Draw footer
+	for (size_t i = 0; i < footer.size(); ++i) {
+		renderText->Draw(footer[i],
+				(width - footer[i]->w) / 2, offset,
+				true);
+
+		offset -= footer[i]->h + interline;
+	}
+}

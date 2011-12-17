@@ -24,6 +24,36 @@
 #include "sfera.h"
 #include "gameconfig.h"
 
+class RenderText;
+
+class RenderTextMenu {
+public:
+	RenderTextMenu(RenderText *rt,
+			const string &header,
+			const string &options,
+			const string &footer,
+			const int interline = 4);
+	~RenderTextMenu();
+
+	void Draw(const int scrWidth, const int scrHeight) const;
+
+	int GetSelectedOption() const { return selectedOption; }
+	void SetSelectedOption(const int i) { selectedOption = i; }
+
+private:
+	int interline;
+
+	RenderText *renderText;
+
+	vector<SDL_Surface *> header;
+	vector<SDL_Surface *> options;
+	vector<SDL_Surface *> footer;
+
+	int headerSize, optionsSize;
+
+	int selectedOption;
+};
+
 class RenderText {
 public:
 	RenderText(const GameConfig *cfg, TTF_Font *small, TTF_Font *medium, TTF_Font *big);
