@@ -88,9 +88,9 @@ GameLevel::~GameLevel() {
 	delete toneMap;
 }
 
-void GameLevel::Refresh() {
+void GameLevel::Refresh(const float refreshRate) {
 	player->UpdateLocalCoordSystem();
-	player->ApplyInputs();
+	player->ApplyInputs(refreshRate);
 	player->UpdatePuppet();
 	player->UpdateCamera(*camera, gameConfig->GetScreenWidth(), gameConfig->GetScreenHeight());
 }

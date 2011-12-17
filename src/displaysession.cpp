@@ -487,8 +487,8 @@ void DisplaySession::RunGameSession(const string &pack) {
 
 	// Show the final score
 	stringstream ss;
-	ss << "[font=big]Level " << gameSession.GetCurrentLevel() - 1 <<
-			"\n[font=big]Total time " << fixed << setprecision(2) << gameSession.GetTotalLevelsTime() << " secs";
+	ss << "[font=big]Level " << gameSession.GetCurrentLevel() - 1 << "\n"
+			"[font=big]Total time " << fixed << setprecision(2) << gameSession.GetTotalLevelsTime() << " secs";
 	const string msg = ss.str();
 
 	// Wait for a key/mouse event

@@ -165,7 +165,7 @@ size_t OCLRenderer::DrawFrame() {
 	barrier->wait();
 
 	//--------------------------------------------------------------------------
-	// Blend frame, tone mapping and copy the OpenCL frame buffer to OpenGL one
+	// Blend frames, tone mapping and copy the OpenCL frame buffer to OpenGL one
 	//--------------------------------------------------------------------------
 
 	renderThread[0]->DrawFrame();

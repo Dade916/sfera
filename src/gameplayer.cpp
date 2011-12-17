@@ -100,17 +100,19 @@ void GamePlayer::UpdateCamera(PerspectiveCamera &camera,
 	}
 }
 
-void GamePlayer::ApplyInputs() {
-	// TODO: movements should be not refresh rate related
+void GamePlayer::ApplyInputs(const float refreshRate) {
+	const float roatationSpeed = 180.f; // Degree/sec
+	const float rotationRate = roatationSpeed / refreshRate;
+
 	if (inputTurnLeft) {
 		// Rotate left
-		Transform t = Rotate(2.5f, up);
+		Transform t = Rotate(rotationRate, up);
 		front = t(front);
 	}
 
 	if (inputTurnRight) {
 		// Rotate right
-		Transform t = Rotate(-2.5f, up);
+		Transform t = Rotate(-rotationRate, up);
 		front = t(front);
 	}
 }

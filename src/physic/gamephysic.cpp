@@ -173,7 +173,7 @@ void GamePhysic::DoStep() {
 
 	dynamicsWorld->stepSimulation(1.f / gameLevel->gameConfig->GetPhysicRefreshRate(), 4);
 
-	gameLevel->Refresh();
+	gameLevel->Refresh(gameLevel->gameConfig->GetPhysicRefreshRate());
 
 	// Check if one of the pills was hit
 	int numManifolds = dispatcher->getNumManifolds();

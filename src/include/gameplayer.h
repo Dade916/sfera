@@ -40,7 +40,7 @@ public:
 	~GamePlayer();
 
 	void UpdateLocalCoordSystem();
-	void ApplyInputs();
+	void ApplyInputs(const float refreshRate);
 	void UpdatePuppet();
 	void UpdateCamera(PerspectiveCamera &camera,
 		const unsigned int filmWidth, const unsigned int filmHeight) const;

@@ -35,7 +35,7 @@ public:
 	GameLevel(const GameConfig *cfg, const string &levelFileName);
 	~GameLevel();
 
-	void Refresh();
+	void Refresh(const float refreshRate);
 
 	mutable boost::mutex levelMutex;
 
