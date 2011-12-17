@@ -149,6 +149,17 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 	// Start the game
 	//--------------------------------------------------------------------------
 
+	// Initial text message
+	stringstream ss;
+	ss << "[font=big]Level " << gameSession.GetCurrentLevel() << "\n"
+			"[font=big]" << gameSession.GetCurrentLevelName();
+	// Show the high score if it is available
+	const double highScore = gameSession.GetHighScore();
+	if (highScore > 0.0)
+		ss << "\n[font=big] \n"
+				"[font=big]High Score " << fixed << setprecision(2) << highScore << "secs";
+	const string introMsg = ss.str();
+
 	physicThread.Start();
 
 	unsigned int frame = 0;
@@ -315,11 +326,9 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 
 		DrawLevelLabels(bottomLabel, topLabel);
 
-		if (WallClockTime() - currentLevel->startTime < 3.0) {
-			stringstream ss;
-			ss << "[font=big]Level " << gameSession.GetCurrentLevel() << "\n[font=big]" << gameSession.GetCurrentLevelName();
-			renderText->Draw(ss.str(), true);
-		}
+		// Draw the intro message during the first 5 seconds
+		if (WallClockTime() - currentLevel->startTime < 5.0)
+			renderText->Draw(introMsg, true);
 
 		SDL_GL_SwapBuffers();
 
@@ -382,11 +391,19 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 	// Show the end of level result
 	//--------------------------------------------------------------------------
 
-	stringstream ss;
+	ss.str("");
 	if (levelDone) {
 		// Well done
 		const double secs = WallClockTime() - currentLevel->startTime;
-		ss << "[font=big]Well done: " << fixed << setprecision(2) << secs << " secs";
+		ss << "[font=big]Well done: " << fixed << setprecision(2) << secs << " secs\n"
+				"[font=big] \n";
+
+		// Check if it is a new record
+		if (gameSession.IsNewHighScore(secs))
+			ss << "[font=big]New record !";
+		else
+			ss << "[font=big]Current record " << fixed << setprecision(2) << gameSession.GetHighScore();
+
 		gameSession.SetLevelTime(secs);
 	} else {
 		// Game over
@@ -487,36 +504,46 @@ void DisplaySession::RunGameSession(const string &pack) {
 			break;
 	}
 
-	// Show the final score
-	stringstream ss;
-	ss << "[font=big]Level " << gameSession.GetCurrentLevel() - 1 << "\n"
-			"[font=big]Total time " << fixed << setprecision(2) << gameSession.GetTotalLevelsTime() << " secs";
-	const string msg = ss.str();
+	// Show the final score only if we reached the end level
+	if (gameSession.IsAllPackDone()) {
+		stringstream ss;
+		ss << "[font=big]Level " << gameSession.GetCurrentLevel() - 1 << "\n"
+				"[font=big]Total time " << fixed << setprecision(2) << gameSession.GetTotalLevelsTime() << " secs\n";
+		if (gameSession.IsNewTotalTimeHighScore())
+			ss << "[font=big] \n"
+				"[font=big]New Record !";
+		else
+			ss << "[font=big] \n"
+				"[font=big]Current Record " << fixed << setprecision(2) << gameSession.GetTotalTimeHighScore() << " secs";
+		const string msg = ss.str();
 
-	// Wait for a key/mouse event
-	const double startTime = WallClockTime();
-	for (bool endWait = false; !endWait;) {
-		glColor3f(0.f, 0.f, 0.f);
-		glRecti(0, 0,
-				gameConfig->GetScreenWidth() - 1, gameConfig->GetScreenHeight() - 1);
+		gameSession.SetTotalLevelsTime();
 
-		renderText->Draw(msg, true);
+		// Wait for a key/mouse event
+		const double startTime = WallClockTime();
+		for (bool endWait = false; !endWait;) {
+			glColor3f(0.f, 0.f, 0.f);
+			glRecti(0, 0,
+					gameConfig->GetScreenWidth() - 1, gameConfig->GetScreenHeight() - 1);
 
-		SDL_GL_SwapBuffers();
+			renderText->Draw(msg, true);
 
-		SDL_Event event;
-		while (SDL_PollEvent(&event)) {
-			switch (event.type) {
-				case SDL_MOUSEBUTTONDOWN:
-				case SDL_KEYDOWN:
-					// Wait at least 1sec
-					if (WallClockTime() - startTime > 1.0)
-						endWait = true;
-					break;
+			SDL_GL_SwapBuffers();
+
+			SDL_Event event;
+			while (SDL_PollEvent(&event)) {
+				switch (event.type) {
+					case SDL_MOUSEBUTTONDOWN:
+					case SDL_KEYDOWN:
+						// Wait at least 1sec
+						if (WallClockTime() - startTime > 1.0)
+							endWait = true;
+						break;
+				}
 			}
-		}
 
-		boost::this_thread::sleep(boost::posix_time::millisec(100));
+			boost::this_thread::sleep(boost::posix_time::millisec(100));
+		}
 	}
 
 	SFERA_LOG("Game Session is over");

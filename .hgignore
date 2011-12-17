@@ -1,5 +1,6 @@
 ^bin/Sfera
 ^nbproject/*
+^gamedata/scores/*
 ^Makefile-Sfera.mk
 ^.dep.inc
 syntax: glob

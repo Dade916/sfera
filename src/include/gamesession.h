@@ -38,11 +38,26 @@ public:
 	unsigned int GetCurrentLevel() const { return currentLevelNumber; }
 	const string &GetCurrentLevelName() const { return packLevelList.names[currentLevelNumber - 1]; }
 	double GetTotalLevelsTime() const { return totalLevelsTime; }
+	bool IsNewTotalTimeHighScore() {
+		return ((totalLevelsTime > 0.0) && (
+				(highScores.GetTotal() == 0.0) ||
+				(totalLevelsTime < highScores.GetTotal())));
+	}
+	void SetTotalLevelsTime() {
+		if (IsNewTotalTimeHighScore()) {
+			highScores.SetTotal(totalLevelsTime);
+			highScores.Save();
+		}
+	}
 	bool IsNewHighScore(const double t) const {
 		const double st = highScores.Get(currentLevelNumber);
 		return (st == 0.f) || (st > t);
 	}
 	void SetLevelTime(const double t);
+	double GetHighScore() const { return highScores.Get(currentLevelNumber); };
+	double GetTotalTimeHighScore() const { return highScores.GetTotal(); };
+
+	bool IsAllPackDone() const { return (currentLevelNumber > packLevelList.names.size()); }
 
 	const GameConfig *gameConfig;
 	const string packName;

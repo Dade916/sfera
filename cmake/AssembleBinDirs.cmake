@@ -40,6 +40,7 @@ ELSE (WIN32)
 		COMMAND rm -rf ${SFERA_BIN_WIN32_DIR}
 		COMMAND mkdir ${SFERA_BIN_WIN32_DIR}
 		COMMAND cp -r gamedata ${SFERA_BIN_WIN32_DIR}
+		COMMAND rm -rf ${SFERA_BIN_WIN32_NOOPENCL_DIR}/gamedata/scores/*
 		COMMAND cp bin/win32/Sfera.exe bin/win32/*.dll bin/win32/*.bat ${SFERA_BIN_WIN32_DIR}
 		COMMAND cp AUTHORS.txt COPYING.txt README.txt ${SFERA_BIN_WIN32_DIR}
 		COMMENT "Building ${SFERA_BIN_WIN32_DIR}")
@@ -60,6 +61,7 @@ ELSE (WIN32)
 		COMMAND rm -rf ${SFERA_BIN_WIN32_NOOPENCL_DIR}
 		COMMAND mkdir ${SFERA_BIN_WIN32_NOOPENCL_DIR}
 		COMMAND cp -r gamedata ${SFERA_BIN_WIN32_NOOPENCL_DIR}
+		COMMAND rm -rf ${SFERA_BIN_WIN32_NOOPENCL_DIR}/gamedata/scores/*
 		COMMAND cp bin/win32/Sfera-noopencl.exe ${SFERA_BIN_WIN32_NOOPENCL_DIR}/Sfera.exe
 		COMMAND cp bin/win32/*.dll bin/win32/*.bat ${SFERA_BIN_WIN32_NOOPENCL_DIR}
 		COMMAND cp gamedata/cfgs/cpu.cfg ${SFERA_BIN_WIN32_NOOPENCL_DIR}/gamedata/cfgs/default.cfg
@@ -84,6 +86,7 @@ ELSE (WIN32)
 		COMMAND rm -rf ${SFERA_BIN_LINUX64_DIR}
 		COMMAND mkdir ${SFERA_BIN_LINUX64_DIR}
 		COMMAND cp -r gamedata ${SFERA_BIN_LINUX64_DIR}
+		COMMAND rm -rf ${SFERA_BIN_WIN32_NOOPENCL_DIR}/gamedata/scores/*
 		COMMAND cp bin/Sfera ${SFERA_BIN_LINUX64_DIR}
 		COMMAND cp AUTHORS.txt COPYING.txt README.txt ${SFERA_BIN_LINUX64_DIR}
 		COMMENT "Building ${SFERA_BIN_LINUX64_DIR}")

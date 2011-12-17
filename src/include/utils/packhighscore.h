@@ -34,10 +34,14 @@ public:
 	double Get(size_t i) const { return scores[i - 1]; }
 	void Set(size_t i, double t) { scores[i - 1] = t; }
 
+	double GetTotal() const { return totalScore; }
+	void SetTotal(const double t) { totalScore = t; }
+
 private:
 	const PackLevelList *packLevelList;
 
 	vector<double> scores;
+	double totalScore;
 };
 
 #endif	/* _SFERA_PACKHIGHSCORE_H */
