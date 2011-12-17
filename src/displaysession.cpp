@@ -349,8 +349,10 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 		const double now = WallClockTime();
 
 		stringstream ss;
-		ss << "[Lights " << currentLevel->offPillCount << "/" << currentLevel->scene->pillCount <<
-				"][Time " << fixed << setprecision(2) << now - currentLevel->startTime << "secs]";
+		const double timeFromStart = now - currentLevel->startTime;
+		ss << "[Lights " << currentLevel->offPillCount << "/" << currentLevel->scene->pillCount <<"]"
+			"[Time " << fixed << setprecision(2) << timeFromStart << "secs]"
+			"[Total time " << gameSession.GetTotalLevelsTime() + timeFromStart << "secs]";
 		bottomLabel = ss.str();
 
 		++frame;
@@ -568,7 +570,7 @@ bool DisplaySession::RunPackSelection(string *pack) {
 			"[font=medium] Select a level pack:\n"
 			"[font=medium] ",
 			ss.str(),
-			"[font=medium] \n"
+			"[font=small] \n"
 			"[font=small](Up/Down to scroll, press the space bar to select)");
 
 	bool quit = false;
@@ -627,26 +629,202 @@ bool DisplaySession::RunPackSelection(string *pack) {
 	return quit;
 }
 
-void DisplaySession::RunGame() {
-	bool quit = false;
+void DisplaySession::RunShowHighScores() {
+	//--------------------------------------------------------------------------
+	// Select a Pack
+	//--------------------------------------------------------------------------
 
-	do {
-		if (RunIntro()) {
-			// I have to quit
-			quit = true;
-		}
+	string pack;
+	if (RunPackSelection(&pack))
+		return;
 
-		if (!quit) {
-			string pack;
-			if (RunPackSelection(&pack)) {
-				// I have to quit
-				quit = true;
+	//--------------------------------------------------------------------------
+	// Show the Pack high scores
+	//--------------------------------------------------------------------------
+
+	// Read the high scores
+	PackLevelList packLevelList(pack);
+	PackHighScore packHighScores(&packLevelList);
+
+	// Build the Menu
+	stringstream ss;
+	int optionCount = 0;
+	for (size_t i = 0; i < packLevelList.names.size(); ++i) {
+		const double highScore = packHighScores.Get(i + 1);
+		if (highScore == 0.0)
+			break;
+
+		if (i > 0)
+			ss <<"\n";
+		ss << "[font=medium]Level " << i + 1 << " " << packLevelList.names[i] << ": " << fixed << setprecision(2) << highScore << "secs";
+		++optionCount;
+	}
+
+	if (packHighScores.GetTotal() > 0.0) {
+		ss << "\n"
+			"[font=medium] \n"
+			"[font=medium]Complete pack time: " << fixed << setprecision(2) << packHighScores.GetTotal() << "secs";
+		optionCount += 2;
+	}
+
+	if (optionCount == 0) {
+		ss << "[font=medium]None";
+		++optionCount;
+	}
+
+	RenderTextMenu rtm(renderText,
+			"[font=medium]High Scores:\n"
+			"[font=medium] ",
+			ss.str(),
+			"[font=small] \n"
+			"[font=small](Up/Down to scroll, the space bar to exit)");
+
+	int selected = 0;
+	const int width = gameConfig->GetScreenWidth();
+	const int height = gameConfig->GetScreenHeight();
+	for(;;) {
+		// Wait for a key/mouse event
+		for (bool endWait = false; !endWait;) {
+			// Background
+			glColor3f(0.0f, 0.0f, 0.0f);
+			glRecti(0, 0, width, height);
+
+			// Menu
+			rtm.SetSelectedOption(selected);
+			rtm.Draw(width, height);
+
+			SDL_GL_SwapBuffers();
+
+			SDL_Event event;
+			while (SDL_PollEvent(&event)) {
+				switch (event.type) {
+					case SDL_KEYDOWN: {
+						switch (event.key.keysym.sym) {
+							case SDLK_ESCAPE:
+								endWait = true;
+								break;
+							case SDLK_UP:
+								selected = Max<int>(0, selected - 1);
+								break;
+							case SDLK_DOWN:
+								selected = Min<int>(optionCount - 1, selected + 1);
+								break;
+							case SDLK_SPACE:
+								endWait = true;
+								break;
+							default:
+								break;
+						}
+						break;
+					}
+					case SDL_QUIT:
+						endWait = true;
+						break;
+				}
 			}
 
-			if (!quit)
-				RunGameSession(pack);
+			boost::this_thread::sleep(boost::posix_time::millisec(100));
 		}
-	} while (!quit);
+
+		break;
+	}
+
+	return;
+}
+
+bool DisplaySession::RunStartMenu() {
+	// Build the Menu
+	RenderTextMenu rtm(renderText,
+			"[font=medium] Menu:\n"
+			"[font=medium] ",
+			"[font=medium]Play\n"
+			"[font=medium]Show High Scores",
+			"[font=small] \n"
+			"[font=small](Up/Down to scroll, press the space bar to select)");
+
+	bool quit = false;
+	int selected = 0;
+	const int width = gameConfig->GetScreenWidth();
+	const int height = gameConfig->GetScreenHeight();
+	for(;;) {
+		// Wait for a key/mouse event
+		for (bool endWait = false; !endWait;) {
+			// Background
+			glColor3f(0.0f, 0.0f, 0.0f);
+			glRecti(0, 0, width, height);
+
+			// Menu
+			rtm.SetSelectedOption(selected);
+			rtm.Draw(width, height);
+
+			SDL_GL_SwapBuffers();
+
+			SDL_Event event;
+			while (SDL_PollEvent(&event)) {
+				switch (event.type) {
+					case SDL_KEYDOWN: {
+						switch (event.key.keysym.sym) {
+							case SDLK_ESCAPE:
+								quit = true;
+								endWait = true;
+								break;
+							case SDLK_UP:
+								selected = Max<int>(0, selected - 1);
+								break;
+							case SDLK_DOWN:
+								selected = Min<int>(1, selected + 1);
+								break;
+							case SDLK_SPACE:
+								endWait = true;
+								break;
+							default:
+								break;
+						}
+						break;
+					}
+					case SDL_QUIT:
+						quit = true;
+						endWait = true;
+						break;
+				}
+			}
+
+			boost::this_thread::sleep(boost::posix_time::millisec(100));
+		}
+
+		break;
+	}
+
+	if (quit)
+		return true;
+
+	if (selected == 0) {
+		// Menu: Play
+		string pack;
+		if (RunPackSelection(&pack))
+			return false;
+
+		RunGameSession(pack);
+	} else {
+		// Menu: Show High Scores
+		RunShowHighScores();
+	}
+
+	return false;
+}
+
+void DisplaySession::RunGame() {
+	for (;;) {
+		if (RunIntro()) {
+			// I have to quit
+			break;
+		}
+
+		if (RunStartMenu()) {
+			// I have to quit
+			break;
+		}
+	}
 
 	SFERA_LOG("Done.");
 }

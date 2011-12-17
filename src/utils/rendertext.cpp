@@ -199,7 +199,7 @@ RenderTextMenu::RenderTextMenu(RenderText *rt,
 		header.push_back(renderText->Create(headerMsgs[i]));
 		headerSize += header[i]->h;
 	}
-	headerSize += interline * (header.size() - 1);
+	headerSize += interline * header.size();
 
 	// The menu options
 
@@ -210,7 +210,7 @@ RenderTextMenu::RenderTextMenu(RenderText *rt,
 		options.push_back(renderText->Create(optionsMsgs[i]));
 		optionsSize += options[i]->h;
 	}
-	optionsSize += interline * (options.size() - 1);
+	optionsSize += interline * options.size();
 
 	// The menu footer
 
@@ -237,8 +237,10 @@ void RenderTextMenu::Draw(const int width, const int height) const {
 	glRecti((width - options[selectedOption]->w) / 2 - 1, offset - 1,
 			(width - options[selectedOption]->w) / 2 + options[selectedOption]->w + 1, offset + options[selectedOption]->h + 1);
 
+	//--------------------------------------------------------------------------
 	// Draw the menu
-	glColor3f(1.0f, 1.0f, 1.0f);
+	//--------------------------------------------------------------------------
+
 	for (size_t i = 0; i < size_t(selectedOption); ++i)
 		offset += options[selectedOption]->h + interline;
 	offset += headerSize;
@@ -249,7 +251,7 @@ void RenderTextMenu::Draw(const int width, const int height) const {
 				(width - header[i]->w) / 2, offset,
 				true);
 
-		offset -= options[i]->h + interline;
+		offset -= header[i]->h + interline;
 	}
 
 	// Draw options

@@ -39,6 +39,8 @@ private:
 	void DrawLevelLabels(const string &bottomLabel, const string &topLabel) const;
 
 	bool RunIntro();
+	bool RunStartMenu();
+	void RunShowHighScores();
 	bool RunPackSelection(string *pack);
 	void RunGameSession(const string &pack);
 	bool RunLevel(GameSession &gameSession);

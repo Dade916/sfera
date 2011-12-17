@@ -40,7 +40,7 @@ PackHighScore::PackHighScore(const PackLevelList *levelList) {
 
 	// Set the current high scores
 	for (size_t i = 0; i < packLevelList->names.size(); ++i)
-		scores.push_back(propScores->GetFloat("scores." + packLevelList->packName + ".level" + ToString(i), 0.f));
+		scores.push_back(propScores->GetFloat("scores." + packLevelList->packName + ".level." + ToString(i + 1), 0.f));
 
 	totalScore = propScores->GetFloat("scores." + packLevelList->packName + ".total", 0.f);
 }
@@ -48,7 +48,7 @@ PackHighScore::PackHighScore(const PackLevelList *levelList) {
 void PackHighScore::Save() const {
 	Properties propScores;
 	for (size_t i = 0; i < packLevelList->names.size(); ++i)
-		propScores.SetString("scores." + packLevelList->packName + ".level" + ToString(i),
+		propScores.SetString("scores." + packLevelList->packName + ".level." + ToString(i + 1),
 				ToString(scores[i]));
 
 	propScores.SetString("scores." + packLevelList->packName + ".total",
