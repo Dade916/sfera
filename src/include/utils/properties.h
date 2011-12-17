@@ -33,6 +33,7 @@ public:
 
 	void Load(const Properties &prop);
 	void LoadFile(const std::string &fileName);
+	void SaveFile(const std::string &fileName);
 
 	std::vector<std::string> GetAllKeys() const;
 	std::vector<std::string> GetAllKeys(const std::string prefix) const;

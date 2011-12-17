@@ -18,46 +18,27 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_GAMESESSION_H
-#define	_SFERA_GAMESESSION_H
+#ifndef _SFERA_PACKHIGHSCORE_H
+#define	_SFERA_PACKHIGHSCORE_H
 
 #include "sfera.h"
-#include "gameconfig.h"
-#include "gamelevel.h"
-#include "utils/packlevellist.h"
-#include "utils/packhighscore.h"
+#include "packlevellist.h"
 
-class GameSession {
+class PackHighScore {
 public:
-	GameSession(const GameConfig *cfg, const string &pack);
-	~GameSession();
+	PackHighScore(const PackLevelList *packLevelList);
+	~PackHighScore() { }
 
-	void Begin(const unsigned int startLevel = 1);
-	bool NextLevel();
+	void Save() const;
 
-	unsigned int GetCurrentLevel() const { return currentLevelNumber; }
-	const string &GetCurrentLevelName() const { return packLevelList.names[currentLevelNumber - 1]; }
-	double GetTotalLevelsTime() const { return totalLevelsTime; }
-	bool IsNewHighScore(const double t) const {
-		const double st = highScores.Get(currentLevelNumber);
-		return (st == 0.f) || (st > t);
-	}
-	void SetLevelTime(const double t);
-
-	const GameConfig *gameConfig;
-	const string packName;
-
-	GameLevel *currentLevel;
+	double Get(size_t i) const { return scores[i - 1]; }
+	void Set(size_t i, double t) { scores[i - 1] = t; }
 
 private:
-	void LoadLevel(const unsigned int level);
+	const PackLevelList *packLevelList;
 
-	PackLevelList packLevelList;
-	unsigned int currentLevelNumber;
-
-	PackHighScore highScores;
-
-	double totalLevelsTime;
+	vector<double> scores;
 };
 
-#endif	/* _SFERA_GAMESESSION_H */
+#endif	/* _SFERA_PACKHIGHSCORE_H */
+

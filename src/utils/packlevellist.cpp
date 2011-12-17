@@ -22,37 +22,45 @@
 
 using namespace boost::filesystem;
 
-#include "utils/packlist.h"
+#include "utils/packlevellist.h"
 
-PackList::PackList() {
-	// Build the list of packs
-	string dir("gamedata/packs");
-	SFERA_LOG("Looking for packs in: " << dir);
+PackLevelList::PackLevelList(const string &pack) : packName(pack) {
+	// Build the list of levels
+	string packDir("gamedata/packs/" + packName);
+	SFERA_LOG("Looking for levels inside pack: " << packDir);
 	try {
-		path dirPath(dir);
+		path packPath(packDir);
 
-		if (!exists(dirPath))
-			throw runtime_error(dir + " directory doesn't exist");
-		if (!is_directory(dirPath))
-			throw runtime_error(dir + " is not a directory");
+		if (!exists(packPath))
+			throw runtime_error(packDir + " directory doesn't exist");
+		if (!is_directory(packPath))
+			throw runtime_error(packDir + " is not a directory");
 
-        vector<path> packDirs;
-        copy(directory_iterator(dirPath), directory_iterator(), back_inserter(packDirs));
-        sort(packDirs.begin(), packDirs.end());
+        vector<path> levelFiles;
+        copy(directory_iterator(packPath), directory_iterator(), back_inserter(levelFiles));
+        sort(levelFiles.begin(), levelFiles.end());
 
-		for (vector<path>::const_iterator it(packDirs.begin()); it != packDirs.end(); ++it) {
-			string packName = it->filename();
-			SFERA_LOG("  " << packName);
+		unsigned int level = 1;
+		stringstream ss;
+		ss << "lvl" << std::setw(2) << std::setfill('0') << level << "-";
+		string levelPrefix = ss.str();
+		for (vector<path>::const_iterator it(levelFiles.begin()); it != levelFiles.end(); ++it) {
+			string levelName = it->filename();
+			SFERA_LOG("  " << levelName);
 
-			// Check if it is the definition of a pack
-			if (is_directory(dir + "/" + packName)) {
-				SFERA_LOG("    ACCEPTED");
-				names.push_back(packName);
-			} else {
-				SFERA_LOG("    REJECTED");
+			// Check if it is the definition of the level
+			if (boost::starts_with(levelName, ss.str()) && boost::ends_with(levelName, ".lvl")) {
+				SFERA_LOG("    Used for level: " << level);
+				names.push_back(levelName.substr(6, levelName.length() - 6 - 4));
+
+				// Look for the next level
+				++level;
+				ss.str("");
+				ss << "lvl" << std::setw(2) << std::setfill('0') << level << "-";
+				levelPrefix = ss.str();
 			}
 		}
 	} catch (const filesystem_error &ex) {
-		SFERA_LOG("Error reading the packs in: " << dir << endl << "Error: "<< ex.what());
+		SFERA_LOG("Error reading the level pack: " << packDir << endl << "Error: "<< ex.what());
 	}
 }

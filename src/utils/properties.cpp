@@ -40,12 +40,10 @@ void Properties::Load(const Properties &p) {
 
 void Properties::LoadFile(const std::string &fileName) {
 	std::ifstream file(fileName.c_str(), std::ios::in);
-	char buf[512];
-	if (file.fail()) {
-		sprintf(buf, "Unable to open file %s", fileName.c_str());
-		throw std::runtime_error(buf);
-	}
+	if (file.fail())
+		throw std::runtime_error("Unable to open file" + fileName);
 
+	char buf[512];
 	for (int lineNumber = 1;; ++lineNumber) {
 		file.getline(buf, 512);
 		if (file.eof())
@@ -79,6 +77,18 @@ void Properties::LoadFile(const std::string &fileName) {
 
 		props[key] = value;
 	}
+}
+
+void Properties::SaveFile(const std::string &fileName) {
+	std::ofstream file(fileName.c_str(), std::ios::out);
+	if (file.fail())
+		throw std::runtime_error("Unable to open file" + fileName);
+
+	std::vector<std::string> keys = GetAllKeys();
+	for (size_t i = 0; i < keys.size(); ++i)
+		file << keys[i] << "=" << GetString(keys[i], "0.0") << "\n";
+
+	file.close();
 }
 
 std::vector<std::string> Properties::GetAllKeys() const {

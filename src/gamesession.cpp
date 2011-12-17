@@ -28,49 +28,14 @@
 using namespace boost::filesystem;
 
 GameSession::GameSession(const GameConfig *cfg, const string &pack) :
-	gameConfig(cfg), packName(pack), currentLevel(NULL), currentLevelNumber(0),
-	totalLevelsTime(0.0) {
-	// Build the list of levels
-	string packDir("gamedata/packs/" + pack);
-	SFERA_LOG("Looking for levels inside pack: " << packDir);
-	try {
-		path packPath(packDir);
-
-		if (!exists(packPath))
-			throw runtime_error(packDir + " directory doesn't exist");
-		if (!is_directory(packPath))
-			throw runtime_error(packDir + " is not a directory");
-
-        vector<path> levelFiles;
-        copy(directory_iterator(packPath), directory_iterator(), back_inserter(levelFiles));
-        sort(levelFiles.begin(), levelFiles.end());
-
-		unsigned int level = 1;
-		stringstream ss;
-		ss << "lvl" << std::setw(2) << std::setfill('0') << level << "-";
-		string levelPrefix = ss.str();
-		for (vector<path>::const_iterator it(levelFiles.begin()); it != levelFiles.end(); ++it) {
-			string levelName = it->filename();
-			SFERA_LOG("  " << levelName);
-
-			// Check if it is the definition of the level
-			if (boost::starts_with(levelName, ss.str()) && boost::ends_with(levelName, ".lvl")) {
-				SFERA_LOG("    Used for level: " << level);
-				levelNames.push_back(levelName.substr(6, levelName.length() - 6 - 4));
-
-				// Look for the next level
-				++level;
-				ss.str("");
-				ss << "lvl" << std::setw(2) << std::setfill('0') << level << "-";
-				levelPrefix = ss.str();
-			}
-		}
-	} catch (const filesystem_error &ex) {
-		SFERA_LOG("Error reading the level pack: " << packDir << endl << "Error: "<< ex.what());
-	}
+	gameConfig(cfg), packName(pack), currentLevel(NULL), packLevelList(packName),
+	currentLevelNumber(0), highScores(&packLevelList), totalLevelsTime(0.0) {
 }
 
 GameSession::~GameSession() {
+	// Save the high scores
+	highScores.Save();
+
 	delete currentLevel;
 }
 
@@ -83,7 +48,7 @@ bool GameSession::NextLevel() {
 	++currentLevelNumber;
 
 	// Check if there is a next level
-	if (currentLevelNumber > levelNames.size())
+	if (currentLevelNumber > packLevelList.names.size())
 		return false;
 
 	LoadLevel(currentLevelNumber);
@@ -94,7 +59,18 @@ bool GameSession::NextLevel() {
 void GameSession::LoadLevel(const unsigned int level) {
 	stringstream ss;
 	ss << "gamedata/packs/" + packName + "/lvl" << std::setw(2) << std::setfill('0') <<
-			level << "-" + levelNames[level - 1] << ".lvl";
+			level << "-" + packLevelList.names[level - 1] << ".lvl";
 
 	currentLevel = new GameLevel(gameConfig, ss.str());
+}
+
+void GameSession::SetLevelTime(const double t) {
+	totalLevelsTime += t;
+
+	if (IsNewHighScore(t)) {
+		highScores.Set(currentLevelNumber, t);
+
+		// Better safe than sorry...
+		highScores.Save();
+	}
 }

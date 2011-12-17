@@ -387,7 +387,7 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 		// Well done
 		const double secs = WallClockTime() - currentLevel->startTime;
 		ss << "[font=big]Well done: " << fixed << setprecision(2) << secs << " secs";
-		gameSession.AddLevelTime(secs);
+		gameSession.SetLevelTime(secs);
 	} else {
 		// Game over
 		ss << "[font=big]Game Over";
@@ -424,8 +424,10 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 }
 
 bool DisplaySession::RunIntro() {
-	const string introMsg = "[font=big]Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSION_MINOR "\n[font=medium] \n"
-		"[font=medium]Written by\n[font=medium]David \"Dade\" Bucciarelli";
+	const string introMsg = "[font=big]Sfera v" SFERA_VERSION_MAJOR "." SFERA_VERSION_MINOR "\n"
+		"[font=medium] \n"
+		"[font=medium]Written by\n"
+		"[font=medium]David \"Dade\" Bucciarelli";
 
 	bool quit = false;
 	for(;;) {

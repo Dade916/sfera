@@ -18,46 +18,36 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef _SFERA_GAMESESSION_H
-#define	_SFERA_GAMESESSION_H
+#include <boost/filesystem.hpp>
 
-#include "sfera.h"
-#include "gameconfig.h"
-#include "gamelevel.h"
-#include "utils/packlevellist.h"
+using namespace boost::filesystem;
+
 #include "utils/packhighscore.h"
+#include "utils/packlevellist.h"
 
-class GameSession {
-public:
-	GameSession(const GameConfig *cfg, const string &pack);
-	~GameSession();
+PackHighScore::PackHighScore(const PackLevelList *levelList) {
+	packLevelList = levelList;
 
-	void Begin(const unsigned int startLevel = 1);
-	bool NextLevel();
+	// Read the high scores
+	Properties *propScores;
 
-	unsigned int GetCurrentLevel() const { return currentLevelNumber; }
-	const string &GetCurrentLevelName() const { return packLevelList.names[currentLevelNumber - 1]; }
-	double GetTotalLevelsTime() const { return totalLevelsTime; }
-	bool IsNewHighScore(const double t) const {
-		const double st = highScores.Get(currentLevelNumber);
-		return (st == 0.f) || (st > t);
-	}
-	void SetLevelTime(const double t);
+	const string scoreFileName = "gamedata/scores/" + packLevelList->packName + ".scr";
+	path scorePath(scoreFileName);
+	if (!exists(scorePath))
+		propScores = new Properties();
+	else
+		propScores = new Properties(scoreFileName);
 
-	const GameConfig *gameConfig;
-	const string packName;
+	// Set the current high scores
+	for (size_t i = 0; i < packLevelList->names.size(); ++i)
+		scores.push_back(propScores->GetFloat("scores." + packLevelList->packName + ".level" + ToString(i), 0.f));
+}
 
-	GameLevel *currentLevel;
+void PackHighScore::Save() const {
+	Properties propScores;
+	for (size_t i = 0; i < packLevelList->names.size(); ++i)
+		propScores.SetString("scores." + packLevelList->packName + ".level" + ToString(i),
+				ToString(scores[i]));
 
-private:
-	void LoadLevel(const unsigned int level);
-
-	PackLevelList packLevelList;
-	unsigned int currentLevelNumber;
-
-	PackHighScore highScores;
-
-	double totalLevelsTime;
-};
-
-#endif	/* _SFERA_GAMESESSION_H */
+	propScores.SaveFile("gamedata/scores/" + packLevelList->packName + ".scr");
+}
