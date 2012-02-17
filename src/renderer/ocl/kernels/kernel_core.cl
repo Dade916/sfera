@@ -715,18 +715,15 @@ void Metal_Sample_f(const PARAM_MEM_TYPE MetalParam *mat, const Vector *wo, Vect
 		float *pdf, Spectrum *f, const Vector *shadeN,
 		Seed *seed,
 		bool *diffuseBounce) {
-        GlossyReflection(wo, wi, mat->exponent, shadeN, RndFloatValue(seed), RndFloatValue(seed));
+	GlossyReflection(wo, wi, mat->exponent, shadeN, RndFloatValue(seed), RndFloatValue(seed));
 
-		if (Dot(wi, shadeN) > 0.f) {
-			*pdf = 1.f;
+	f->r = mat->r;
+	f->g = mat->g;
+	f->b = mat->b;
 
-            f->r = mat->r;
-            f->g = mat->g;
-            f->b = mat->b;
+	*diffuseBounce = true;
 
-			*diffuseBounce = true;
-		} else
-			*pdf = 0.f;
+	*pdf =  (Dot(wi, shadeN) > 0.f) ? 1.f : 0.f;
 }
 
 void Alloy_Sample_f(const PARAM_MEM_TYPE AlloyParam *mat, const Vector *wo, Vector *wi,
