@@ -45,7 +45,7 @@ PackLevelList::PackLevelList(const string &pack) : packName(pack) {
 		ss << "lvl" << std::setw(2) << std::setfill('0') << level << "-";
 		string levelPrefix = ss.str();
 		for (vector<path>::const_iterator it(levelFiles.begin()); it != levelFiles.end(); ++it) {
-			string levelName = it->filename();
+			string levelName = it->filename().generic_string();
 			SFERA_LOG("  " << levelName);
 
 			// Check if it is the definition of the level

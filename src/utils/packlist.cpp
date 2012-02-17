@@ -41,7 +41,7 @@ PackList::PackList() {
         sort(packDirs.begin(), packDirs.end());
 
 		for (vector<path>::const_iterator it(packDirs.begin()); it != packDirs.end(); ++it) {
-			string packName = it->filename();
+			string packName = it->filename().generic_string();
 			SFERA_LOG("  " << packName);
 
 			// Check if it is the definition of a pack

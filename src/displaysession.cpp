@@ -180,7 +180,6 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 	int mouseStartY = 0;
 	bool leftMouseDown = false;
 	bool rightMouseDown = false;
-	bool fKeyDown = false;
 
 	do {
 		const double t1 = WallClockTime();
@@ -266,7 +265,6 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 							currentLevel->player->inputSlowDown = true;
 							break;
 						case SDLK_f:
-							fKeyDown = true;
 							currentLevel->player->targetPuppet = false;
 							currentLevel->player->targetTheta = currentLevel->player->viewTheta;
 							currentLevel->player->targetPhi = currentLevel->player->viewPhi;
@@ -299,7 +297,6 @@ bool DisplaySession::RunLevel(GameSession &gameSession) {
 							currentLevel->player->inputSlowDown = false;
 							break;
 						case SDLK_f:
-							fKeyDown = false;
 							currentLevel->player->targetPuppet = true;
 							break;
 						case SDLK_ESCAPE:
